@@ -1,6 +1,6 @@
 # 发布指南
 
-本次发行版本：`@easyuseai/my-ai-infra@0.0.5`，目标 dist-tag 为 `latest`；发布状态见 npm registry 与 manifest。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
+当前公开版本：`@easyuseai/my-ai-infra@0.0.5`，dist-tag 为 `latest`（2026-10-15 发布）。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
 
 ## 发布前的负责人事项
 
