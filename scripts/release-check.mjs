@@ -156,7 +156,7 @@ try {
   pass('Conflict refusal preserves modified project files and config');
 
   const web = await startServer('mai',['web','--port','0'],globalOptions);
-  for (const [route,type] of [['/','text/html; charset=utf-8'],['/app.js','text/javascript'],['/style.css','text/css'],['/assets/logo.png','image/png'],['/design-system/bxy-design-tokens.css','text/css'],['/design-system/assets/icons/material-symbols-rounded.woff2','font/woff2']]) {
+  for (const [route,type] of [['/','text/html; charset=utf-8'],['/app.js','text/javascript'],['/cog-train.js','text/javascript'],['/style.css','text/css'],['/assets/logo.png','image/png'],['/design-system/bxy-design-tokens.css','text/css'],['/design-system/assets/icons/material-symbols-rounded.woff2','font/woff2']]) {
     const response = await fetch(web.origin+route,{signal:AbortSignal.timeout(5000)});
     ensure(response.status===200 && response.headers.get('content-type')===type, `Packaged Web failed: ${route}`);
     ensure((await response.arrayBuffer()).byteLength>0,`Empty Web resource: ${route}`);

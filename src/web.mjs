@@ -26,6 +26,7 @@ export async function startWeb({ home, project, port = 4317 }) {
         const asset = {
           '/': ['web/index.html', 'text/html; charset=utf-8'],
           '/app.js': ['web/app.js', 'text/javascript'],
+          '/cog-train.js': ['web/cog-train.js', 'text/javascript'],
           '/style.css': ['web/style.css', 'text/css'],
           '/design-system/bxy-design-tokens.css': ['design-system/bxy-design-tokens.css', 'text/css'],
           '/design-system/assets/icons/material-symbols-rounded.css': ['design-system/assets/icons/material-symbols-rounded.css', 'text/css'],

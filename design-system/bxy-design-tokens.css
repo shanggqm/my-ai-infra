@@ -202,7 +202,6 @@
 /* Landing and change-review dialog semantic extensions. */
 :root {
   --bxy-layout-landing: 1180px;
-  --bxy-layout-hero-art: 460px;
   --bxy-layout-preview-modal: 1100px;
   --bxy-layout-preview-max-height: 880px;
   --bxy-layout-preview-status: 88px;
@@ -211,6 +210,14 @@
   --bxy-typography-section: clamp(24px, 2.4vw, 30px);
   --bxy-typography-landing-body: 16px;
   --bxy-typography-landing-line: 1.75;
-  --bxy-motion-assembly: 1200ms;
-  --bxy-motion-assembly-delay: 160ms;
+}
+
+/* Full-width Cog Train hero; colors share the orange brand family. */
+:root {
+  --bxy-color-hero-background: #FFFCF8;
+  --bxy-color-gear-soft: #FFB77F;
+  --bxy-color-gear-pale: #FFD2AE;
+  --bxy-layout-hero-height: 640px;
+  --bxy-layout-hero-mobile-height: 600px;
+  --bxy-layout-hero-copy: 680px;
 }

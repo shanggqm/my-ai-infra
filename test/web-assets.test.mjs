@@ -14,6 +14,7 @@ test('relocated runtime serves local logo, design tokens and subset icons withou
   const web = await startWeb({ home, port: 0 });
   t.after(() => new Promise(resolve => web.server.close(resolve)));
   for (const [route, type, prefix] of [
+    ['/cog-train.js', 'text/javascript', null],
     ['/assets/logo.png', 'image/png', [137,80,78,71]],
     ['/design-system/assets/icons/material-symbols-rounded.woff2', 'font/woff2', [119,79,70,50]],
     ['/design-system/bxy-design-tokens.css', 'text/css', null],

@@ -5,7 +5,7 @@
 ## 页面与任务
 
 - 工作台采用 `adaptive` profile；首页在同一套 foundations 下使用 `landing` profile。只提供浅色主题。
-- 默认打开首页：说明个人资产如何复用到项目，介绍 SDD 工作流，并通过“配置当前项目”进入实际配置。资产库、个人记忆有独立入口。
+- 默认打开首页：主标语为“你的企业级AI Coding基建。”，依次展示轻量、高效、深入优化、自进化、可定制扩展、经过真实场景检验六项卖点，再介绍 SDD 工作流与资产复用。通过“配置当前项目”进入配置；资产库、个人记忆有独立入口。真实场景定位由负责人提供，首页不添加未经提供的客户名称、案例数量或效果指标。
 - 项目页集中展示工具与 Skill 选择，底部保留选择摘要、检查安装和预览入口。
 - 文件变更在原生 `dialog` 中查看：项目路径、冲突策略、摘要、搜索/筛选、文件列表、后续提示。桌面弹窗最大宽度 1100px，移动端接近全屏，正文独立滚动，头部与底部操作始终可见。
 - 文件状态、路径、原因分层展示；链接目标按需展开。无需改动的文件默认收起，可切换为全部文件。
@@ -25,20 +25,24 @@ JSON 真源为 [bxy-design-tokens.json](bxy-design-tokens.json)，CSS 映射为 
 | 圆角/阴影 | `--bxy-radius-*` / `--bxy-shadow-modal` |
 | 首页正文与标题 | `--bxy-font-landing` / `--bxy-typography-hero` / `--bxy-typography-section` |
 | 首页/弹窗布局 | `--bxy-layout-landing` / `--bxy-layout-preview-modal` |
-| 入场与反馈 | `--bxy-motion-assembly` / `--bxy-motion-fast` / `--bxy-motion-slow` |
+| 首屏背景与齿轮 | `--bxy-color-hero-background` / `--bxy-color-brand` / `--bxy-color-brand-light` / `--bxy-color-gear-soft` / `--bxy-color-gear-pale` |
+| 首屏高度与正文宽度 | `--bxy-layout-hero-height` / `--bxy-layout-hero-mobile-height` / `--bxy-layout-hero-copy` |
+| 控件反馈 | `--bxy-motion-fast` / `--bxy-motion-slow` |
 | 功能图标 | `.bxy-icon`，Material Symbols Rounded |
 
 控件具有 default、hover/pressed、focus-visible、disabled、loading 状态；表单错误有文案和 aria-invalid。手机触控尺寸至少 44px。布局断点、列数与插图变换几何属于有注释的组件布局约束，不承担颜色和文字语义。
 
 ## 首页动效
 
-策略为 `expressive`。优先参考 [ReactBits Card Swap](https://reactbits.dev/components/card-swap) 的分层卡片构图与错峰运动机制，在现有原生 HTML/CSS 中实现资产装配入场；没有复制上游组件源码或引入 React/GSAP。
+策略为 `expressive`。按负责人提供的 Originkit Cog Train 代码参考，实现原生 Canvas 2D 齿轮背景；保留共同齿距、大小齿轮啮合、相邻反向旋转和鼠标横向移动反馈。来源登记见 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)。
 
-- 单一视觉母题：个人资产库、项目配置、工具入口三层卡片，变换使用 transform。
-- 入场持续 1200ms，两层分别延迟 160ms、320ms；没有无限循环，避免持续计算与注意力干扰。点击“重播动画”可再次观察。
-- 标题、说明与主操作始终可见，动画不是操作前置条件。图形是装配示意，未使用虚构安装结果或统计数据。
-- `prefers-reduced-motion: reduce` 直接展示最终构图并隐藏重播按钮。手机保留同一内容顺序与低开销入场，不使用持续 Canvas/WebGL。
-- 动态首帧、中间态和结束态由 `npm run test:web` 验证并可导出截图。
+- 首屏占视口 100% 宽度，独立于正文内容宽度；桌面高度至少 640px，手机至少 600px。浅色底 `#FFFCF8`，齿轮使用主色橙及三档浅橙。
+- 标题、说明与主操作居中，正文区域用同色浅底淡化齿轮线条；动画不影响文字可读性和操作。
+- 轮廓路径缓存，绘制上限 30fps；桌面像素比不超过 2，手机不超过 1.5。手机减小齿轮尺寸，使用同一视觉语言。
+- 按负责人 2026-10-15 指定移除暂停按钮。参考参数：Accent Mix 68%、Density 80%、Size 70px、Speed 100、Hover 200%、Seed 1；Cog variation 23%、tooth depth 100%、stroke 3px，hub 24%、spokes 8。手机尺寸缩放至 60%、线宽缩放至 65%。
+- 鼠标速度按帧采样，50ms 平滑，100ms 加速响应、450ms 衰减；基准时钟倍率 2，鼠标增益最高 ±16。正文和主按钮区域同样响应移动，停下后恢复基础速度；触屏不模拟悬停。滚出首屏、切换工作台或页面不可见时暂停。
+- `prefers-reduced-motion: reduce` 显示静态齿轮。Canvas 不可用时保留浅底、正文与操作。
+- `npm run test:web` 验证多个动画帧不同、鼠标加速/反转/停止后恢复、离开首页停止、减少动态效果，以及四种宽度下首屏铺满视口。
 
 ## 资产与例外
 
