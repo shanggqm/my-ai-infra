@@ -115,13 +115,13 @@ my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，�
 
 项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/assets/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/assets/rules/AGENTS.md；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
 
-CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用后也在终端单独显示；Web 在预览和成功提示中显示。Codex / Claude Code 在各自会话中执行 /init；Copilot 执行 copilot init；Cursor 使用 Agent 对话补全 AGENTS.md。具体命令及官方说明见 [README](../README.md#项目资产与运行规则的边界)。安装器不自动运行这些命令；doctor 健康表示安装一致，空规则仍需用户补全。
+CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用后也在终端单独显示；Web 在预览和成功提示中显示。Codex / Claude Code 在各自会话中执行 /init；Copilot 执行 copilot init；Cursor 使用 Agent 对话补全 AGENTS.md。具体命令及官方说明见 [项目规则入口](#项目规则入口)。安装器不自动运行这些命令；doctor 健康表示安装一致，空规则仍需用户补全。
 
 通过规则软链接编辑内容会更新中心文件，sync 保留这些正文修改。如果外部工具把空规则链接替换成普通文件，sync 会将新正文归入中心文件并恢复链接；中心文件与入口均有不同非空内容时，默认 merge 保留中心正文，把入口原文归档为 local/ 候选，再恢复链接。选择 abort 时保留现场并退出 2。中心文件仍有内容而入口副本为空时，保留中心正文。
 
 CLI 初始化默认安装全部可用 Skill；Web 可按项目选择，sync 保留项目配置。旧 --skills 参数保持脚本兼容，不参与交互选择。
 
-.gitignore 增量补缺并去重，保留已有规则、注释、换行和显式反向规则。删除安装记录后留下的旧片段不会仅因没有旧 hash 而阻止安装。项目规格文档只补缺，已有正文保留。CLI 与 Web 默认 merge，交互终端发现冲突时提供 merge / replace / 终止单选。使用 --conflict 显式指定策略；--yes 或非交互环境采用默认 merge。plan 返回 conflicts、review、skipped、complete 与逐项 resolution，链接项包含 target。冲突内容的恢复方式与不同类型处理见 [初始化冲突处理](../README.md#初始化冲突处理)。
+.gitignore 增量补缺并去重，保留已有规则、注释、换行和显式反向规则。删除安装记录后留下的旧片段不会仅因没有旧 hash 而阻止安装。项目规格文档只补缺，已有正文保留。CLI 与 Web 默认 merge，交互终端发现冲突时提供 merge / replace / 终止单选。使用 --conflict 显式指定策略；--yes 或非交互环境采用默认 merge。plan 返回 conflicts、review、skipped、complete 与逐项 resolution，链接项包含 target。冲突内容的恢复方式与不同类型处理见 [初始化冲突处理](#初始化冲突处理)。
 
 merge 以本地优先的目录合并补齐资产，同名不同正文保留候选；脚本和结构化文件不盲目拼接。合并后保留的本地资产记录 preserve 标记，普通同步和 doctor 尊重这些项目定制；显式 replace 才重置它们。安装状态无效时备份后重建，不使用未经校验的旧路径删除文件。merge 会备份损坏的忽略标记，再保留其他内容并重建有效标记。目录或二进制占位归档后装配，未知父目录链接保持原状并跳过依赖入口；此时部分配置可应用，但 complete 为 false，CLI 退出 2，doctor 不宣称健康。
 
@@ -158,3 +158,40 @@ merge 以本地优先的目录合并补齐资产，同名不同正文保留候�
 ## 个人长期记忆
 
 `0.0.4` 新增 `memory get / recall / bind / put / save / delete` 与 Web“个人记忆”。项目配置可包含稳定 `projectId`，只在首次绑定时生成；普通 sync 保留它。全局偏好配置 defaults.json 继续仅保存工具与 Skill 选择。完整说明见[个人记忆指南](memory.md)。
+
+## 项目规则入口
+
+空规则由项目作者在目标项目中初始化；安装器负责集中存放与软链装配。
+
+- Codex：启动 `codex` 后执行 `/init`，补全 AGENTS.md（[官方命令说明](https://developers.openai.com/codex/cli/slash-commands)）。
+- Claude Code：启动 `claude` 后执行 `/init`，补全 CLAUDE.md（[官方命令说明](https://code.claude.com/docs/zh-CN/commands)）。
+- Cursor：在 Agent 对话发送“请读取仓库，补全根目录 AGENTS.md 中的项目运行原则、命令和约束”（[规则支持](https://cursor.com/docs/context/rules)）。
+- Copilot：执行 `copilot init`，或在 CLI 会话执行 `/init`（[官方命令说明](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)）。
+
+文件已存在时，可让对应工具补全已有内容。新建的 AGENTS.md 与 CLAUDE.md 共用源，Codex、Cursor、Claude Code 可选一个生成原则；原有独立规则保持独立。通过现有链接写入后内容立即集中生效；如果初始化工具将空链接替换成普通文件，执行 `my-ai-infra sync --project .` 重新归入中心目录。已有两份不同的非空内容时，先合并差异后再同步。
+
+## 初始化冲突处理
+
+`init` / `sync` 会在写入前集中检查计划安装和移除的路径，包括 Skill / Agent、运行规则、父目录类型、文件链接、配置、安装记录与忽略标记。无关文件保持原状。交互终端发现冲突时用方向键选择处理方式，Enter 默认选择 merge；完成后显示简短摘要与恢复目录。`--yes` 和非交互命令直接采用默认策略，非交互输出保持 JSON。Web 提供相同策略，并要求重新预览后应用。
+
+| 策略 | 行为 |
+|---|---|
+| `merge`（默认） | 补缺，保留同名本地文本；多工具 Skill 副本集中到 `.agents`，优先已有中心内容，否则采用首个本地副本。不同版本保存为合并候选，不直接拼接脚本、YAML 或运行约束。 |
+| `replace` | 先备份，再使用待安装内容；目录和二进制占位也会归档，外部链接仅更换链接入口，不修改目标。 |
+| `abort` | 有冲突时终止，项目保持原状。 |
+
+```bash
+my-ai-infra init --project . --conflict merge
+my-ai-infra sync --project . --conflict replace
+my-ai-infra plan --project . --conflict abort
+```
+
+成功结果的 `recovery` 给出恢复目录，通常为 `.my-ai-infra/backups/<操作ID>/`。其中 `before/` 保留原文件、二进制与链接，`incoming/` 和 `local/` 保存不同版本，`journal.json` 记录变更。目录占位整体移入备份，失败时恢复；状态目录本身被占用时采用项目内独立的 `.my-ai-infra-recovery-<操作ID>/`。
+
+merge 保留的本地资产继续受到保护，后续普通同步沿用它；需要明确采用分发版本时使用 replace。`review` 列出需要人工核对的差异。不能安全处理的父目录链接或不可读路径保留并列入 `skipped`，其他配置继续装配；此时 `complete: false`、CLI 退出 2，Web 明确显示部分完成。正确指向 `.agents` 的 Skill 目录链接可直接复用。核心 API 保留默认 abort，CLI 与 Web 的默认策略为 merge。
+
+## 环境与支持范围
+
+需要 Node.js 22+ 和 npm；Git worktree 辅助能力另需 Git 与 Bash。当前验证环境为 macOS，Windows / Linux 尚未逐平台完成全部验收；Windows 使用软链需要相应权限。
+
+CLI 与 Web 在本机运行，无遥测。开发偏好保存在本地个人库，项目同步由用户显式发起；团队审批、远程资产市场和跨项目自动升级不在当前功能范围内。

@@ -3,7 +3,7 @@ package_name: "@easyuseai/my-ai-infra"
 license: MIT
 version: 0.0.4
 status: released
-purpose: Personal AI Coding asset management and SDD project scaffolding
+purpose: Lightweight SDD scaffolding for enterprise AI coding, with reusable assets and persistent development preferences
 repository:
   url: https://github.com/shanggqm/my-ai-infra
   visibility: private

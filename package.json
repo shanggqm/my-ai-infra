@@ -1,7 +1,7 @@
 {
   "name": "@easyuseai/my-ai-infra",
   "version": "0.0.4",
-  "description": "面向个人的 AI Coding 资产管理、SDD 项目脚手架与本地配置工作台",
+  "description": "面向企业级 AI Coding 的轻量 SDD 脚手架，以规格驱动交付，让开发经验持续沉淀与复用。",
   "type": "module",
   "bin": {
     "mai": "bin/my-ai-infra.mjs",
@@ -47,9 +47,11 @@
     "ai-coding",
     "sdd",
     "spec-driven-development",
+    "developer-tools",
+    "ai-agents",
     "skills",
-    "cli",
     "scaffold",
+    "cli",
     "codex",
     "claude-code",
     "cursor",
@@ -65,5 +67,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shanggqm/my-ai-infra.git"
+  },
+  "homepage": "https://github.com/shanggqm/my-ai-infra#readme",
+  "bugs": {
+    "url": "https://github.com/shanggqm/my-ai-infra/issues"
   }
 }
