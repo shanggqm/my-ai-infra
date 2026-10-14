@@ -112,7 +112,7 @@ $('project-path').oninput = () => { $('project-path').removeAttribute('aria-inva
 $('project-path').onkeydown = event => { if (event.key === 'Enter') $('load').click(); };
 $('select-core').onclick = () => { const ids = new Set(state.assets.filter(a => a.core).map(a => a.name)); for (const input of document.querySelectorAll('#project-skills input')) input.checked = ids.has(input.value); invalidate(); };
 $('conflict-policy').onchange = () => { invalidate(); notice('处理策略已更改，请重新预览后应用。'); };
-mountCogTrain($('cog-hero'), $('toggle-cogs'));
+mountCogTrain($('cog-hero'));
 function initializationHints(steps) {
   const section = element('div');
   if (steps.length) section.append(element('h3', '补全项目运行规则'));

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#FF7918">
-  <title>my-ai-infra · 个人 AI Coding 工作台</title>
+  <title>my-ai-infra · 你的企业级AI Coding基建。</title>
   <link rel="icon" type="image/png" href="/assets/logo.png">
   <link rel="stylesheet" href="/design-system/bxy-design-tokens.css">
   <link rel="stylesheet" href="/design-system/assets/icons/material-symbols-rounded.css">
@@ -35,13 +35,20 @@
         <div class="landing-hero" id="cog-hero">
           <canvas class="cog-canvas" aria-hidden="true"></canvas>
           <div class="hero-copy">
-            <h1 id="home-title">你的 AI 编码资产，随项目一起复用。</h1>
-            <p class="hero-description">把常用的 Skill、Agent 和个人偏好收进自己的资产库。换一个项目、换一种工具，依然沿用熟悉的开发方式。</p>
+            <h1 id="home-title">你的企业级<span class="hero-term">AI Coding</span>基建。</h1>
+            <p class="hero-description">轻量接入，高效交付。深入优化的 Skill 与工作流经过真实场景检验，随实践自进化，按需定制与扩展。</p>
             <button class="button primary hero-cta" data-tab="project">配置当前项目<span class="bxy-icon" aria-hidden="true">arrow_forward</span></button>
             <div class="hero-command"><span class="bxy-icon" aria-hidden="true">terminal</span><div><code>mai init</code><span>在项目目录开始</span></div><div><code>mai web</code><span>打开本地工作台</span></div></div>
           </div>
-          <button id="toggle-cogs" class="text-button motion-toggle" aria-pressed="false">暂停动画</button>
         </div>
+        <section class="landing-principles" aria-label="产品卖点">
+          <div><span class="bxy-icon" aria-hidden="true">terminal</span><h2>轻量</h2><p>一条命令接入已有项目，CLI 与本地工作台随手切换。</p></div>
+          <div><span class="bxy-icon" aria-hidden="true">account_tree</span><h2>高效</h2><p>串联需求、设计、实现与评审，复用上下文，减少重复配置与沟通。</p></div>
+          <div><span class="bxy-icon" aria-hidden="true">tune</span><h2>深入优化</h2><p>围绕中文开发场景，打磨 Skill 的职责、输入输出与评审标准。</p></div>
+          <div><span class="bxy-icon" aria-hidden="true">fact_check</span><h2>自进化</h2><p>把开发偏好与实践经验沉淀为记忆和资产，持续改进后续协作。</p></div>
+          <div><span class="bxy-icon" aria-hidden="true">deployed_code</span><h2>可定制扩展</h2><p>按项目组合工具与 Skill，自定义 Agent、Prompt 和工作流。</p></div>
+          <div><span class="bxy-icon" aria-hidden="true">check_circle</span><h2>经过真实场景检验</h2><p>在真实项目的需求、设计、编码与评审中反复使用和打磨。</p></div>
+        </section>
         <section class="landing-workflow" aria-labelledby="workflow-title">
           <div class="workflow-heading"><h2 id="workflow-title">从需求到代码，有一条走得通的路径</h2><p>内置 SDD 主流程 Skill，让每一步都有可接续的文档与产出。</p></div>
           <ol class="workflow-steps"><li><span>需求上下文</span><small>把问题说清楚</small></li><li><span>产品规格</span><small>明确验收标准</small></li><li><span>技术设计</span><small>确定实现路径</small></li><li><span>方案审查</span><small>收敛复杂度</small></li><li><span>测试规划</span><small>覆盖关键行为</small></li><li><span>编码实现</span><small>按任务推进</small></li><li><span>代码评审</span><small>核对交付证据</small></li></ol>
@@ -50,7 +57,6 @@
           <div><h2 id="library-title">让每一次积累，成为下一次的起点</h2><p>自己的资产自己维护，项目需要什么就装配什么。</p></div>
           <div class="library-links"><button data-tab="assets"><span class="bxy-icon" aria-hidden="true">inventory_2</span><span><strong>维护你的 AI 资产</strong><small>查看、编辑与复用 Skill、Agent 等个人源文件。</small></span><span class="bxy-icon" aria-hidden="true">arrow_forward</span></button><button data-tab="memory"><span class="bxy-icon" aria-hidden="true">fact_check</span><span><strong>留住值得沿用的偏好</strong><small>按项目或全局保存，确认后的偏好参与后续任务。</small></span><span class="bxy-icon" aria-hidden="true">arrow_forward</span></button></div>
         </section>
-        <section class="landing-principles" aria-label="本地工作方式"><div><span class="bxy-icon" aria-hidden="true">hard_drive</span><h3>保存在自己的电脑</h3><p>资产与偏好本地存储，工作台仅在本机运行。</p></div><div><span class="bxy-icon" aria-hidden="true">difference</span><h3>看清变更，再应用</h3><p>逐项预览文件改动，选择冲突策略，保留恢复记录。</p></div><div><span class="bxy-icon" aria-hidden="true">tune</span><h3>每个项目，自由选择</h3><p>工具和 Skill 按需组合，已有项目保留自己的配置。</p></div></section>
       </section>
       <section id="project-view" aria-labelledby="project-title" hidden>
         <div class="page-heading"><h1 id="project-title">项目配置</h1><p>为项目选择 AI Coding 工具与 Skill，预览后应用。</p></div>

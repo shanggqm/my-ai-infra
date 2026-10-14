@@ -34,9 +34,9 @@ body:has(dialog[open]){overflow:hidden}
 .landing-hero{position:relative;isolation:isolate;display:grid;place-items:center;width:100%;min-height:var(--bxy-layout-hero-height);padding:var(--bxy-space-80) var(--bxy-space-32);overflow:hidden;background:var(--bxy-color-hero-background)}
 .cog-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:-1}
 .landing-hero .hero-copy{width:100%;max-width:var(--bxy-layout-hero-copy);text-align:center}
+.landing-hero .hero-term{white-space:nowrap}
 .landing-hero .hero-description{margin-inline:auto}
 .landing-hero .hero-command{justify-content:center;max-width:var(--bxy-layout-editor);margin-inline:auto}
-.motion-toggle{position:absolute;right:var(--bxy-space-24);bottom:var(--bxy-space-16);background:var(--bxy-color-hero-background);font-size:var(--bxy-text-caption)}
 .landing-header,.landing-workflow,.landing-library{max-width:var(--bxy-layout-landing);margin-inline:auto;padding-inline:var(--bxy-space-32)}
 .landing-principles,body[data-view=home] .page>footer,body[data-view=home] #message{max-width:calc(var(--bxy-layout-landing) - var(--bxy-space-64));width:calc(100% - var(--bxy-space-64));margin-inline:auto}
 .hero-copy{min-width:0}
@@ -62,9 +62,9 @@ body:has(dialog[open]){overflow:hidden}
 .library-links button>.bxy-icon:last-child{margin-left:auto}
 .library-links strong{display:block;font-size:var(--bxy-text-body);font-weight:500}
 .library-links small{display:block;margin-top:var(--bxy-space-8);font-size:var(--bxy-text-caption);color:var(--bxy-color-text-secondary)}
-.landing-principles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--bxy-space-32);background:var(--bxy-color-pressed);border-radius:var(--bxy-radius-xl);padding:var(--bxy-space-32)}
+.landing-principles{margin-block:var(--bxy-space-48);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--bxy-space-32);background:var(--bxy-color-pressed);border-radius:var(--bxy-radius-xl);padding:var(--bxy-space-32)}
 .landing-principles .bxy-icon{color:var(--bxy-color-text-secondary);font-size:var(--bxy-space-24)}
-.landing-principles h3{font-size:var(--bxy-text-body);font-weight:500;margin:var(--bxy-space-12) 0 var(--bxy-space-8)}
+.landing-principles h2{font-size:var(--bxy-text-body);font-weight:500;margin:var(--bxy-space-12) 0 var(--bxy-space-8)}
 .landing-principles p{font-size:var(--bxy-text-caption);color:var(--bxy-color-text-secondary)}
 /* Configuration stays full width; all review detail lives in the modal. */
 .project-layout{display:block}
@@ -132,7 +132,6 @@ summary{cursor:pointer;min-height:var(--bxy-layout-button);align-content:center}
   .landing-hero{min-height:var(--bxy-layout-hero-mobile-height);padding:var(--bxy-space-64) var(--bxy-space-16)}
   .landing-header,.landing-workflow,.landing-library{padding-inline:var(--bxy-space-16)}
   .landing-principles,body[data-view=home] .page>footer,body[data-view=home] #message{width:calc(100% - var(--bxy-space-32))}
-  .motion-toggle{right:var(--bxy-space-16);bottom:var(--bxy-space-8)}
   .hero-copy h1{margin-bottom:var(--bxy-space-16)}
   .hero-cta{margin-top:var(--bxy-space-24)}
   .hero-command{margin-top:var(--bxy-space-24);gap:var(--bxy-space-16)}
@@ -140,7 +139,7 @@ summary{cursor:pointer;min-height:var(--bxy-layout-button);align-content:center}
   .landing-workflow{padding-block:var(--bxy-space-32)}
   .landing-library{grid-template-columns:minmax(0,1fr);gap:var(--bxy-space-16);padding-block:var(--bxy-space-32)}
   .library-links button{padding-inline:0}
-  .landing-principles{grid-template-columns:minmax(0,1fr);gap:var(--bxy-space-24);padding:var(--bxy-space-24)}
+  .landing-principles{margin-block:var(--bxy-space-32);grid-template-columns:minmax(0,1fr);gap:var(--bxy-space-24);padding:var(--bxy-space-24)}
   .project-actions{flex-direction:column;align-items:stretch;padding:var(--bxy-space-16);gap:var(--bxy-space-12);bottom:var(--bxy-space-8)}
   .project-actions .action-line{display:grid;grid-template-columns:1fr 1fr;gap:var(--bxy-space-8)}
   .preview-dialog{width:calc(100% - var(--bxy-space-16));max-height:calc(100dvh - var(--bxy-space-16));border-radius:var(--bxy-radius-xl)}
