@@ -25,3 +25,9 @@ Icon 来自 Google Material Symbols Rounded，以 Apache License 2.0 分发。�
 ## Logo 与设计基础
 
 Logo 由内置 imagegen 于 2026-10-13 生成；项目内保存透明 PNG，来源与提示词见 [Logo 说明](web/assets/README.md)。界面按负责人指定的 bxy-core-design-system 沉淀 tokens 和交互约束；未分发商业产品组件、设备外框或私有业务素材。
+
+## 首页齿轮动画参考
+
+2026-10-14，负责人提供标题为 “Cog Train — Originkit” 的 React/WebGL 代码片段作为视觉与运动参考。原始输入 SHA-256：`4883d59879e50b114741cbd904e6081b4a53009dc56d5702d9d7941498a0e549`。
+
+[web/cog-train.js](web/cog-train.js) 使用原生 Canvas 2D 实现，参考共同齿距、齿轮接触相位、反向转动和指针速度反馈机制；重新实现轮廓路径缓存、浅色语义配色、阅读区域、响应式布局与动效生命周期。分发内容未包含原始 React 组件或 GLSL 源码，也未引入相应运行时依赖。此登记保留参考来源，不对输入片段的上游许可作推定。

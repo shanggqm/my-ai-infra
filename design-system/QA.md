@@ -1,5 +1,14 @@
 # UI 验证记录
 
+## 2026-10-14：全宽橙色齿轮首屏
+
+- 保留 adaptive 工作台 + landing 首页；首屏改为 100% 视口宽度的浅色背景与四档橙色齿轮，替换此前的分层卡片动画。语义颜色和布局值登记在 JSON/CSS tokens，来源记入设计契约与第三方来源说明。
+- 1440/1280/390/375：Canvas 左边界为 0、宽度等于视口，页面无水平溢出。正文居中、主操作可见，手机标题自然换行；桌面与手机截图人工查看通过。
+- 三个运动时间点的 Canvas 像素摘要互不相同；暂停后像素不变，继续后恢复。切换工作台后动画停止；reduced motion 下画面稳定并隐藏暂停按钮。
+- 原有变更预览回归通过：搜索、筛选、链接展开、焦点循环与回收、过期响应丢弃、策略失效、错误反馈、真实应用与冲突保护。四种宽度下弹窗底部操作可见，无浏览器错误或外部请求。
+- 截图与报告保存于课程工作区的忽略目录 work/mai-web-qa/cogs，可用 scripts/check-web.mjs 与 MAI_WEB_ARTIFACT_DIR 重建。
+- npm run release:check 通过（包含 verify：构建、lint、资源/链接校验与 190 项测试）；离线安装后 mai init、mai web 和齿轮模块静态资源读取通过。课程根级 npm test 与两级仓库 git diff --check 通过。
+
 ## 2026-10-14：首页与模态预览
 
 - Profile：adaptive 工作台 + landing 首页，共用原有橙白语义 tokens。主题入口为 web/style.css；图标采用 17 个自托管 Material Symbols Rounded glyph，3,516 bytes，CSP 保持 self。

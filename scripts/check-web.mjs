@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,25 +31,28 @@ try {
   await ready();
   assert.equal(await page.locator('body').getAttribute('data-view'), 'home');
   assert.equal(await page.locator('#project-view').isVisible(), false);
-  await page.locator('#replay-assembly').click();
-  const motion = await page.evaluate(async () => {
-    const card = document.querySelector('.source-card');
-    const frames = [];
-    for (const time of [0, 500, 1500]) {
-      for (const animation of document.querySelector('.assembly-scene').getAnimations({ subtree: true })) { animation.pause(); animation.currentTime = time; }
-      frames.push(getComputedStyle(card).transform);
-      await new Promise(requestAnimationFrame);
-    }
-    return frames;
-  });
-  assert.equal(new Set(motion).size, 3);
-  if (artifacts) {
-    for (const [name, time] of [['start',0],['middle',500],['end',1600]]) {
-      await page.evaluate(time => { for (const animation of document.querySelector('.assembly-scene').getAnimations({ subtree: true })) { animation.pause(); animation.currentTime = time; } }, time);
-      await shot('motion-' + name);
-    }
+  await page.waitForFunction(() => document.querySelector('#cog-hero').dataset.motion === 'running');
+  const imageData = () => page.locator('.cog-canvas').evaluate(canvas => canvas.toDataURL());
+  await page.locator('#toggle-cogs').click();
+  const still = await imageData();
+  await page.waitForTimeout(180);
+  assert.equal(await imageData(), still);
+  const motion = [createHash('sha256').update(still).digest('hex')];
+  await shot('motion-start');
+  for (const [name, duration] of [['middle',400], ['end',900]]) {
+    await page.locator('#toggle-cogs').click();
+    await page.waitForTimeout(duration);
+    await page.locator('#toggle-cogs').click();
+    motion.push(createHash('sha256').update(await imageData()).digest('hex'));
+    await shot('motion-' + name);
   }
+  assert.equal(new Set(motion).size, 3);
+  await page.locator('#toggle-cogs').click();
   await page.getByRole('button', { name: '配置当前项目', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#cog-hero').dataset.motion === 'idle');
+  const offscreen = await imageData();
+  await page.waitForTimeout(120);
+  assert.equal(await imageData(), offscreen);
   await openPreview();
   assert.equal(await page.locator('#preview-dialog').evaluate(node => node.contains(document.activeElement)), true);
   await page.keyboard.press('Shift+Tab');
@@ -68,7 +72,7 @@ try {
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#preview-dialog').evaluate(node => node.open), false);
   assert.equal(await page.locator('#preview').evaluate(node => node === document.activeElement), true);
-  pass('Default home, visible three-stage hero motion, modal focus, Escape, file search, filters and link details');
+  pass('Default home, animated gear frames, pause/resume and offscreen suspension, modal focus, Escape, file search, filters and link details');
 
   // A late preview response must not resurrect a closed dialog or stale selection.
   await page.route('**/api/plan', async route => { await new Promise(resolve => setTimeout(resolve, 350)); await route.continue(); });
@@ -118,7 +122,9 @@ try {
     await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
     await ready();
     await noOverflow();
-    await page.waitForTimeout(1700);
+    const canvasBounds = await page.locator('.cog-canvas').boundingBox();
+    assert.ok(Math.abs(canvasBounds.x) < 1 && Math.abs(canvasBounds.width - width) < 1, 'Hero canvas must span the viewport');
+    await page.waitForTimeout(350);
     await shot('home-' + width);
     await page.getByRole('button', { name: '配置当前项目', exact: true }).click();
     await noOverflow();
@@ -134,7 +140,11 @@ try {
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await ready();
-  assert.equal(await page.locator('.assembly-card').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).animationName === 'none')), true);
+  assert.equal(await page.locator('#cog-hero').getAttribute('data-motion'), 'reduced');
+  assert.equal(await page.locator('#toggle-cogs').isVisible(), false);
+  const reducedFrame = await imageData();
+  await page.waitForTimeout(200);
+  assert.equal(await imageData(), reducedFrame);
   await shot('home-reduced-motion');
   assert.deepEqual(errors, []);
   assert.deepEqual(remote, []);

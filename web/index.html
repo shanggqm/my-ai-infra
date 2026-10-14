@@ -32,21 +32,15 @@
           <a class="landing-brand" href="#main"><img src="/assets/logo.png" alt="" width="40" height="40"><strong>my-ai-infra</strong></a>
           <nav aria-label="首页导航"><button class="text-button" data-tab="assets">浏览资产</button><button class="text-button" data-tab="memory">个人记忆</button><button class="button secondary" data-tab="project">进入工作台<span class="bxy-icon" aria-hidden="true">arrow_forward</span></button></nav>
         </header>
-        <div class="landing-hero">
+        <div class="landing-hero" id="cog-hero">
+          <canvas class="cog-canvas" aria-hidden="true"></canvas>
           <div class="hero-copy">
             <h1 id="home-title">你的 AI 编码资产，随项目一起复用。</h1>
             <p class="hero-description">把常用的 Skill、Agent 和个人偏好收进自己的资产库。换一个项目、换一种工具，依然沿用熟悉的开发方式。</p>
             <button class="button primary hero-cta" data-tab="project">配置当前项目<span class="bxy-icon" aria-hidden="true">arrow_forward</span></button>
             <div class="hero-command"><span class="bxy-icon" aria-hidden="true">terminal</span><div><code>mai init</code><span>在项目目录开始</span></div><div><code>mai web</code><span>打开本地工作台</span></div></div>
           </div>
-          <figure class="assembly" aria-labelledby="assembly-caption">
-            <div class="assembly-scene" aria-hidden="true">
-              <div class="assembly-card source-card"><div class="assembly-card-head"><span class="bxy-icon">inventory_2</span><strong>个人资产库</strong></div><div class="source-items"><span>Skill</span><span>Agent</span><span>个人偏好</span></div></div>
-              <div class="assembly-card project-card"><div class="assembly-card-head"><span class="bxy-icon">folder_open</span><strong>项目配置</strong></div><div class="spec-line"><span class="bxy-icon">check_circle</span>需求与产品规格</div><div class="spec-line"><span class="bxy-icon">check_circle</span>技术设计与代码评审</div></div>
-              <div class="assembly-card tools-card"><div class="assembly-card-head"><span class="bxy-icon">deployed_code</span><strong>工具入口</strong><span class="assembly-tag">按需装配</span></div><div class="assembly-tools"><span>Codex</span><span>Claude Code</span><span>Cursor</span><span>GitHub Copilot</span></div><div class="assembly-note"><span class="bxy-icon">account_tree</span>统一资产，连接不同工具</div></div>
-            </div>
-            <figcaption id="assembly-caption">从个人积累到项目协作的装配示意<button id="replay-assembly" class="text-button" aria-label="重播装配动画">重播动画</button></figcaption>
-          </figure>
+          <button id="toggle-cogs" class="text-button motion-toggle" aria-pressed="false">暂停动画</button>
         </div>
         <section class="landing-workflow" aria-labelledby="workflow-title">
           <div class="workflow-heading"><h2 id="workflow-title">从需求到代码，有一条走得通的路径</h2><p>内置 SDD 主流程 Skill，让每一步都有可接续的文档与产出。</p></div>

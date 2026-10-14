@@ -281,7 +281,10 @@
       "control-border": "#8b8f96",
       "divider": "#dfe1e5",
       "success-readable": "#176b33",
-      "error-readable": "#af241a"
+      "error-readable": "#af241a",
+      "hero-background": "#FFFCF8",
+      "gear-soft": "#FFB77F",
+      "gear-pale": "#FFD2AE"
     },
     "layout": {
       "sidebar": "228px",
@@ -293,10 +296,12 @@
       "touch": "44px",
       "logo": "40px",
       "landing": "1180px",
-      "hero-art": "460px",
       "preview-modal": "1100px",
       "preview-max-height": "880px",
-      "preview-status": "88px"
+      "preview-status": "88px",
+      "hero-height": "640px",
+      "hero-mobile-height": "600px",
+      "hero-copy": "680px"
     },
     "typography": {
       "hero": "clamp(32px, 3.6vw, 48px)",
@@ -304,10 +309,6 @@
       "section": "clamp(24px, 2.4vw, 30px)",
       "landing-body": "16px",
       "landing-line": "1.75"
-    },
-    "motion": {
-      "assembly": "1200ms",
-      "assembly-delay": "160ms"
     }
   }
 }

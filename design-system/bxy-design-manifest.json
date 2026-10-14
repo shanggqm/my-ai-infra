@@ -4,7 +4,7 @@
   "profile": "adaptive",
   "motionStrategy": "expressive",
   "motionSourcePriority": [
-    "ReactBits Card Swap: layered card composition and staggered assembly, original native CSS implementation"
+    "User-provided Originkit Cog Train reference; native Canvas 2D gear train"
   ],
   "installedAt": "2026-10-13T09:19:11.830Z",
   "tokenSource": "bxy-design-tokens.json",

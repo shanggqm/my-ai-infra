@@ -1,3 +1,5 @@
+import { mountCogTrain } from './cog-train.js';
+
 const $ = id => document.getElementById(id);
 const labels = { codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot' };
 const groups = { sdd: 'SDD 主流程', support: '编码辅助', management: '资产管理', custom: '个人扩展' };
@@ -96,6 +98,7 @@ async function load(project) {
 }
 function tab(name) {
   document.body.dataset.view = name;
+  window.dispatchEvent(new Event('mai:viewchange'));
   for (const id of ['home', 'project', 'assets', 'memory', 'preferences']) $(id + '-view').hidden = id !== name;
   for (const button of document.querySelectorAll('[data-tab]')) { const active = button.dataset.tab === name; button.classList.toggle('active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); }
   $('breadcrumb').textContent = { home: '首页', project: '项目配置', assets: 'AI 资产', preferences: '默认偏好', memory: '个人记忆' }[name];
@@ -109,7 +112,7 @@ $('project-path').oninput = () => { $('project-path').removeAttribute('aria-inva
 $('project-path').onkeydown = event => { if (event.key === 'Enter') $('load').click(); };
 $('select-core').onclick = () => { const ids = new Set(state.assets.filter(a => a.core).map(a => a.name)); for (const input of document.querySelectorAll('#project-skills input')) input.checked = ids.has(input.value); invalidate(); };
 $('conflict-policy').onchange = () => { invalidate(); notice('处理策略已更改，请重新预览后应用。'); };
-$('replay-assembly').onclick = () => { for (const animation of document.querySelector('.assembly-scene').getAnimations({ subtree: true })) { animation.currentTime = 0; animation.play(); } };
+mountCogTrain($('cog-hero'), $('toggle-cogs'));
 function initializationHints(steps) {
   const section = element('div');
   if (steps.length) section.append(element('h3', '补全项目运行规则'));
