@@ -1,6 +1,6 @@
 # 发布指南
 
-当前公开版本：`@easyuseai/my-ai-infra@0.0.5`，dist-tag 为 `latest`（2026-10-15 发布）。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
+本次发行版本：`@easyuseai/my-ai-infra@0.0.6`，目标 dist-tag 为 `latest`；发布状态见 npm registry 与 manifest。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
 
 ## 发布前的负责人事项
 
@@ -31,7 +31,7 @@ npm run release:check
 
 产物位于 `dist/`：
 
-- `easyuseai-my-ai-infra-0.0.5.tgz`：通过验收的实际安装包。
+- `easyuseai-my-ai-infra-0.0.6.tgz`：通过验收的实际安装包。
 - `release-report.json`：文件清单、大小、SHA-256、npm integrity 与实际装配检查结果。
 
 检查使用独立临时目录与 npm cache，不触碰真实个人库或全局工具目录。它验证 npx 入口、四种工具安装、重复同步、冲突保护、Feature 脚本/模板及包内 Web 的 Logo、字体、tokens 与认证。结束后清理临时安装环境，保留发行包和报告。
@@ -43,20 +43,28 @@ npm run release:check
 先安装已检查的本地包试用：
 
 ```bash
-npx --yes --package=/absolute/path/to/dist/easyuseai-my-ai-infra-0.0.5.tgz my-ai-infra --version
-npx --yes --package=/absolute/path/to/dist/easyuseai-my-ai-infra-0.0.5.tgz my-ai-infra web --port 0
+npx --yes --package=/absolute/path/to/dist/easyuseai-my-ai-infra-0.0.6.tgz my-ai-infra --version
+npx --yes --package=/absolute/path/to/dist/easyuseai-my-ai-infra-0.0.6.tgz my-ai-infra web --port 0
 ```
 
 需要时预演发布，再由维护者显式执行正式发布：
 
 ```bash
-npm publish ./dist/easyuseai-my-ai-infra-0.0.5.tgz --dry-run --access public --registry=https://registry.npmjs.org/
+npm publish ./dist/easyuseai-my-ai-infra-0.0.6.tgz --dry-run --access public --registry=https://registry.npmjs.org/
 # 确认授权、身份、版本及检查报告后，再执行：
-npm publish ./dist/easyuseai-my-ai-infra-0.0.5.tgz --access public --registry=https://registry.npmjs.org/
+npm publish ./dist/easyuseai-my-ai-infra-0.0.6.tgz --access public --registry=https://registry.npmjs.org/
 ```
 
 发布已检查的 tarball 可以避免重新从变化后的源码打包。npm 对 tarball 发布不会替你运行源码的 `prepublishOnly`，因此必须先完成 `release:check` 并确认 SHA-256 未变。dry-run 不替代真实账号权限和服务端规则检查。参见 [npm lifecycle](https://docs.npmjs.com/cli/v11/using-npm/scripts/) 与 [npm publish](https://docs.npmjs.com/cli/v11/commands/npm-publish/)。
 
-预发布版本使用语义版本号（例如 `0.0.5-beta.1`）和明确的 `--tag beta`；稳定版本通常使用 latest。npm 不能用同一个名称/版本覆盖已发布内容；发现问题时修复后发布新的补丁版本。
+预发布版本使用语义版本号（例如 `0.0.6-beta.1`）和明确的 `--tag beta`；稳定版本通常使用 latest。npm 不能用同一个名称/版本覆盖已发布内容；发现问题时修复后发布新的补丁版本。
 
 发布后核对 registry 版本、integrity，并在空目录中运行固定版本 npx 的版本查询、init、doctor 和 web。更新本节的发布状态与 CHANGELOG 日期，再按独立仓库约定创建对应 Git 标签；不要把生成的 cache、个人库、测试项目或凭证提交到源码。
+
+## GitHub 与 npm 同步发行
+
+1. 在发布分支整理变更记录与版本号，完成源码、浏览器和实际安装包检查，通过 PR 合入默认分支。
+2. 确认最终安装包内容与合入提交一致，创建并推送带注释的 `v<版本>` 标签；标签创建后保持不变。
+3. 创建同名 GitHub Release 草稿，写明变更、升级方式和验证结果，附上已验证的 npm `.tgz` 与 `SHA256SUMS`。
+4. 将同一 `.tgz` 发布到 npm，核对版本、latest、integrity 和固定版本安装；确认后发布 GitHub Release。
+5. 提交发布状态记录，再更新课程仓库的 submodule 引用。任一平台失败时保留已完成的记录，从失败步骤重试，避免覆盖版本或移动已发布标签。

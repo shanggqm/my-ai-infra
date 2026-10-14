@@ -1,6 +1,6 @@
 # 使用指南
 
-全局安装 `npm install --global @easyuseai/my-ai-infra@0.0.5` 后，在目标项目目录执行 `mai init` 初始化，执行 `mai web` 启动该项目的本地工作台。`mai` 与 `my-ai-infra` 共用入口，所有命令和选项均可互换。
+全局安装 `npm install --global @easyuseai/my-ai-infra@0.0.6` 后，在目标项目目录执行 `mai init` 初始化，执行 `mai web` 启动该项目的本地工作台。`mai` 与 `my-ai-infra` 共用入口，所有命令和选项均可互换。
 
 `init` / `sync` 在终端中按配置选择、冲突检查、备份应用三个阶段展示进度，完成后分别列出文件统计、恢复记录与下一步操作。工具菜单支持彩色焦点与选中标记；执行阶段使用等待动画。设置 `NO_COLOR=1` 关闭颜色，`TERM=dumb` 关闭颜色和等待动画；标准输出重定向时保留 JSON，不输出动画。`plan` / `--dry-run` 继续输出完整 JSON 预览。
 
