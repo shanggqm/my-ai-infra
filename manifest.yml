@@ -1,0 +1,116 @@
+name: my-ai-infra
+package_name: "@easyuseai/my-ai-infra"
+license: MIT
+version: 0.0.4
+status: released
+purpose: Personal AI Coding asset management and SDD project scaffolding
+repository:
+  url: https://github.com/shanggqm/my-ai-infra
+  visibility: private
+source:
+  kind: owner-provided-copy-and-original-tooling
+  original_commit: ac59d821c77e5d647f031b57671a9957225cdd79
+  upstream_url: null
+  license: unverified
+  reference_implementation: chat/packages/ai-infra (owner-provided external reference; not distributed)
+canonical:
+  readme: README.md
+  asset_root: assets/
+  asset_registry: src/assets.mjs
+  asset_management: assets/README.md
+  cli: bin/my-ai-infra.mjs
+  core: src/
+  web: web/
+  design_system: design-system/
+  templates: templates/
+  specifications: templates/mai-specs/
+  bundled_skills: assets/skills/
+  agent_assets: assets/agents/
+  prompt_assets: assets/prompts/
+  prompt_usage: docs/custom-prompts.md
+  feature_initializer: assets/skills/my-create-feature/scripts/init-feature.mjs
+  feature_layout: assets/skills/my-create-feature/template/FEATURE_LAYOUT.json
+  feature_validator: assets/skills/my-create-feature/scripts/validate-feature.mjs
+  feature_template: assets/skills/my-create-feature/template/
+  entry_skill: assets/skills/my-ai-infra/SKILL.md
+  memory_skill: assets/skills/my-create-memory/SKILL.md
+  memory_runtime: src/memory.mjs
+  personal_memory: docs/memory.md
+  skill_inventory: skill-inventory.md
+  usage: docs/usage.md
+  releasing: docs/releasing.md
+  changelog: CHANGELOG.md
+  attribution: THIRD_PARTY_NOTICES.md
+  skill_registry: catalog/skills.json
+  design_review_skill: assets/skills/my-review-design/SKILL.md
+configuration:
+  global_home: ~/.my-ai-infra
+  project_config: .my-ai-infra.json
+  specifications_root: mai-specs/
+  project_state: .my-ai-infra/state.json
+  project_source: .agents/assets/
+  adapter_strategy: relative-file-symlinks
+  managed_state_version: 4
+  project_runtime_rules: .agents/assets/rules/
+  bundle_baseline: ~/.my-ai-infra/bundle-state.json
+  tools:
+  - codex
+  - claudecode
+  - cursor
+  - copilot
+deliverables:
+- assets/prompts/README.md
+- assets/prompts/my-auto-feature.md
+- assets/prompts/my-auto-design.md
+- docs/custom-prompts.md
+- assets/skills/my-create-memory/SKILL.md
+- assets/skills/my-create-memory/scripts/my-ai-infra.mjs
+- docs/memory.md
+- src/memory.mjs
+- assets/README.md
+- LICENSE
+- README.md
+- CHANGELOG.md
+- assets/agents/README.md
+- assets/agents/architecture-review.md
+- assets/agents/code-review.md
+- docs/custom-agents.md
+- THIRD_PARTY_NOTICES.md
+- docs/README.md
+- docs/usage.md
+- docs/troubleshooting.md
+- docs/releasing.md
+- bin/my-ai-infra.mjs
+- web/index.html
+- web/assets/logo.png
+- design-system/BXY_DESIGN_SYSTEM.md
+- assets/skills/my-ai-infra/SKILL.md
+- assets/skills/my-create-feature/SKILL.md
+- assets/skills/my-create-feature/scripts/init-feature.mjs
+- assets/skills/my-create-feature/scripts/validate-feature.mjs
+- assets/skills/my-create-feature/template/FEATURE_LAYOUT.json
+- assets/skills/my-create-feature/template/README.md
+- assets/skills/my-create-feature/template/feature/
+- assets/skills/my-create-feature/template/ROADMAP.md
+- assets/skills/my-create-prd/SKILL.md
+- assets/skills/my-create-prd/references/interaction-and-copy.md
+- assets/skills/my-create-design/SKILL.md
+- assets/skills/my-create-test-plan/SKILL.md
+- assets/skills/my-implement-code/SKILL.md
+- assets/skills/my-review-code/SKILL.md
+- assets/skills/my-create-worktree/SKILL.md
+- assets/skills/my-create-worktree/scripts/create-worktree.sh
+- assets/skills/my-review-design/SKILL.md
+validation:
+  commands:
+  - npm run verify
+  - npm run release:check
+  scope: Source-and-packed-CLI-Web-adapters-upgrades-conflicts-Feature-resources-and-documentation
+  isolated: true
+publication:
+  npm: published
+  previous_version: 0.0.3
+  dist_tag: latest
+  url: https://www.npmjs.com/package/@easyuseai/my-ai-infra
+  previous_published_at: "2026-10-13T18:38:39.789Z"
+  published_at: "2026-10-14T11:21:31.136Z"

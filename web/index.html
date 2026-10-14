@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN" data-bxy-profile="adaptive" data-bxy-theme="light">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#FF7918">
+  <title>my-ai-infra · 个人 AI Coding 工作台</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+  <link rel="stylesheet" href="/design-system/bxy-design-tokens.css">
+  <link rel="stylesheet" href="/design-system/assets/icons/material-symbols-rounded.css">
+  <link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head>
+<body data-view="home">
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <aside class="sidebar">
+    <div class="brand"><img src="/assets/logo.png" alt="" width="40" height="40"><span>my-ai-infra<small>个人 AI Coding 工作台</small></span></div>
+    <nav aria-label="主要导航">
+      <button class="nav active" data-tab="home" aria-current="page"><span class="bxy-icon" aria-hidden="true">home</span>首页</button>
+      <button class="nav" data-tab="project"><span class="bxy-icon" aria-hidden="true">folder_open</span>项目配置</button>
+      <button class="nav" data-tab="assets"><span class="bxy-icon" aria-hidden="true">deployed_code</span>AI 资产</button>
+      <button class="nav" data-tab="memory"><span class="bxy-icon" aria-hidden="true">fact_check</span>个人记忆</button>
+      <button class="nav" data-tab="preferences"><span class="bxy-icon" aria-hidden="true">tune</span>默认偏好</button>
+    </nav>
+    <div class="recent-head">最近项目</div><div id="projects" class="recent"></div>
+    <div class="sidebar-footer"><span class="bxy-icon" aria-hidden="true">hard_drive</span><span>个人资产目录<small id="home"></small></span></div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <header class="topbar"><span id="breadcrumb">首页</span><span class="topbar-note">本机配置与资产管理</span></header>
+    <div class="page">
+      <div id="message" role="status" aria-live="polite">正在连接本地工作台。如果界面未加载，请运行 my-ai-infra web，并使用终端输出的链接打开。</div>
+      <section id="home-view" class="landing" data-bxy-profile="landing" aria-labelledby="home-title">
+        <header class="landing-header">
+          <a class="landing-brand" href="#main"><img src="/assets/logo.png" alt="" width="40" height="40"><strong>my-ai-infra</strong></a>
+          <nav aria-label="首页导航"><button class="text-button" data-tab="assets">浏览资产</button><button class="text-button" data-tab="memory">个人记忆</button><button class="button secondary" data-tab="project">进入工作台<span class="bxy-icon" aria-hidden="true">arrow_forward</span></button></nav>
+        </header>
+        <div class="landing-hero">
+          <div class="hero-copy">
+            <h1 id="home-title">你的 AI 编码资产，随项目一起复用。</h1>
+            <p class="hero-description">把常用的 Skill、Agent 和个人偏好收进自己的资产库。换一个项目、换一种工具，依然沿用熟悉的开发方式。</p>
+            <button class="button primary hero-cta" data-tab="project">配置当前项目<span class="bxy-icon" aria-hidden="true">arrow_forward</span></button>
+            <div class="hero-command"><span class="bxy-icon" aria-hidden="true">terminal</span><div><code>mai init</code><span>在项目目录开始</span></div><div><code>mai web</code><span>打开本地工作台</span></div></div>
+          </div>
+          <figure class="assembly" aria-labelledby="assembly-caption">
+            <div class="assembly-scene" aria-hidden="true">
+              <div class="assembly-card source-card"><div class="assembly-card-head"><span class="bxy-icon">inventory_2</span><strong>个人资产库</strong></div><div class="source-items"><span>Skill</span><span>Agent</span><span>个人偏好</span></div></div>
+              <div class="assembly-card project-card"><div class="assembly-card-head"><span class="bxy-icon">folder_open</span><strong>项目配置</strong></div><div class="spec-line"><span class="bxy-icon">check_circle</span>需求与产品规格</div><div class="spec-line"><span class="bxy-icon">check_circle</span>技术设计与代码评审</div></div>
+              <div class="assembly-card tools-card"><div class="assembly-card-head"><span class="bxy-icon">deployed_code</span><strong>工具入口</strong><span class="assembly-tag">按需装配</span></div><div class="assembly-tools"><span>Codex</span><span>Claude Code</span><span>Cursor</span><span>GitHub Copilot</span></div><div class="assembly-note"><span class="bxy-icon">account_tree</span>统一资产，连接不同工具</div></div>
+            </div>
+            <figcaption id="assembly-caption">从个人积累到项目协作的装配示意<button id="replay-assembly" class="text-button" aria-label="重播装配动画">重播动画</button></figcaption>
+          </figure>
+        </div>
+        <section class="landing-workflow" aria-labelledby="workflow-title">
+          <div class="workflow-heading"><h2 id="workflow-title">从需求到代码，有一条走得通的路径</h2><p>内置 SDD 主流程 Skill，让每一步都有可接续的文档与产出。</p></div>
+          <ol class="workflow-steps"><li><span>需求上下文</span><small>把问题说清楚</small></li><li><span>产品规格</span><small>明确验收标准</small></li><li><span>技术设计</span><small>确定实现路径</small></li><li><span>方案审查</span><small>收敛复杂度</small></li><li><span>测试规划</span><small>覆盖关键行为</small></li><li><span>编码实现</span><small>按任务推进</small></li><li><span>代码评审</span><small>核对交付证据</small></li></ol>
+        </section>
+        <section class="landing-library" aria-labelledby="library-title">
+          <div><h2 id="library-title">让每一次积累，成为下一次的起点</h2><p>自己的资产自己维护，项目需要什么就装配什么。</p></div>
+          <div class="library-links"><button data-tab="assets"><span class="bxy-icon" aria-hidden="true">inventory_2</span><span><strong>维护你的 AI 资产</strong><small>查看、编辑与复用 Skill、Agent 等个人源文件。</small></span><span class="bxy-icon" aria-hidden="true">arrow_forward</span></button><button data-tab="memory"><span class="bxy-icon" aria-hidden="true">fact_check</span><span><strong>留住值得沿用的偏好</strong><small>按项目或全局保存，确认后的偏好参与后续任务。</small></span><span class="bxy-icon" aria-hidden="true">arrow_forward</span></button></div>
+        </section>
+        <section class="landing-principles" aria-label="本地工作方式"><div><span class="bxy-icon" aria-hidden="true">hard_drive</span><h3>保存在自己的电脑</h3><p>资产与偏好本地存储，工作台仅在本机运行。</p></div><div><span class="bxy-icon" aria-hidden="true">difference</span><h3>看清变更，再应用</h3><p>逐项预览文件改动，选择冲突策略，保留恢复记录。</p></div><div><span class="bxy-icon" aria-hidden="true">tune</span><h3>每个项目，自由选择</h3><p>工具和 Skill 按需组合，已有项目保留自己的配置。</p></div></section>
+      </section>
+      <section id="project-view" aria-labelledby="project-title" hidden>
+        <div class="page-heading"><h1 id="project-title">项目配置</h1><p>为项目选择 AI Coding 工具与 Skill，预览后应用。</p></div>
+        <div class="project-layout"><div class="configuration">
+          <section class="panel project-picker"><label for="project-path">目标项目</label><div class="input-line"><input id="project-path" placeholder="输入本机项目的绝对路径" autocomplete="off" aria-describedby="project-status"><button id="load" class="button secondary">打开项目</button></div><p id="project-status" class="hint">选择一个已有目录，开始初始化。</p></section>
+          <section class="configuration-section"><div class="section-title"><h2>AI Coding 工具</h2><span class="hint">可多选</span></div><div id="project-tools" class="tool-grid"></div></section>
+          <section class="configuration-section"><div class="section-title"><h2>项目 Skill</h2><button id="select-core" class="text-button">选择 SDD 主流程</button></div><p class="hint section-help">主流程覆盖需求到归档，辅助能力按项目选用。</p><div id="project-skills" class="skill-grid"></div></section>
+        </div>
+        </div>
+        <section class="project-actions" aria-label="项目配置操作"><div><strong id="selection-count"></strong><p class="hint">预览会在独立窗口展示文件变更，确认后再应用。</p></div><div class="action-line"><button id="doctor" class="button secondary"><span class="bxy-icon" aria-hidden="true">fact_check</span>检查安装</button><button id="preview" class="button primary" disabled><span class="bxy-icon" aria-hidden="true">difference</span>预览变更</button></div></section>
+      </section>
+      <section id="assets-view" aria-labelledby="assets-title" hidden>
+        <div class="page-heading heading-actions"><div><h1 id="assets-title">AI 资产</h1><p>维护个人源文件，再按需同步到项目。保存前自动备份旧版本。</p></div><button id="new-asset" class="button secondary"><span class="bxy-icon" aria-hidden="true">add</span>新建 Skill</button></div>
+        <div class="asset-layout"><section class="panel asset-list"><div class="asset-list-head"><h2>全部资产 <span id="asset-count"></span></h2></div><label class="sr-only" for="asset-search">搜索 Skill</label><div class="search-field"><span class="bxy-icon" aria-hidden="true">search</span><input id="asset-search" type="search" placeholder="搜索名称或用途"></div><div id="assets-list"></div><p id="search-empty" class="hint" hidden>没有匹配的 Skill，试试其他关键词。</p></section>
+        <section class="panel editor"><div class="editor-heading"><h2 id="editor-title">选择一个 Skill</h2><span id="editor-status" class="hint" aria-live="polite">未选择</span></div><label for="asset-name">Skill 名称</label><input id="asset-name" readonly aria-describedby="editor-error"><div class="editor-label"><label for="asset-content">SKILL.md</label><span class="hint">Ctrl / ⌘ + S 保存</span></div><textarea id="asset-content" spellcheck="false" placeholder="从资产列表选择一个 Skill，或新建资产。" aria-describedby="editor-error" disabled></textarea><p id="editor-error" class="field-error" role="alert" hidden></p><div class="action-line"><span id="editor-help" class="hint">改动仅保存到个人资产库。</span><button id="save-asset" class="button primary" disabled>保存 Skill</button></div></section></div>
+      </section>
+      <section id="memory-view" aria-labelledby="memory-title" hidden>
+        <div class="page-heading"><h1 id="memory-title">个人记忆</h1><p>只保留值得长期沿用的个人偏好。候选经确认后参与任务；没有新证据就不新增。</p></div>
+        <section class="panel memory-controls"><label for="memory-scope">适用范围</label><select id="memory-scope"><option value="project">当前项目</option><option value="global">所有项目</option></select><button id="memory-load" class="button secondary">重新读取</button><button id="memory-bind" class="button secondary">绑定当前项目</button><p id="memory-location" class="hint" aria-live="polite">请先打开项目，或选择所有项目。</p></section>
+        <div class="asset-layout">
+          <section class="panel asset-list"><div class="asset-list-head"><h2>偏好条目</h2></div><div id="memory-entries"></div></section>
+          <section class="panel editor"><div class="editor-heading"><h2>编辑记忆</h2><span id="memory-status" class="hint" aria-live="polite">未读取</span></div><label for="memory-content">memory.md</label><textarea id="memory-content" spellcheck="false" disabled aria-describedby="memory-help"></textarea><p id="memory-help" class="hint">保留条目字段。来源只记录必要用户原话；先合并同类偏好。候选最多 5 条、生效最多 30 条。删除会移除正文，不保留历史副本。</p><div class="action-line"><span class="hint">仅保存在个人库</span><button id="memory-save" class="button primary" disabled>保存记忆</button></div></section>
+        </div>
+        <section class="panel memory-preview"><h2>任务中会使用哪些偏好</h2><label for="memory-scene">任务场景</label><select id="memory-scene"><option value="design">技术设计</option><option value="design-review">方案评审</option><option value="feature">需求简报</option><option value="prd">产品规格</option><option value="test-plan">测试规划</option><option value="implement">代码实现</option><option value="code-review">代码评审</option><option value="delivery">交付</option><option value="all">通用协作</option></select><button id="memory-recall" class="button secondary">预览已保存的偏好</button><pre id="memory-result" aria-live="polite">选择项目后，可预览全局与项目偏好的命中和排除原因。</pre></section>
+      </section>
+      <section id="preferences-view" aria-labelledby="preferences-title" hidden>
+        <div class="page-heading"><h1 id="preferences-title">默认偏好</h1><p>作为新项目的起点，已有项目继续使用自己的配置。</p></div>
+        <section class="panel preferences-panel"><div class="section-title"><h2>默认工具</h2></div><div id="default-tools" class="tool-grid"></div><div class="section-title"><h2>默认 Skill</h2></div><div id="default-skills" class="skill-grid"></div><div class="action-line preferences-actions"><span id="default-status" class="hint">偏好已保存</span><button id="save-defaults" class="button primary" disabled>保存默认偏好</button></div></section>
+      </section>
+      <footer>个人资产与项目副本独立维护，所有更改均保存在本机。</footer>
+    </div>
+  </main>
+  <dialog id="preview-dialog" class="preview-dialog" aria-labelledby="preview-dialog-title" aria-describedby="preview-project">
+    <header class="preview-header"><div><h2 id="preview-dialog-title">变更预览</h2><p id="preview-project"></p></div><button id="close-preview" class="icon-button" aria-label="关闭变更预览"><span class="bxy-icon" aria-hidden="true">close</span></button></header>
+    <div class="preview-body">
+      <div id="preview-feedback" class="preview-feedback" role="status" aria-live="polite" hidden></div>
+      <div id="preview-controls" class="preview-toolbar"><label class="conflict-policy" for="conflict-policy">冲突处理方式<select id="conflict-policy"><option value="merge">合并：保留本地，补齐缺失</option><option value="replace">替换：备份后使用新内容</option><option value="abort">终止：遇冲突不应用</option></select></label><button id="refresh-preview" class="button secondary"><span class="bxy-icon" aria-hidden="true">difference</span>重新预览</button></div>
+      <div id="plan" hidden></div>
+    </div>
+    <footer class="preview-footer"><p id="preview-footer-note" class="hint">确认变更后，将配置应用到项目。</p><div class="action-line"><button id="cancel-preview" class="button secondary">返回调整</button><button id="apply" class="button primary" disabled><span class="bxy-icon" aria-hidden="true">check_circle</span>应用到项目</button></div></footer>
+  </dialog>
+  <dialog id="discard-dialog" aria-labelledby="discard-title"><h2 id="discard-title">有尚未保存的更改</h2><p>继续操作会放弃当前更改。你也可以返回后先保存。</p><div class="action-line"><button id="keep-editing" class="button secondary">返回编辑</button><button id="discard-changes" class="button primary">放弃并继续</button></div></dialog>
+</body>
+</html>

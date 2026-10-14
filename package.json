@@ -1,0 +1,69 @@
+{
+  "name": "@easyuseai/my-ai-infra",
+  "version": "0.0.4",
+  "description": "面向个人的 AI Coding 资产管理、SDD 项目脚手架与本地配置工作台",
+  "type": "module",
+  "bin": {
+    "mai": "bin/my-ai-infra.mjs",
+    "my-ai-infra": "bin/my-ai-infra.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "web",
+    "assets",
+    "templates",
+    "catalog",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md",
+    "docs",
+    "design-system/BXY_DESIGN_SYSTEM.md",
+    "design-system/bxy-design-tokens.json",
+    "design-system/bxy-design-tokens.css",
+    "design-system/bxy-design-manifest.json",
+    "design-system/assets/icons"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node bin/my-ai-infra.mjs web",
+    "check": "node bin/my-ai-infra.mjs catalog",
+    "build:skill": "node scripts/build-skill.mjs",
+    "validate": "node scripts/validate.mjs",
+    "prepack": "npm run validate",
+    "prepublishOnly": "npm run verify",
+    "lint": "node scripts/lint.mjs",
+    "verify": "npm run build:skill && npm run lint && npm run validate && npm test",
+    "release:check": "npm run verify && node scripts/release-check.mjs",
+    "test:web": "node scripts/check-web.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "author": "andy",
+  "keywords": [
+    "ai-coding",
+    "sdd",
+    "spec-driven-development",
+    "skills",
+    "cli",
+    "scaffold",
+    "codex",
+    "claude-code",
+    "cursor",
+    "github-copilot"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shanggqm/my-ai-infra.git"
+  }
+}

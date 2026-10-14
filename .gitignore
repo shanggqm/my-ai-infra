@@ -1,0 +1,41 @@
+# Runtime state and caches
+**/cache/**
+**/Cache/**
+**/logs/**
+**/sessions/**
+**/projects/**
+**/chats/**
+**/worktrees/**
+**/file-history/**
+**/debug/**
+**/backups/**
+**/plugins/cache/**
+**/.tmp/**
+**/__pycache__/**
+*.py[cod]
+**/node_modules/**
+**/.venv/**
+
+# Secrets and local auth
+**/*auth*.json
+**/*credential*.json
+**/*credentials*.json
+**/*token*.json
+**/*secret*.json
+**/*cookie*.json
+!design-system/bxy-design-tokens.json
+**/auth.json
+**/oauth_creds.json
+**/.env
+**/.env.*
+
+# Generated adapter output; review before applying manually.
+generated/**
+
+# Local editor/system files
+.DS_Store
+*.log
+
+# Local release artifacts
+dist/
+*.tgz

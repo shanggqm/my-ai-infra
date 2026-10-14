@@ -1,0 +1,147 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { chromium } from 'playwright';
+import { startWeb } from '../src/web.mjs';
+
+const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'mai-web-check-'));
+const project = path.join(temp, 'project with spaces 中文');
+const artifacts = process.env.MAI_WEB_ARTIFACT_DIR && path.resolve(process.env.MAI_WEB_ARTIFACT_DIR);
+await fs.mkdir(project);
+if (artifacts) await fs.mkdir(artifacts, { recursive: true });
+const checks = [];
+const pass = message => { checks.push(message); console.log(`OK: ${message}`); };
+const web = await startWeb({ home: path.join(temp, 'personal'), project, port: 0 });
+let browser;
+try {
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage(), errors = [], remote = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => { if (!request.url().startsWith(web.origin)) remote.push(request.url()); });
+  const shot = async name => { if (artifacts) { const modal = await page.locator('#preview-dialog').evaluate(node => node.open); if (modal) await page.locator('#preview-dialog').evaluate(node => Promise.all(node.getAnimations().map(animation => animation.finished))); await page.screenshot({ path: path.join(artifacts, name + '.png'), fullPage: !modal }); } };
+  const ready = async () => { await page.goto(web.origin + '/?ui-check=' + Date.now() + '#' + web.token); await page.locator('#project-tools input').first().waitFor({ state: 'attached' }); await page.evaluate(() => document.fonts.ready); };
+  const openPreview = async () => {
+    await page.locator('#preview').click();
+    await page.waitForFunction(() => document.querySelector('#preview-dialog').open && !document.querySelector('#plan').hidden);
+  };
+  const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await ready();
+  assert.equal(await page.locator('body').getAttribute('data-view'), 'home');
+  assert.equal(await page.locator('#project-view').isVisible(), false);
+  await page.locator('#replay-assembly').click();
+  const motion = await page.evaluate(async () => {
+    const card = document.querySelector('.source-card');
+    const frames = [];
+    for (const time of [0, 500, 1500]) {
+      for (const animation of document.querySelector('.assembly-scene').getAnimations({ subtree: true })) { animation.pause(); animation.currentTime = time; }
+      frames.push(getComputedStyle(card).transform);
+      await new Promise(requestAnimationFrame);
+    }
+    return frames;
+  });
+  assert.equal(new Set(motion).size, 3);
+  if (artifacts) {
+    for (const [name, time] of [['start',0],['middle',500],['end',1600]]) {
+      await page.evaluate(time => { for (const animation of document.querySelector('.assembly-scene').getAnimations({ subtree: true })) { animation.pause(); animation.currentTime = time; } }, time);
+      await shot('motion-' + name);
+    }
+  }
+  await page.getByRole('button', { name: '配置当前项目', exact: true }).click();
+  await openPreview();
+  assert.equal(await page.locator('#preview-dialog').evaluate(node => node.contains(document.activeElement)), true);
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await page.locator('#preview-dialog').evaluate(node => node.contains(document.activeElement)), true);
+  await page.getByPlaceholder('搜索文件路径').fill('no-such-file');
+  assert.equal(await page.locator('.plan-row').count(), 0);
+  assert.match(await page.locator('.plan-empty').textContent(), /没有匹配/);
+  await page.getByPlaceholder('搜索文件路径').fill('SKILL.md');
+  assert.ok(await page.locator('.plan-row').count() > 0);
+  assert.ok((await page.locator('.file-path').allTextContents()).every(text => text.includes('SKILL.md')));
+  await page.getByPlaceholder('搜索文件路径').fill('');
+  await page.getByLabel('显示范围').selectOption('noop');
+  assert.equal(await page.locator('.plan-row').count(), 0);
+  await page.getByLabel('显示范围').selectOption('all');
+  await page.locator('.file-content summary').first().click();
+  assert.ok(await page.locator('.file-content details[open] code').first().isVisible());
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#preview-dialog').evaluate(node => node.open), false);
+  assert.equal(await page.locator('#preview').evaluate(node => node === document.activeElement), true);
+  pass('Default home, visible three-stage hero motion, modal focus, Escape, file search, filters and link details');
+
+  // A late preview response must not resurrect a closed dialog or stale selection.
+  await page.route('**/api/plan', async route => { await new Promise(resolve => setTimeout(resolve, 350)); await route.continue(); });
+  await page.locator('#preview').click();
+  await page.locator('#close-preview').click();
+  await page.locator('#project-tools input[value="cursor"]').check();
+  await page.waitForFunction(() => !document.querySelector('#preview').hasAttribute('aria-busy'));
+  assert.equal(await page.locator('#apply').isDisabled(), true);
+  assert.equal(await page.locator('#preview-dialog').evaluate(node => node.open), false);
+  await page.unroute('**/api/plan');
+  await openPreview();
+  await page.locator('#conflict-policy').selectOption('replace');
+  assert.equal(await page.locator('#apply').isDisabled(), true);
+  await page.locator('#refresh-preview').click();
+  await page.waitForFunction(() => !document.querySelector('#apply').disabled);
+  await page.route('**/api/apply', route => route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: '项目已更改，请重新预览' }) }));
+  await page.locator('#apply').click();
+  await page.waitForFunction(() => document.querySelector('#preview-feedback').textContent.includes('项目已更改'));
+  assert.equal(await page.locator('#apply').isDisabled(), true);
+  assert.equal(await page.locator('#preview-feedback').isVisible(), true);
+  await page.unroute('**/api/apply');
+  await page.locator('#refresh-preview').click();
+  await page.waitForFunction(() => !document.querySelector('#apply').disabled);
+  await page.locator('#apply').click();
+  await page.waitForFunction(() => document.querySelector('#preview-dialog-title').textContent === '项目配置已应用');
+  assert.equal(await page.locator('#apply').isVisible(), false);
+  assert.ok(await page.locator('.initialization-hints[open]').isVisible());
+  const config = JSON.parse(await fs.readFile(path.join(project, '.my-ai-infra.json')));
+  assert.ok(config.tools.includes('cursor'));
+  await page.locator('#cancel-preview').click();
+  pass('Late-response rejection, policy invalidation, inline API error, real apply, saved config and completion hints');
+
+  const edited = path.join(project, '.agents/assets/skills/my-create-prd/SKILL.md');
+  await fs.appendFile(edited, '\nProject customization.\n');
+  await openPreview();
+  await page.locator('#conflict-policy').selectOption('abort');
+  await page.locator('#refresh-preview').click();
+  await page.waitForFunction(() => !document.querySelector('#plan').hidden && !document.querySelector('#refresh-preview').hasAttribute('aria-busy'));
+  assert.equal(await page.locator('#apply').isDisabled(), true);
+  assert.ok(await page.locator('.plan-row.conflict').count() > 0);
+  await shot('preview-conflicts');
+  await page.locator('#cancel-preview').click();
+  assert.match(await fs.readFile(edited, 'utf8'), /Project customization/);
+  pass('Real conflict blocks apply and preserves customized files');
+
+  for (const width of [1440, 1280, 390, 375]) {
+    await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
+    await ready();
+    await noOverflow();
+    await page.waitForTimeout(1700);
+    await shot('home-' + width);
+    await page.getByRole('button', { name: '配置当前项目', exact: true }).click();
+    await noOverflow();
+    await shot('project-' + width);
+    await openPreview();
+    const bounds = await page.locator('#preview-dialog').boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width);
+    const footer = await page.locator('.preview-footer').boundingBox();
+    assert.ok(footer.y + footer.height <= (width < 768 ? 844 : 1000));
+    await noOverflow();
+    await shot('preview-' + width);
+    await page.keyboard.press('Escape');
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await ready();
+  assert.equal(await page.locator('.assembly-card').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).animationName === 'none')), true);
+  await shot('home-reduced-motion');
+  assert.deepEqual(errors, []);
+  assert.deepEqual(remote, []);
+  pass('1440/1280/390/375 layouts, visible modal footer, reduced motion, no page errors or external requests');
+  if (artifacts) await fs.writeFile(path.join(artifacts, 'report.json'), JSON.stringify({ checks, motion, viewports: [1440,1280,390,375] }, null, 2));
+} finally {
+  await browser?.close();
+  await new Promise(resolve => web.server.close(resolve));
+  await fs.rm(temp, { recursive: true, force: true });
+}

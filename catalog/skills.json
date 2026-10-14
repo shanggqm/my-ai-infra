@@ -1,0 +1,97 @@
+{
+  "namingVersion": 4,
+  "skills": [
+    {
+      "name": "my-create-feature",
+      "label": "需求简报与上下文",
+      "category": "sdd",
+      "default": true,
+      "aliases": [
+        "create-feature",
+        "my-init-feature"
+      ]
+    },
+    {
+      "name": "my-create-prd",
+      "label": "产品规格与验收标准",
+      "category": "sdd",
+      "default": true,
+      "aliases": [
+        "generate-prd",
+        "my-generate-prd"
+      ]
+    },
+    {
+      "name": "my-create-design",
+      "label": "技术方案与任务拆解",
+      "category": "sdd",
+      "default": true,
+      "aliases": [
+        "create-tech-design",
+        "my-design-tech"
+      ]
+    },
+    {
+      "name": "my-review-design",
+      "label": "规格与技术方案审查",
+      "category": "sdd",
+      "default": true,
+      "aliases": []
+    },
+    {
+      "name": "my-create-test-plan",
+      "label": "测试设计与验证",
+      "category": "sdd",
+      "default": true,
+      "aliases": [
+        "create-test-plan",
+        "my-plan-test"
+      ]
+    },
+    {
+      "name": "my-implement-code",
+      "label": "按规格实施代码",
+      "category": "sdd",
+      "default": true,
+      "aliases": [
+        "implement-feature",
+        "my-create-code"
+      ]
+    },
+    {
+      "name": "my-review-code",
+      "label": "对照规格评审实现",
+      "category": "sdd",
+      "default": true,
+      "aliases": [
+        "review-code"
+      ]
+    },
+    {
+      "name": "my-create-worktree",
+      "label": "隔离开发分支与环境",
+      "category": "support",
+      "default": false,
+      "aliases": [
+        "create-worktree"
+      ]
+    },
+    {
+      "name": "my-create-memory",
+      "label": "审慎提炼个人长期偏好",
+      "category": "support",
+      "default": false,
+      "aliases": []
+    },
+    {
+      "name": "my-ai-infra",
+      "label": "初始化与维护项目配置",
+      "category": "management",
+      "default": false,
+      "aliases": []
+    }
+  ],
+  "removedSkills": [
+    "my-verify-feature"
+  ]
+}
