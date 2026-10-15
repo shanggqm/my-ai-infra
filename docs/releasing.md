@@ -1,6 +1,6 @@
 # 发布指南
 
-本次待发布版本：`@easyuseai/my-ai-infra@0.0.7`，dist-tag 为 `latest`（计划于 2026-10-15 发布）；[GitHub Release v0.0.7](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.7) 附带同一安装包和 SHA-256 校验文件。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
+当前公开版本：`@easyuseai/my-ai-infra@0.0.7`，dist-tag 为 `latest`（2026-10-15 发布）；[GitHub Release v0.0.7](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.7) 附带同一安装包和 SHA-256 校验文件。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
 
 ## 发布前的负责人事项
 

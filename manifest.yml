@@ -2,7 +2,7 @@ name: my-ai-infra
 package_name: "@easyuseai/my-ai-infra"
 license: MIT
 version: 0.0.7
-status: release-candidate
+status: released
 purpose: Lightweight SDD scaffolding for enterprise AI coding, with reusable assets and persistent development preferences
 repository:
   url: https://github.com/shanggqm/my-ai-infra
@@ -109,9 +109,12 @@ validation:
   scope: Source-and-packed-CLI-Web-adapters-upgrades-conflicts-Feature-resources-and-documentation
   isolated: true
 publication:
-  npm: pending
+  npm: published
   previous_version: 0.0.6
   dist_tag: latest
   url: https://www.npmjs.com/package/@easyuseai/my-ai-infra
   git_tag: v0.0.7
   github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.7
+  published_at: "2026-10-15T07:09:52.450Z"
+  source_commit: 3bd95d2ea93fa2fbdab2542d54f163f37ce5083a
+  github_published_at: "2026-10-15T07:10:42Z"
