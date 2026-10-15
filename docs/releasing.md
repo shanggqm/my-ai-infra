@@ -2,6 +2,9 @@
 
 本次发行版本：`@easyuseai/my-ai-infra@0.0.9`，目标 dist-tag 为 `latest`。发布后以 npm registry 的版本和 integrity 核验结果为准。本指南的检查不会自动发布、登录、提交 Git 或创建标签。
 
+
+`0.0.9` 已于 2026-10-15 发布到 npm，`latest` 与 registry integrity 已核验。213 项自动化测试、浏览器回归、Codex/Claude 发现检查及发布后的固定版本安装、四工具 init、doctor、Web 检查通过；宿主模型行为评测未执行。源码标签为 `v0.0.9`，对应提交 `2215f1f270fdc9a0ece8008b8555c34ccd96eb62`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.9)。
+
 ## 发布前的负责人事项
 
 - 决定发行版本和 dist-tag，确认该 npm 名称/版本可由当前账号发布。
