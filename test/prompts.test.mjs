@@ -20,18 +20,27 @@ async function fixture(t) {
 }
 async function checkLinks(root, assets, global = false) {
   for (const asset of assets) {
-    const center = path.join(root, '.agents/assets/prompts', asset.entry);
+    const center = path.join(root, '.agents/prompts', asset.entry);
     assert.ok((await fs.lstat(center)).isFile());
     for (const entry of Object.values(global ? asset.globalTargets : asset.targets)) {
       const alias = path.join(root, entry);
-      assert.ok((await fs.lstat(alias)).isSymbolicLink(), entry);
-      assert.equal(path.isAbsolute(await fs.readlink(alias)), false);
-      assert.equal(await fs.realpath(alias), center);
+      if (entry.endsWith('/SKILL.md')) {
+        assert.equal((await fs.lstat(alias)).isFile(),entry.startsWith('.agents/'), entry);
+        const body = await fs.readFile(alias,'utf8');
+        const reference = body.match(/\]\(([^)]+)\)/)[1];
+        assert.equal(path.resolve(path.dirname(await fs.realpath(alias)),decodeURI(reference)),center);
+        assert.match(body,/disable-model-invocation: true/);
+        assert.match(await fs.readFile(path.join(path.dirname(await fs.realpath(alias)),'agents/openai.yaml'),'utf8'),/allow_implicit_invocation: false/);
+      } else {
+        assert.ok((await fs.lstat(alias)).isSymbolicLink(), entry);
+        assert.equal(path.isAbsolute(await fs.readlink(alias)), false);
+        assert.equal(await fs.realpath(alias), center);
+      }
     }
   }
 }
 
-test('bundled prompts install one body with four relative tool aliases, survive moving and repeated sync', async t => {
+test('bundled prompts install one body with native entries for four tools, survive moving and repeated sync', async t => {
   const { root, home, project } = await fixture(t);
   const assets = (await extensionCatalog(home)).filter(a => a.type === 'prompts');
   assert.deepEqual(assets.map(a => a.name), names);
@@ -42,7 +51,7 @@ test('bundled prompts install one body with four relative tool aliases, survive 
   const result = await apply(home, project, chosen, preview.revision);
   assert.equal(result.complete, true);
   await checkLinks(project, assets);
-  const center = '.agents/assets/prompts/my-auto-feature.md';
+  const center = '.agents/prompts/my-auto-feature.md';
   const body = await read(project, center);
   const moved = path.join(root, 'moved project');
   await fs.rename(project, moved);
@@ -52,14 +61,14 @@ test('bundled prompts install one body with four relative tool aliases, survive 
   assert.equal((await doctor(home, moved)).healthy, true);
 });
 
-test('prompt edits through an alias stay centralized and merge protects project customization', async t => {
+test('prompt body edits stay centralized and merge protects project customization', async t => {
   const { home, project } = await fixture(t);
   await apply(home, project, chosen);
-  const center = '.agents/assets/prompts/my-auto-design.md';
-  const alias = '.claude/commands/my-auto-design.md';
+  const center = '.agents/prompts/my-auto-design.md';
+  const alias = '.claude/skills/my-auto-design/SKILL.md';
   const customized = (await read(project, center)) + '\nProject-specific acceptance rule.\n';
-  await fs.writeFile(path.join(project, alias), customized);
-  assert.equal(await read(project, '.github/prompts/my-auto-design.prompt.md'), customized);
+  await fs.writeFile(path.join(project, center), customized);
+  assert.equal(await read(project, center), customized);
   const result = await apply(home, project, undefined, undefined, { conflict: 'merge' });
   assert.equal(await read(project, center), customized);
   assert.ok(result.review.some(item => item.path === center));
@@ -90,9 +99,9 @@ test('prompt upgrade preserves edits, updates tracked builtins, and setup links 
   await setup(home, tools, toolHome);
   const assets = (await extensionCatalog(home)).filter(a => a.type === 'prompts');
   await checkLinks(toolHome, assets, true);
-  for (const asset of assets) assert.equal(asset.globalTargets.copilot, undefined);
+  for (const asset of assets) assert.equal(asset.globalTargets.copilot, `.agents/skills/${asset.name}/SKILL.md`);
   await assert.rejects(fs.stat(path.join(toolHome, '.copilot/prompts')), { code: 'ENOENT' });
-  assert.equal(await read(toolHome, '.codex/prompts/my-auto-design.md'), personal);
+  assert.equal(await read(toolHome, '.agents/prompts/my-auto-design.md'), personal);
 });
 
 test('single-file Prompt import and edit validate metadata, reject duplicates and stale writes', async t => {
@@ -114,7 +123,7 @@ test('single-file Prompt import and edit validate metadata, reject duplicates an
   assert.equal(updated.description, '更新描述');
   await apply(home, project, chosen);
   await checkLinks(project, [updated]);
-  assert.equal(await read(project, '.claude/commands/my-shortcut.md'), edited);
+  assert.equal(await read(project, '.agents/prompts/my-shortcut.md'), edited);
   await assert.rejects(fs.stat(path.join(home, 'assets/prompts/my-shortcut')), { code: 'ENOENT' });
 });
 

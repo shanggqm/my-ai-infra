@@ -4,14 +4,14 @@
 
 | 类型 | 结构 | 原生适配 |
 |---|---|---|
-| Skill | `skills/<名称>/SKILL.md` 与附属文件 | 所有工具逐文件相对软链接 |
+| Skill | `skills/<名称>/SKILL.md` 与附属文件 | Codex 直接使用源文件，其他工具逐文件相对软链接 |
 | SubAgent | `agents/<名称>.md` | 从中立源生成原生格式，原生入口链接到派生文件 |
 | Prompt | `prompts/<名称>.md`，frontmatter 提供 `description` | 安装器统一映射工具路径，安装相对软链接 |
 | Hook / MCP / 扩展类型 | `<类型>/<名称>/asset.json` 与文本文件 | 清单声明入口和工具路径，安装相对软链接 |
 
-项目源位于 `.agents/assets/`，个人库源位于 `<home>/assets/`，全局入口源位于用户目录 `.agents/assets/`。项目运行规则单独保存在项目 `.agents/assets/rules/`，正文由项目维护。
+项目源位于 `.agents/`，个人库源位于 `<home>/assets/`，全局入口源位于用户目录 `.agents/`。项目运行规则单独保存在项目 `.agents/rules/`，正文由项目维护。
 
-Agent 原生格式保存在 `.agents/assets/.generated/<工具>/agents/`，属于可重建的派生结果。编辑 `agents/<名称>.md` 后运行 sync；工具格式文件的手工修改会受到冲突保护：abort 停止，merge 保存修改候选后从中立源重建，replace 备份后重建。转换格式的正文仅来自对应角色源。
+Agent 原生格式保存在 `.agents/.generated/<工具>/agents/`，属于可重建的派生结果。编辑 `agents/<名称>.md` 后运行 sync；工具格式文件的手工修改会受到冲突保护：abort 停止，merge 保存修改候选后从中立源重建，replace 备份后重建。转换格式的正文仅来自对应角色源。
 
 ## Skill 附属资源
 
@@ -19,7 +19,7 @@ Skill 的 `references/` 保存按需读取的决策规范，`assets/templates/` 
 
 ## Prompt
 
-内置 [三个 Prompt](prompts/README.md)：`my-auto-feature` 与 `my-auto-design` 用一句话编排已有 Skill；`my-init-repo-memory` 依据仓库事实生成或精简优化根目录 `AGENTS.md`。每个资产只需单个 Markdown，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具入口链接到同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
+内置 [三个 Prompt](prompts/README.md)：`my-auto-feature` 与 `my-auto-design` 用一句话编排已有 Skill；`my-init-repo-memory` 依据仓库事实生成或精简优化根目录 `AGENTS.md`。每个资产只需单个 Markdown，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具原生入口通过 共享 Skill 入口读取同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
 
 ```bash
 my-ai-infra asset import /path/to/my-shortcut.md --type prompts
@@ -64,7 +64,7 @@ CLI 与 Web 的资产清单、编辑界面包含所有类型。Web 新建按钮�
 ## 迁移
 
 - 个人库旧 `skills/`、`agents/` 移到 `assets/`，原内容移入备份；新旧路径内容不同则停止并报告。
-- 项目旧 `.agents/skills/` 转成链接入口，实体归到 `.agents/assets/skills/`；旧 Agent 中立源保留兼容链接。
+- 项目旧 `.agents/assets/<类型>/` 的受管资产迁移到 `.agents/<类型>/`，Skill 和 Agent 中立源直接保存文件；更新工具链接，备份旧内容，仅清理空旧目录，未登记的用户文件留在原处。
 - 各工具的旧 Agent 文件迁成链接。未修改的受管文件可直接转换；修改内容遵循 merge / replace / abort 策略，并保留恢复材料。
-- 运行规则原文迁移到 `.agents/assets/rules/`，AGENTS.md 与 CLAUDE.md 的共享关系保持。
+- 运行规则原文迁移到 `.agents/rules/`，AGENTS.md 与 CLAUDE.md 的共享关系保持。
 - `plan` 和 `doctor` 只读；迁移在显式安装、同步或升级时执行。

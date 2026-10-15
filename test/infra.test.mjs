@@ -30,7 +30,7 @@ test('plan is read-only, initializes all adapters, and repeated installation is 
   assert.equal(await read(project, '.my-ai-infra.json'), null);
   await assert.rejects(fs.stat(home), { code: 'ENOENT' });
   await apply(home, project, chosen, before.revision);
-  for (const name of ['README.md', 'ROADMAP.md', 'FEATURE_LAYOUT.json', '_templates/PRD.tmpl.md', '_templates/TECH_DESIGN.tmpl.md', '_templates/TEST_PLAN.tmpl.md']) {
+  for (const name of ['README.md', 'ROADMAP.md', '_templates/PRD.tmpl.md', '_templates/TECH_DESIGN.tmpl.md', '_templates/TEST_PLAN.tmpl.md']) {
     assert.ok(await read(project, `mai-specs/${name}`), name);
   }
   await assert.rejects(fs.stat(path.join(project, 'requirements')), { code: 'ENOENT' });
@@ -55,7 +55,7 @@ test('preserves instructions outside managed blocks and user-owned requirement d
   await write(project, 'AGENTS.md', '# Existing rules\nKeep this.\n');
   await write(project, '.gitignore', 'user-logs/\n');
   await apply(home, project);
-  await write(project, '.agents/assets/rules/AGENTS.md', (await read(project, 'AGENTS.md')) + '\nNew user rule.\n');
+  await write(project, '.agents/rules/AGENTS.md', (await read(project, 'AGENTS.md')) + '\nNew user rule.\n');
   await write(project, 'mai-specs/ROADMAP.md', '# My roadmap\n');
   await apply(home, project, config(['codex', 'copilot']));
   assert.match(await read(project, 'AGENTS.md'), /Keep this/);
@@ -65,13 +65,13 @@ test('preserves instructions outside managed blocks and user-owned requirement d
 });
 test('unknown same-name assets block the whole project installation', async t => {
   const { home, project } = await fixture(t);
-  await write(project, '.agents/assets/skills/my-create-feature/SKILL.md', '# user asset');
+  await write(project, '.agents/skills/my-create-feature/SKILL.md', '# user asset');
   const p = await plan(home, project);
   assert.ok(p.actions.some(a => a.action === 'conflict'));
   await assert.rejects(apply(home, project), /Conflicting files/);
   assert.equal(await read(project, '.my-ai-infra.json'), null);
   assert.equal(await read(project, 'AGENTS.md'), null);
-  assert.equal(await read(project, '.agents/assets/skills/my-create-feature/SKILL.md'), '# user asset');
+  assert.equal(await read(project, '.agents/skills/my-create-feature/SKILL.md'), '# user asset');
 });
 test('global edits sync to projects while modified project copies block updates', async t => {
   const { home, project } = await fixture(t);
@@ -80,18 +80,18 @@ test('global edits sync to projects while modified project copies block updates'
   const modified = asset.content + '\nPersonal addition.\n';
   await saveAsset(home, asset.name, modified, asset.revision);
   await apply(home, project);
-  assert.equal(await read(project, '.agents/assets/skills/my-create-feature/SKILL.md'), modified);
-  await write(project, '.agents/assets/skills/my-create-feature/SKILL.md', modified + '\nProject edit');
+  assert.equal(await read(project, '.agents/skills/my-create-feature/SKILL.md'), modified);
+  await write(project, '.agents/skills/my-create-feature/SKILL.md', modified + '\nProject edit');
   await assert.rejects(apply(home, project, config(['claudecode'])), /Conflicting files/);
   assert.equal(await read(project, '.claude/skills/my-create-feature/SKILL.md'), null);
 });
 test('switching tools retains the canonical assets and unrelated files', async t => {
   const { home, project } = await fixture(t);
   await apply(home, project);
-  await write(project, '.agents/assets/skills/other/SKILL.md', 'user skill');
+  await write(project, '.agents/skills/other/SKILL.md', 'user skill');
   await apply(home, project, config(['copilot']));
-  assert.match(await read(project, '.agents/assets/skills/my-create-feature/SKILL.md'), /my-create-feature/);
-  assert.equal(await read(project, '.agents/assets/skills/other/SKILL.md'), 'user skill');
+  assert.match(await read(project, '.agents/skills/my-create-feature/SKILL.md'), /my-create-feature/);
+  assert.equal(await read(project, '.agents/skills/other/SKILL.md'), 'user skill');
   assert.match(await read(project, '.github/skills/my-create-feature/SKILL.md'), /name: "?my-create-feature/);
   assert.equal((await doctor(home, project)).healthy, true);
 });
@@ -99,7 +99,7 @@ test('rejects stale previews after project files or global assets change', async
   const { home, project } = await fixture(t);
   await apply(home, project);
   const p = await plan(home, project);
-  await write(project, '.agents/assets/rules/AGENTS.md', 'Concurrent project rule.\n');
+  await write(project, '.agents/rules/AGENTS.md', 'Concurrent project rule.\n');
   await assert.rejects(apply(home, project, p.config, p.revision), /changed since preview/);
   const p2 = await plan(home, project);
   const asset = (await catalog(home)).find(a => a.name === 'my-create-feature');
@@ -116,18 +116,18 @@ test('rejects symlinked output directories without writing outside the project',
 test('state path traversal cannot authorize removal of user files', async t => {
   const { home, project } = await fixture(t);
   await write(project, 'keep.txt', 'important');
-  await write(project, '.my-ai-infra/state.json', json({ version: 1, files: { '.agents/assets/skills/x/../../../keep.txt': { kind: 'file', hash: hash('important') } } }));
+  await write(project, '.my-ai-infra/state.json', json({ version: 1, files: { '.agents/skills/x/../../../keep.txt': { kind: 'file', hash: hash('important') } } }));
   await assert.rejects(apply(home, project), /Invalid managed path/);
   assert.equal(await read(project, 'keep.txt'), 'important');
 });
 test('global setup installs an entry Skill whose runtime works without the source package', async t => {
   const { home, toolHome } = await fixture(t);
   await setup(home, Object.keys(TOOLS), toolHome);
-  const wrapper = path.join(toolHome, '.agents/assets/skills/my-ai-infra/scripts/my-ai-infra.mjs');
+  const wrapper = path.join(toolHome, '.agents/skills/my-ai-infra/scripts/my-ai-infra.mjs');
   const { stdout } = await exec(process.execPath, [wrapper, 'catalog'], { cwd: toolHome });
   assert.equal(JSON.parse(stdout).length, BUILTINS.length);
   assert.match(await read(toolHome, '.copilot/skills/my-ai-infra/SKILL.md'), /name: "?my-ai-infra/);
-  await write(toolHome, '.agents/assets/skills/my-ai-infra/SKILL.md', '# edited by user');
+  await write(toolHome, '.agents/skills/my-ai-infra/SKILL.md', '# edited by user');
   await assert.rejects(setup(home, ['codex'], toolHome), /Global asset conflict/);
 });
 test('imports custom assets and rejects duplicates, malformed metadata and symlinks', async t => {
@@ -194,7 +194,7 @@ test('failed project writes roll back previously changed files and configuration
   try { await assert.rejects(apply(home, project, config(['copilot'])), /Simulated disk failure/); }
   finally { fs.rename = rename; }
   assert.equal(await read(project, '.my-ai-infra.json'), before);
-  assert.match(await read(project, '.agents/assets/skills/my-create-feature/SKILL.md'), /name: "?my-create-feature/);
+  assert.match(await read(project, '.agents/skills/my-create-feature/SKILL.md'), /name: "?my-create-feature/);
   assert.equal(await read(project, '.github/skills/my-create-feature/SKILL.md'), null);
   assert.equal((await doctor(home, project)).healthy, true);
 });
@@ -227,8 +227,8 @@ test('legacy configuration names resolve without creating a second installed ide
   const normalized = await normalizeConfig(input, home);
   assert.deepEqual(normalized.skills, ['my-create-feature', 'my-create-prd']);
   const p = await plan(home, project, input);
-  assert.ok(p.actions.some(a => a.path === '.agents/assets/skills/my-create-feature/SKILL.md'));
-  assert.ok(!p.actions.some(a => a.path === '.agents/assets/skills/create-feature/SKILL.md'));
+  assert.ok(p.actions.some(a => a.path === '.agents/skills/my-create-feature/SKILL.md'));
+  assert.ok(!p.actions.some(a => a.path === '.agents/skills/create-feature/SKILL.md'));
   await assert.rejects(fs.stat(home), { code: 'ENOENT' });
 });
 test('legacy personal assets and managed project copies migrate with edits, attachments and preview intact', async t => {
@@ -355,7 +355,7 @@ test('previous personal assets remain user owned after built-in removal', async 
 test('updating a stable runtime removes obsolete bundled aliases from its active catalog with recovery copies', async t => {
   const { home, toolHome } = await fixture(t);
   await setup(home, ['codex'], toolHome);
-  const wrapper = path.join(toolHome, '.agents/assets/skills/my-ai-infra/scripts/my-ai-infra.mjs');
+  const wrapper = path.join(toolHome, '.agents/skills/my-ai-infra/scripts/my-ai-infra.mjs');
   const old = '---\nname: my-create-code\ndescription: Previous bundle\n---\nOld bundle content.\n';
   await write(home, 'runtime/assets/skills/my-create-code/SKILL.md', old);
   await assert.rejects(exec(process.execPath, [wrapper, 'catalog']), /Both legacy and canonical/);

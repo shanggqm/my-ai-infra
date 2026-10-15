@@ -2,7 +2,7 @@
 
 全局安装 `npm install --global @easyuseai/my-ai-infra@0.0.6` 后，在目标项目目录执行 `mai init` 初始化，执行 `mai web` 启动该项目的本地工作台。`mai` 与 `my-ai-infra` 共用入口，所有命令和选项均可互换。
 
-`init` / `sync` 在终端中按配置选择、冲突检查、备份应用三个阶段展示进度，完成后分别列出文件统计、恢复记录与下一步操作。工具菜单支持彩色焦点与选中标记；执行阶段使用等待动画。设置 `NO_COLOR=1` 关闭颜色，`TERM=dumb` 关闭颜色和等待动画；标准输出重定向时保留 JSON，不输出动画。`plan` / `--dry-run` 继续输出完整 JSON 预览。
+`init` / `sync` 在终端中按配置选择、冲突检查、备份应用三个阶段展示进度，完成后分别列出文件统计、恢复记录、资产入口与下一步操作。工具菜单支持彩色焦点与选中标记；执行阶段使用等待动画。设置 `NO_COLOR=1` 关闭颜色，`TERM=dumb` 关闭颜色和等待动画；标准输出重定向时保留 JSON，不输出动画。`plan` / `--dry-run` 继续输出完整 JSON 预览。
 
 ## Web 首页与变更预览
 
@@ -97,7 +97,7 @@ npx --yes @easyuseai/my-ai-infra@latest doctor --project /path/to/repo --home /p
 
 `bundle-state.json` 记录本工具曾写入的内置文件摘要。显式 upgrade / setup 更新仍匹配该基线的内置文件；个人修改与没有可信基线的旧文件保持原状，并在 upgrade 结果中列为 preserved。普通 init/sync 保持当前个人源，避免预览期间隐式改写正文。新增包内资源会补齐，个人附加文件不会自动删除。
 
-升级替换前的内容位于 `backups/bundle-update-*`；个人正文修改和命名迁移也有各自备份。项目更改的旧文件与 journal 位于 `<项目>/.my-ai-infra/backups/`。需要恢复时先停止相关写入，按具体操作的备份核对文件，恢复旧内容或删除该次新建且未被人工修改的文件，再重新 plan。安装记录也要与恢复后的状态一起核对；保留 journal，不用整目录删除代替恢复。
+升级替换前的内容位于 `backups/bundle-update-*`；个人正文修改和命名迁移也有各自备份。项目更改的旧文件与 journal 位于全局存储的 `projects/<项目真实路径的 SHA-256>/backups/`（默认全局根目录为 `~/.my-ai-infra`，可由 `--home` 或 `MY_AI_INFRA_HOME` 指定）。需要恢复时先停止相关写入，按具体操作的备份核对文件，恢复旧内容或删除该次新建且未被人工修改的文件，再重新 plan。安装记录也要与恢复后的状态一起核对；保留 journal，不用整目录删除代替恢复。
 
 安装包降级不会自动回滚个人正文与项目文件；恢复具体资产后，再用所需版本预览并同步。没有一键清空个人库或卸载所有项目文件的命令。`npm uninstall --global my-ai-infra` 仅移除全局 npm 命令，个人资产、工具入口和项目文件保留。
 
@@ -111,9 +111,9 @@ my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，�
 
 ## 单一内容源与已有项目兼容
 
-`0.0.4` 统一使用 `.agents/assets/<类型>/` 保存项目资产，Codex 的 `.agents/skills/` 与其他工具目录均为相对软链接入口。全局 setup 使用用户主目录 `.agents/assets/`。个人库与分发包采用 `assets/<类型>/`，完整扩展清单见 [统一资产管理](../assets/README.md)。
+项目使用 `.agents/<类型>/` 保存资产，`skills/`、`agents/`、`prompts/`、`hooks/` 等目录并列。Codex 直接读取 `.agents/skills/` 源文件，其他工具的 Skill 目录使用相对软链接入口。全局 setup 使用用户主目录 `.agents/`。个人库与分发包采用 `assets/<类型>/`，完整扩展清单见 [统一资产管理](../assets/README.md)。
 
-项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/assets/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/assets/rules/AGENTS.md；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
+项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/rules/AGENTS.md；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
 
 CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用后也在终端单独显示；Web 在预览和成功提示中显示。Codex / Claude Code 在各自会话中执行 /init；Copilot 执行 copilot init；Cursor 使用 Agent 对话补全 AGENTS.md。具体命令及官方说明见 [项目规则入口](#项目规则入口)。安装器不自动运行这些命令；doctor 健康表示安装一致，空规则仍需用户补全。
 
@@ -125,9 +125,9 @@ CLI 初始化默认安装全部可用 Skill；Web 可按项目选择，sync 保�
 
 merge 以本地优先的目录合并补齐资产，同名不同正文保留候选；脚本和结构化文件不盲目拼接。合并后保留的本地资产记录 preserve 标记，普通同步和 doctor 尊重这些项目定制；显式 replace 才重置它们。安装状态无效时备份后重建，不使用未经校验的旧路径删除文件。merge 会备份损坏的忽略标记，再保留其他内容并重建有效标记。目录或二进制占位归档后装配，未知父目录链接保持原状并跳过依赖入口；此时部分配置可应用，但 complete 为 false，CLI 退出 2，doctor 不宣称健康。
 
-旧版 SDD 片段只有与公开 0.0.1/0.0.2 的生成正文摘要相符，或与原安装记录 hash 相符，才会备份后清理。标记不完整、重复或正文有无法确认的修改时保留并提示；不要通过删除整个目录来掩盖差异。已知旧规则共享链接迁移到 .agents/assets/rules/ 下各自的文件，再移除旧共享源。旧生成内容清理后为空时，按所选工具保留空中心文件与有效入口。安装器不扫描或修改任意其他项目规则文件。
+旧版 SDD 片段只有与公开 0.0.1/0.0.2 的生成正文摘要相符，或与原安装记录 hash 相符，才会备份后清理。标记不完整、重复或正文有无法确认的修改时保留并提示；不要通过删除整个目录来掩盖差异。已知旧规则共享链接迁移到 .agents/rules/ 下各自的文件，再移除旧共享源。旧生成内容清理后为空时，按所选工具保留空中心文件与有效入口。安装器不扫描或修改任意其他项目规则文件。
 
-项目状态升级到 version 3，可读取 version 1/2 的旧记录。备份目录 journal 保存 before/after 类型、原文或链接目标；恢复时同步核对安装记录。降级到旧版本不会自动恢复已清理的旧 SDD 片段。
+项目状态使用 version 4，可读取 version 1/2/3 的旧记录。旧 `.agents/assets/` 布局通过 `mai plan` 预览、`mai sync` 迁移；备份旧内容并保留项目定制，仅删除迁移后为空的旧目录。备份目录 journal 保存 before/after 类型、原文或链接目标；恢复时同步核对安装记录。降级到旧版本不会自动恢复已清理的旧 SDD 片段。
 
 复制项目时保留符号链接；Windows 需要文件软链接权限。系统拒绝创建链接时，安装器报错并回滚。
 
@@ -186,7 +186,7 @@ my-ai-infra sync --project . --conflict replace
 my-ai-infra plan --project . --conflict abort
 ```
 
-成功结果的 `recovery` 给出恢复目录，通常为 `.my-ai-infra/backups/<操作ID>/`。其中 `before/` 保留原文件、二进制与链接，`incoming/` 和 `local/` 保存不同版本，`journal.json` 记录变更。目录占位整体移入备份，失败时恢复；状态目录本身被占用时采用项目内独立的 `.my-ai-infra-recovery-<操作ID>/`。
+成功结果的 `recovery` 给出全局项目备份的绝对路径，无变更且无冲突候选时为 null。其中 `before/` 保留原文件、二进制与链接，`incoming/` 和 `local/` 保存不同版本，`journal.json` 记录变更。目录占位整体移入全局备份，支持跨磁盘恢复；失败时回滚。每次成功变更后保留最近 7 天的全部已完成备份，并至少保留最近 3 次；超过 7 天且不属于最近 3 次的记录自动清理。只读预览与无变更同步不触发清理，未完成的恢复记录保留。旧版本留在项目内的备份保持原状，可在确认无需恢复后手动清理。
 
 merge 保留的本地资产继续受到保护，后续普通同步沿用它；需要明确采用分发版本时使用 replace。`review` 列出需要人工核对的差异。不能安全处理的父目录链接或不可读路径保留并列入 `skipped`，其他配置继续装配；此时 `complete: false`、CLI 退出 2，Web 明确显示部分完成。正确指向 `.agents` 的 Skill 目录链接可直接复用。核心 API 保留默认 abort，CLI 与 Web 的默认策略为 merge。
 
@@ -195,3 +195,7 @@ merge 保留的本地资产继续受到保护，后续普通同步沿用它；�
 需要 Node.js 22+ 和 npm；Git worktree 辅助能力另需 Git 与 Bash。当前验证环境为 macOS，Windows / Linux 尚未逐平台完成全部验收；Windows 使用软链需要相应权限。
 
 CLI 与 Web 在本机运行，无遥测。开发偏好保存在本地个人库，项目同步由用户显式发起；团队审批、远程资产市场和跨项目自动升级不在当前功能范围内。
+
+## 检查资产发现
+
+`init`、`sync`、`plan` 与 `doctor` 的 JSON 包含 `discovery`，逐工具列出 Skill、Prompt、Agent、规则和扩展资产。终端安装结果显示原生调用方式。`doctor.healthy` 检查文件装配一致性；宿主菜单识别和实际调用需独立验证，不能从 `healthy` 或 `ready` 推断。Hook/MCP 等扩展需要在宿主配置注册，详见 [Prompt 与入口说明](custom-prompts.md)。

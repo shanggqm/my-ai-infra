@@ -5,12 +5,12 @@ import { legacyRuleActions } from './legacy-instructions.mjs';
 
 // Runtime principles belong to the project. Only their locations and links are managed.
 export const RULES = [
-  { entry: 'AGENTS.md', source: '.agents/assets/rules/AGENTS.md', tools: ['codex', 'cursor'] },
-  { entry: 'CLAUDE.md', source: '.agents/assets/rules/CLAUDE.md', tools: ['claudecode'] },
-  { entry: '.github/copilot-instructions.md', source: '.agents/assets/rules/copilot-instructions.md', tools: ['copilot'] },
+  { entry: 'AGENTS.md', source: '.agents/rules/AGENTS.md', tools: ['codex', 'cursor'] },
+  { entry: 'CLAUDE.md', source: '.agents/rules/CLAUDE.md', tools: ['claudecode'] },
+  { entry: '.github/copilot-instructions.md', source: '.agents/rules/copilot-instructions.md', tools: ['copilot'] },
 ];
 export const ruleTarget = (rule, source = rule.source) => path.posix.relative(path.posix.dirname(rule.entry), source);
-export const SHARED_RULE_SOURCE = '.agents/assets/rules/AGENTS.md';
+export const SHARED_RULE_SOURCE = '.agents/rules/AGENTS.md';
 const initialization = {
   codex: '在项目目录启动 codex，在会话中执行 /init；若提示文件已存在，请让它根据真实代码补全 AGENTS.md。',
   claudecode: '在项目目录启动 claude，在会话中执行 /init；若提示文件已存在，请让它根据真实代码补全 CLAUDE.md。',
@@ -27,7 +27,7 @@ export async function ruleActions(root, tools, oldFiles, inspect = relative => s
   const claude = RULES.find(rule => rule.entry === 'CLAUDE.md');
   const claudeEntry = await inspect(claude.entry), claudeSource = await inspect(claude.source);
   const sharedTarget = ruleTarget(claude, SHARED_RULE_SOURCE);
-  const sharedClaude = claudeEntry?.kind === 'symlink' && claudeEntry.target === '.agents/rules/AGENTS.md'
+  const sharedClaude = claudeEntry?.kind === 'symlink' && claudeEntry.target === '.agents/assets/rules/AGENTS.md'
     || claudeEntry?.kind === 'symlink' && claudeEntry.target === sharedTarget
     || oldFiles[claude.entry]?.kind === 'symlink' && oldFiles[claude.entry].target === sharedTarget
     || claudeEntry === null && claudeSource === null;
@@ -35,7 +35,7 @@ export async function ruleActions(root, tools, oldFiles, inspect = relative => s
   let migratedOldSource = false;
   for (const rule of RULES) {
     const source = rule.entry === 'CLAUDE.md' && sharedClaude ? SHARED_RULE_SOURCE : rule.source;
-    const legacySource = source.replace('.agents/assets/rules/','.agents/rules/');
+    const legacySource = source.replace('.agents/rules/','.agents/assets/rules/');
     const legacyBefore = await inspect(legacySource);
     let before, sourceBefore;
     try {
@@ -95,7 +95,7 @@ export async function ruleActions(root, tools, oldFiles, inspect = relative => s
   }
   if (migratedOldSource && oldSource?.before?.kind === 'file') {
     // Known aliases have been moved. Conflicts abort the entire transaction before any writes.
-    actions.set(oldSource.path, { ...oldSource, action: 'remove', after: null, note: '旧版共享源已分别迁移到 .agents/assets/rules/，保留备份并移除旧源' });
+    actions.set(oldSource.path, { ...oldSource, action: 'remove', after: null, note: '旧版共享源已分别迁移到 .agents/rules/，保留备份并移除旧源' });
   }
   const order = action => RULES.some(rule => rule.source === action.path) ? 0 : action.path === '.agents/AGENTS.md' ? 2 : 1;
   return { actions: [...actions.values()].sort((a, b) => order(a) - order(b)), nextFiles, nextSteps: nextSteps.filter(step => !actions.get(step.source)?.after?.text?.trim()) };

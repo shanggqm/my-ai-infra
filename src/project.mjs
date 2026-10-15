@@ -7,9 +7,10 @@ import { files, hash, json, locked, read, readJSON, write } from './fs.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { LEGACY_RULE_FILES } from './legacy-instructions.mjs';
 import { RULES, ruleTarget, ruleActions, ruleInitialization, SHARED_RULE_SOURCE } from './rules.mjs';
-import { ASSET_ROOT, SKILL_SOURCE, sourceForEntry, assetSourcePath, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog } from './assets.mjs';
+import { ASSET_ROOT, legacyAssetPath, pruneLegacyAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, promptTargets, legacyPromptTargets } from './assets.mjs';
+import { discoveryEntries } from './discovery.mjs';
 import { parseAgent, agentCatalog, AGENT_TOOLS, agentFilename, renderAgent, isManagedAgentPath } from './agents.mjs';
-import { conflictPolicy, pathInspector, inspectEntry, resolveConflicts, recoveryDirectory, backupEntry, installEntry, restoreEntry, saveCandidates } from './conflicts.mjs';
+import { conflictPolicy, pathInspector, inspectEntry, resolveConflicts, recoveryDirectory, pruneBackups, backupEntry, installEntry, restoreEntry, saveCandidates } from './conflicts.mjs';
 
 export const CONFIG = '.my-ai-infra.json';
 const STATE = '.my-ai-infra/state.json';
@@ -68,8 +69,9 @@ function validateManaged(relative, entry) {
     if (relative === 'CLAUDE.md') allowedTargets.push(ruleTarget(rule, SHARED_RULE_SOURCE));
     const canonical = sourceForEntry(relative) || (relative.startsWith('.agents/agents/') ? relative.replace('.agents/agents/',ASSET_ROOT+'/agents/') : null);
     if (canonical) allowedTargets.push(aliasTarget(relative,canonical));
-    if (rule) allowedTargets.push(ruleTarget(rule,rule.source.replace('.agents/assets/rules/','.agents/rules/')));
-    if (relative === 'CLAUDE.md') allowedTargets.push('.agents/rules/AGENTS.md');
+    if (canonical) allowedTargets.push(aliasTarget(relative,legacyAssetPath(canonical)));
+    if (rule) allowedTargets.push(ruleTarget(rule,legacyAssetPath(rule.source)));
+    if (relative === 'CLAUDE.md') allowedTargets.push('.agents/assets/rules/AGENTS.md');
     const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(relative),entry.target || ''));
     if (extension && assetSourcePath(resolved) && !resolved.startsWith(ASSET_ROOT+'/.generated/')) allowedTargets.push(aliasTarget(relative,resolved));
     if (!allowedTargets.includes(entry.target) || entry.hash !== hash(entry.target)) throw Error(`Invalid managed link: ${relative}`);
@@ -119,47 +121,57 @@ export async function plan(home, project, override, options = {}) {
     for (const [source, output] of [...desired]) {
       if (output.kind !== 'file' || !source.startsWith(SKILL_SOURCE + '/')) continue;
       const relative = source.replace(SKILL_SOURCE + '/', TOOLS[tool] + '/');
-      desired.set(relative, { kind: 'symlink', source, target: aliasTarget(relative, source) });
+      if (relative !== source) desired.set(relative, { kind: 'symlink', source, target: aliasTarget(relative, source) });
     }
   }
   const agentPaths = [];
   for (const agent of selectedAgents) {
     const source = `${ASSET_ROOT}/agents/${agent.name}.md`;
     desired.set(source, { text: agent.content, kind: 'file' }); agentPaths.push(source);
-    const local = await inspect(source) || await inspect(`.agents/agents/${agent.name}.md`);
-    const previous = old.files[source] || old.files[`.agents/agents/${agent.name}.md`];
-    const effective = policy !== 'replace' && local?.kind === 'file' && (previous?.preserve || hash(local.text) !== previous?.hash) ? parseAgent(local.text,agent.name) : agent;
+    const local = await inspect(source);
+    const legacyLocal = await inspect(legacyAssetPath(source));
+    const effectiveLocal = local?.kind === 'file' ? local : legacyLocal;
+    const previous = old.files[source] || old.files[legacyAssetPath(source)];
+    const effective = policy !== 'replace' && effectiveLocal?.kind === 'file' && (previous?.preserve || hash(effectiveLocal.text) !== previous?.hash) ? parseAgent(effectiveLocal.text,agent.name) : agent;
     for (const tool of selected.tools) {
       const target = `${AGENT_TOOLS[tool]}/${agentFilename(tool, agent.name)}`;
       const generated = derivedAgent(tool,agent.name,agentFilename(tool,agent.name));
       const text = renderAgent(effective, tool, skill => aliasTarget(target, `${TOOLS.codex}/${skill}/SKILL.md`));
       addFile(desired,generated,text); addLink(desired,target,generated); agentPaths.push(generated,target);
     }
-    const legacy = `.agents/agents/${agent.name}.md`;
-    if (await inspect(legacy)) { addLink(desired,legacy,source); agentPaths.push(legacy); }
   }
-  addExtensions(desired,await extensionCatalog(home),selected.tools);
-  // Move trusted legacy source content before replacing the native file with a link.
-  for (const [relative,output] of desired) {
-    if (output.kind !== 'symlink' || !relative.startsWith('.agents/') || relative.startsWith(ASSET_ROOT+'/')) continue;
-    const before = await inspect(relative), center = await inspect(output.source);
-    const previous = old.files[relative];
-    if (center === null && before?.kind === 'file' && previous?.kind === 'file' && hash(before.text) === previous.hash) {
-      // A current bundle update still takes precedence over an unchanged old source.
-      old.files[output.source] = {...previous};
+  const extensions = await extensionCatalog(home);
+  addExtensions(desired,extensions,selected.tools);
+  const promptMigrations = new Map();
+  for (const asset of extensions.filter(asset => asset.type === 'prompts')) for (const tool of selected.tools) {
+    if (!asset.targets[tool]) continue;
+    for (const target of [asset.targets[tool],legacyPromptTargets(asset.name)[tool]]) {
+      if (!desired.has(target)) promptMigrations.set(target,promptTargets(asset.name)[tool]);
     }
   }
-  const ignored = ['/.agents/assets/', '/.my-ai-infra/', '/.my-ai-infra-recovery-*/', ...selected.skills.map(name => `/${TOOLS.codex}/${name}/`), ...selected.tools.filter(tool => tool !== 'codex').flatMap(tool => selected.skills.map(name => `/${TOOLS[tool]}/${name}/`))];
-  ignored.push(...agentPaths.map(relative => '/' + relative), ...[...desired].filter(([,v])=>v.kind==='symlink').map(([p])=>'/'+p));
-  desired.set('.gitignore', { text: `# ${START}\n${ignored.join('\n')}\n# ${END}`, kind: 'block' });
+  // Relocate only recorded legacy sources. Unknown files stay in their original location.
+  const migrations = new Map();
+  for (const [relative, output] of desired) {
+    if (output.kind !== 'file') continue;
+    const legacy = legacyAssetPath(relative), previous = old.files[legacy];
+    if (previous?.kind !== 'file') continue;
+    const before = await inspect(legacy);
+    if (before?.kind !== 'file') continue;
+    const customized = previous.preserve || hash(before.text) !== previous.hash;
+    migrations.set(relative, { legacy, before, customized, incoming: output.text });
+    if (customized && policy !== 'replace' && !relative.startsWith(ASSET_ROOT + '/.generated/')) output.text = before.text;
+  }
+  const ignored = ['/.agents/.generated/', '/.agents/rules/', '/.my-ai-infra/', '/.my-ai-infra-recovery-*/', ...selected.skills.map(name => `/${TOOLS.codex}/${name}/`), ...selected.tools.filter(tool => tool !== 'codex').flatMap(tool => selected.skills.map(name => `/${TOOLS[tool]}/${name}/`))];
+  ignored.push(...[...desired.keys()].map(relative => '/' + relative), ...agentPaths.map(relative => '/' + relative), ...[...desired].filter(([,v])=>v.kind==='symlink').map(([p])=>'/'+p));
+  desired.set('.gitignore', { text: `# ${START}\n${[...new Set(ignored)].join('\n')}\n# ${END}`, kind: 'block' });
   const actions = [], nextFiles = {};
   for (const [relative, output] of desired) {
-    const before = await inspect(relative), previous = old.files[relative];
+    const before = await inspect(relative), previous = old.files[relative], migration = migrations.get(relative);
     let action, after, detail;
     if (output.kind === 'symlink') {
       after = { kind: 'symlink', target: output.target };
       if (before === null) action = 'create';
-      else if (before.kind === 'symlink') action = before.target === output.target ? 'noop' : 'conflict';
+      else if (before.kind === 'symlink') action = before.target === output.target ? 'noop' : previous?.kind === 'symlink' && previous.target === before.target && before.target === aliasTarget(relative,legacyAssetPath(output.source)) ? 'update' : 'conflict';
       else if (before.kind === 'file') {
         action = (previous?.kind === 'file' && hash(before.text) === previous.hash) || before.text === desired.get(output.source).text ? 'update' : 'conflict';
       } else action = 'conflict';
@@ -176,14 +188,20 @@ export async function plan(home, project, override, options = {}) {
       after = { kind: 'file', text: isBlock ? malformed ? merge((current || '').replaceAll(START,'').replaceAll(END,''), body) : merge(current ?? '', body) : action === 'preserve' ? current : body };
       nextFiles[relative] = { kind: output.kind, hash: hash(body) };
       if (action === 'preserve') nextFiles[relative].preserve = true;
+      if (migration) {
+        if (before?.kind === 'symlink' && previous?.kind === 'symlink' && previous.target === before.target && before.target === aliasTarget(relative,migration.legacy)) action = 'update';
+        if (migration.customized && policy !== 'replace' && output.text === migration.before.text) nextFiles[relative] = { kind: 'file', hash: hash(migration.incoming), preserve: true };
+      }
     }
     const reason = action === 'conflict' ? detail || (before?.kind === 'symlink' ? `链接目标与预期不符，当前为 ${before.target}；不会跟随或覆盖该链接` : previous ? '受管内容与上次安装记录不一致，保留本地修改并等待核对' : '已有同名内容与待安装资产不同，且没有可信安装记录；请保留或对比现有资产') : undefined;
-    actions.push({ path: relative, action, before, after, ...(reason ? { reason } : {}), ...(output.note ? { note: output.note } : {}) });
+    actions.push({ path: relative, action, before, after, ...(output.requires ? {requires:output.requires, expectedText:output.text} : {}), ...(reason ? { reason } : {}), ...(output.note ? { note: output.note } : {}) });
   }
   const rules = await ruleActions(root, selected.tools, old.files, inspect);
   actions.push(...rules.actions); Object.assign(nextFiles, rules.nextFiles);
+  const migratedPaths = new Set([...migrations.values()].map(item => item.legacy));
+  for (const { legacy, before } of migrations.values()) actions.push({ path: legacy, action: 'remove', before, after: null, migrationTo: legacy.replace('.agents/assets/', '.agents/'), note: '旧资产迁移到 .agents/ 下，原内容保留备份' });
   for (const [relative, previous] of Object.entries(old.files)) {
-    if (desired.has(relative) || LEGACY_RULE_FILES.includes(relative)) continue;
+    if (desired.has(relative) || migratedPaths.has(relative) || rules.actions.some(action => action.path === relative) || LEGACY_RULE_FILES.includes(relative)) continue;
     const before = await inspect(relative);
     let action = 'noop', after = null;
     if (before !== null) {
@@ -197,11 +215,11 @@ export async function plan(home, project, override, options = {}) {
         if (previous.kind === 'block') after = { kind: 'file', text: before.text.replace(owned || '', '') };
       }
     }
-    actions.push({ path: relative, action, before, after, ...(action === 'conflict' ? { reason: '待移除入口已修改，保留现场；请核对内容或链接目标后重试' } : {}) });
+    actions.push({ path: relative, action, before, after, ...(promptMigrations.has(relative) ? {migrationTo:promptMigrations.get(relative)} : {}), ...(action === 'conflict' ? { reason: '待移除入口已修改，保留现场；请核对内容或链接目标后重试' } : {}) });
   }
   // Project specification documents are seeded once and retain subsequent edits.
   const templates = [...await files(path.join(PACKAGE, 'templates/mai-specs'))].map(relative => [`mai-specs/${relative}`, `templates/mai-specs/${relative}`]);
-  for (const name of ['ROADMAP.md', 'FEATURE_LAYOUT.json']) templates.push([`mai-specs/${name}`, `assets/skills/my-create-feature/template/${name}`]);
+  for (const name of ['ROADMAP.md']) templates.push([`mai-specs/${name}`, `assets/skills/my-create-feature/template/${name}`]);
   for (const [relative, source] of templates) {
     const before = await inspect(relative);
     actions.push({ path: relative, action: before === null ? 'create' : before.kind === 'file' ? 'preserve' : 'conflict', after: { kind: 'file', text: await read(PACKAGE, source) }, before, ...(before && before.kind !== 'file' ? { reason: '规格入口类型与预期文本文件不同' } : {}) });
@@ -219,6 +237,7 @@ export async function plan(home, project, override, options = {}) {
   actions.push(...inspection.reused.values());
   for (const issue of inspection.dependencies.values()) { const action = actions.find(action => action.path === issue.path); if (action) Object.assign(action,issue); else actions.push(issue); }
   const resolved = resolveConflicts(actions, nextFiles, policy, desired);
+  for (const action of actions) if (action.resolution === 'skip' && old.files[action.path]) nextFiles[action.path] = old.files[action.path];
   const stateAction = actions.find(action => action.internalState);
   stateAction.after = { kind: 'file', text: json({ version: 4, files: Object.fromEntries(Object.entries(nextFiles).sort(([a],[b])=>a.localeCompare(b))) }) };
   if (stateAction.action !== 'conflict' && stateAction.resolution !== 'skip') stateAction.action = equalEntry(rawState,stateAction.after) ? 'noop' : rawState === null ? 'create' : 'update';
@@ -234,9 +253,9 @@ export async function plan(home, project, override, options = {}) {
   }
   const summary = {};
   for (const a of actions) summary[a.action] = (summary[a.action] || 0) + 1;
-  return { root, config: selected, agents: selectedAgents.map(a => a.name), actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
+  return { root, config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
 }
-export const publicPlan = p => ({ root: p.root, config: p.config, agents: p.agents, summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
+export const publicPlan = (p, phase = 'plan') => ({ root: p.root, config: p.config, agents: p.agents, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
 
 export async function apply(home, project, override, expectedRevision, options = {}) {
   return locked(home, async () => {
@@ -249,11 +268,12 @@ export async function apply(home, project, override, expectedRevision, options =
     const registryBefore = await snapshot(home, 'projects.json');
     const changed = p.actions.filter(a => ['create', 'update', 'remove'].includes(a.action));
     const stamp = Date.now() + '-' + randomUUID();
-    const recovery = await recoveryDirectory(p.root, stamp);
+    const hasRecovery = changed.length > 0 || p.actions.some(action => action.candidates?.length);
+    const recovery = hasRecovery ? await recoveryDirectory(home, p.root, stamp) : null;
     for (const a of changed) await backupEntry(p.root, a.path, a.before, recovery);
-    for (const a of changed) if (a.before?.kind === 'file') await write(p.root, `${recovery}/${a.path}`, a.before.text);
-    await saveCandidates(p.root, p.actions, recovery);
-    await write(p.root, `${recovery}/journal.json`, json(changed.map(({ path, before, after }) => ({ path, before, after }))));
+    for (const a of changed) if (a.before?.kind === 'file') await write(recovery, a.path, a.before.text);
+    if (hasRecovery) await saveCandidates(p.root, p.actions, recovery);
+    if (hasRecovery) await write(recovery, 'journal.json', json(changed.map(({ path, before, after }) => ({ path, before, after }))));
     const touched = [];
     try {
       for (const a of p.actions.filter(a=>a.reused)) if (!equalEntry(await inspectEntry(p.root,a.path),a.before)) throw Error(`Directory link changed during installation: ${a.path}`);
@@ -268,7 +288,12 @@ export async function apply(home, project, override, expectedRevision, options =
       await putEntry(home, 'projects.json', registryBefore);
       throw e;
     }
-    return { ...publicPlan(p), applied: true, recovery };
+    if (hasRecovery) {
+      await write(recovery, 'completed.json', json({ project: p.root, completedAt: Date.now() }));
+      await pruneBackups(home, p.root);
+      await pruneLegacyAssetDirectories(p.root, changed.filter(action => action.action === 'remove').map(action => action.path));
+    }
+    return { ...publicPlan(p,'applied'), applied: true, recovery };
   });
 }
 export async function doctor(home, project) {
@@ -277,5 +302,9 @@ export async function doctor(home, project) {
   if ((await inspection.inspect(CONFIG) === null || await inspection.inspect(STATE) === null) && !inspection.blockers.size) return { healthy: false, issues: ['项目尚未初始化'] };
   const p = await plan(home, project);
   const issues = p.actions.filter(a => !['noop', 'preserve'].includes(a.action)).map(({ path, action, reason }) => ({ path, action, ...(reason ? { reason } : {}) }));
-  return { healthy: issues.length === 0, issues };
+  const discovery = discoveryEntries(p,'doctor');
+  for (const entry of discovery.filter(entry => entry.status === 'needs-sync')) {
+    if (!issues.some(issue => issue.path === entry.path)) issues.push({path:entry.path,action:'check',reason:'入口或其依赖与预期不一致，请核对 discovery 并重新同步。'});
+  }
+  return { healthy: issues.length === 0, issues, discovery };
 }

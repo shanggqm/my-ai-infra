@@ -96,7 +96,7 @@ test('sole retired selection stays editable through Web and explicit CLI replace
   assert.deepEqual((await updated.json()).skills, ['my-review-code']);
   await exec(process.execPath, ['bin/my-ai-infra.mjs', 'sync', '--home', home, '--project', project, '--skills', 'my-review-code']);
   assert.deepEqual((await projectConfig(home, project)).skills, ['my-review-code']);
-  assert.equal(await read(project, `.agents/assets/skills/${retired}/SKILL.md`), null);
+  assert.equal(await read(project, `.agents/skills/${retired}/SKILL.md`), null);
 });
 
 test('fresh templates omit acceptance and retired identities cannot be reintroduced', async t => {

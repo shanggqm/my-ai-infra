@@ -8,6 +8,6 @@
 
 ## 按需创建与集中路径契约
 
-Feature 初始化仅生成 BRIEF.md、context/_INDEX.md。后续 Skill 读取本目录的 FEATURE_LAYOUT.json，按 artifacts 中本阶段登记的路径，在实际写文件时创建父目录；初始化所需文件由 initialFiles 定义。spec/diagrams 等辅助目录同样按需创建，不放 .gitkeep。路径契约首次来自 my-create-feature/template/FEATURE_LAYOUT.json，安装后属于项目文件，重复安装保留修改。
+Feature 初始化仅生成 BRIEF.md、context/_INDEX.md。后续 Skill 默认使用随包布局；存在本目录的 FEATURE_LAYOUT.json 时优先读取它，按 artifacts 中本阶段登记的路径，在实际写文件时创建父目录；初始化所需文件由 initialFiles 定义。spec/diagrams 等辅助目录同样按需创建，不放 .gitkeep。需要自定义产物路径时，将已安装的 my-create-feature/template/FEATURE_LAYOUT.json 复制到本目录后修改 artifacts 中的 path；initialFiles 应与需求初始化模板保持一致。重复安装保留已有契约。
 
-旧项目缺少契约时沿用各 Skill 的默认路径；更新后安装器会补入缺少的契约副本。自定义规范、已有文件与登记路径冲突时保留现场并让用户选择。路径校验入口位于已安装 my-create-feature/scripts/validate-feature.mjs，使用 --feature 指定需求，可用 --artifact 指定本次产物 ID。只要求初始文件及明确检查的产物；未来阶段目录缺失正常，已有目录/文档也不代表阶段完成。旧空目录和占位文件仅提示，不自动清理。没有安装该 Skill 时，依照同一契约核对路径，不伪造可用脚本入口。
+缺少契约时沿用各 Skill 的默认路径；初始化和同步均不自动生成契约副本。自定义规范、已有文件与登记路径冲突时保留现场并让用户选择。路径校验入口位于已安装 my-create-feature/scripts/validate-feature.mjs，使用 --feature 指定需求，可用 --artifact 指定本次产物 ID。只要求初始文件及明确检查的产物；未来阶段目录缺失正常，已有目录/文档也不代表阶段完成。旧空目录和占位文件仅提示，不自动清理。没有安装该 Skill 时，依照同一契约核对路径，不伪造可用脚本入口。

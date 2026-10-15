@@ -100,6 +100,7 @@ try {
   assert.ok(await page.locator('.file-content details[open] code').first().isVisible());
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#preview-dialog').evaluate(node => node.open), false);
+  await page.waitForFunction(() => document.activeElement === document.querySelector('#preview'));
   assert.equal(await page.locator('#preview').evaluate(node => node === document.activeElement), true);
   pass('Default home, animated gear frames, pointer acceleration/reversal/settling and offscreen suspension, modal focus, Escape, file search, filters and link details');
 
@@ -134,7 +135,7 @@ try {
   await page.locator('#cancel-preview').click();
   pass('Late-response rejection, policy invalidation, inline API error, real apply, saved config and completion hints');
 
-  const edited = path.join(project, '.agents/assets/skills/my-create-prd/SKILL.md');
+  const edited = path.join(project, '.agents/skills/my-create-prd/SKILL.md');
   await fs.appendFile(edited, '\nProject customization.\n');
   await openPreview();
   await page.locator('#conflict-policy').selectOption('abort');

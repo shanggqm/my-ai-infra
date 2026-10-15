@@ -83,14 +83,20 @@ export function resolveConflicts(actions, nextFiles, policy, desired) {
   const blocked = actions.filter(action => action.unreadable || action.blocker && policy === 'merge' && action.before?.kind === 'symlink');
   const blockedSkills = blocked.some(action => under(SKILL_SOURCE,action.path) || action.path.startsWith(SKILL_SOURCE+'/') || under(ASSET_ROOT+'/agents',action.path) || action.path.startsWith(ASSET_ROOT+'/agents/'));
   for (const action of actions) {
-    const linkSource = action.after?.kind === 'symlink' ? path.posix.normalize(path.posix.join(path.posix.dirname(action.path),action.after.target)) : null;
-    if (blockedSkills && (isManagedAgentPath(action.path) || action.path.startsWith(ASSET_ROOT+'/agents/') || action.path.startsWith(ASSET_ROOT+'/.generated/')) || blocked.some(parent => under(action.path, parent.path) || linkSource && under(linkSource,parent.path))) {
+    const linkSource = action.requires || action.migrationTo || (action.after?.kind === 'symlink' ? path.posix.normalize(path.posix.join(path.posix.dirname(action.path),action.after.target)) : null);
+    if (linkSource && byPath.get(linkSource)?.resolution === 'skip' || blockedSkills && (isManagedAgentPath(action.path) || action.path.startsWith(ASSET_ROOT+'/agents/') || action.path.startsWith(ASSET_ROOT+'/.generated/') || action.migrationTo?.startsWith(ASSET_ROOT+'/agents/') || action.migrationTo?.startsWith(ASSET_ROOT+'/.generated/')) || blocked.some(parent => under(action.path, parent.path) || linkSource && under(linkSource,parent.path))) {
       action.action = 'preserve'; action.after = action.before; action.resolution = 'skip';
       skipped.push({ path: action.path, reason: action.reason || '父目录链接保持原状，未写入其目标' });
       delete nextFiles[action.path]; continue;
     }
     if (action.action !== 'conflict') continue;
     if (action.unreadable) { action.action = 'preserve'; action.resolution = 'skip'; action.after = action.before; skipped.push({ path: action.path, reason: action.reason }); delete nextFiles[action.path]; continue; }
+    if (policy === 'merge' && action.requires && action.before?.kind === 'file' && action.after?.kind === 'file') {
+      action.candidates = [{path:`incoming/${action.path}`,text:action.after.text}];
+      action.action = 'preserve'; action.resolution = 'skip'; action.after = action.before;
+      skipped.push({path:action.path,reason:'已有不同内容的 Prompt 入口，保留原文件与旧入口；请核对候选后重试。'});
+      delete nextFiles[action.path]; continue;
+    }
     action.resolution = policy;
     if (policy === 'merge' && action.path.startsWith(ASSET_ROOT+'/.generated/') && action.before?.kind === 'file' && action.after?.kind === 'file') {
       action.candidates = [{path:`local/${action.path}`,text:action.before.text}];
@@ -129,29 +135,52 @@ export function resolveConflicts(actions, nextFiles, policy, desired) {
   return { actions, conflicts, review, skipped };
 }
 
-export async function recoveryDirectory(root, stamp) {
-  const normal = `.my-ai-infra/backups/${stamp}`;
-  try {
-    await safe(root, normal + '/journal.json');
-    for (const parent of ['.my-ai-infra', '.my-ai-infra/backups']) {
-      const info = await stat(path.join(root, parent));
-      if (info && !info.isDirectory()) throw Error('blocked');
+export async function recoveryDirectory(home, root, stamp) {
+  return safe(home, `projects/${hash(root)}/backups/${stamp}`);
+}
+
+// Only completed, recognized operations are eligible for automatic retention.
+export async function pruneBackups(home, root, now = Date.now()) {
+  const directory = await safe(home, `projects/${hash(root)}/backups`);
+  const entries = [];
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !/^\d+-[a-f0-9-]{36}$/.test(entry.name)) continue;
+    const location = await safe(home, `projects/${hash(root)}/backups/${entry.name}/completed.json`);
+    const info = await stat(location);
+    if (!info?.isFile()) continue;
+    let record;
+    try { record = JSON.parse(await fs.readFile(location, 'utf8')); } catch { continue; }
+    if (record.project !== root || !Number.isFinite(record.completedAt)) continue;
+    entries.push({ name: entry.name, time: record.completedAt });
+  }
+  entries.sort((a, b) => b.time - a.time || b.name.localeCompare(a.name));
+  for (const entry of entries.slice(3)) {
+    if (entry.time < now - 7 * 24 * 60 * 60 * 1000) {
+      await fs.rm(await safe(home, `projects/${hash(root)}/backups/${entry.name}`), { recursive: true });
     }
-    return normal;
-  } catch { return `.my-ai-infra-recovery-${stamp}`; }
+  }
+}
+
+async function moveEntry(source, target) {
+  try { await fs.rename(source, target); }
+  catch (error) {
+    if (error.code !== 'EXDEV') throw error;
+    await fs.cp(source, target, { recursive: true, dereference: false, verbatimSymlinks: true, errorOnExist: true, force: false });
+    await fs.rm(source, { recursive: true, force: true });
+  }
 }
 export async function backupEntry(root, relative, entry, recovery) {
   if (!entry || entry.kind === 'directory') return;
   const source = await safe(root, relative, { leafLink: true });
-  const target = await safe(root, `${recovery}/before/${relative}`);
+  const target = await safe(recovery, `before/${relative}`);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.cp(source, target, { dereference: false, verbatimSymlinks: true, errorOnExist: true, force: false });
 }
 export async function installEntry(root, action, recovery) {
   if (action.before?.kind === 'directory') {
-    const original = await safe(root, action.path), archived = await safe(root, `${recovery}/before/${action.path}`);
+    const original = await safe(root, action.path), archived = await safe(recovery, `before/${action.path}`);
     await fs.mkdir(path.dirname(archived), { recursive: true });
-    await fs.rename(original, archived); action.movedDirectory = true;
+    await moveEntry(original, archived); action.movedDirectory = true;
   }
   await putEntry(root, action.path, action.after);
 }
@@ -159,22 +188,22 @@ export async function restoreEntry(root, action, recovery) {
   const file = await safe(root, action.path, { leafLink: true });
   if (action.before?.kind === 'directory' && action.movedDirectory) {
     if (await stat(file)) {
-      const residue = await safe(root, `${recovery}/rollback-residue/${action.path}`);
-      await fs.mkdir(path.dirname(residue), { recursive: true }); await fs.rename(file, residue);
+      const residue = await safe(recovery, `rollback-residue/${action.path}`);
+      await fs.mkdir(path.dirname(residue), { recursive: true }); await moveEntry(file, residue);
     }
-    await fs.rename(await safe(root, `${recovery}/before/${action.path}`), file); return;
+    await moveEntry(await safe(recovery, `before/${action.path}`), file); return;
   }
   if (action.before?.kind === 'directory') return;
   if ((await stat(file))?.isDirectory()) {
-    const residue = await safe(root, `${recovery}/rollback-residue/${action.path}`);
-    await fs.mkdir(path.dirname(residue), { recursive: true }); await fs.rename(file, residue);
+    const residue = await safe(recovery, `rollback-residue/${action.path}`);
+    await fs.mkdir(path.dirname(residue), { recursive: true }); await moveEntry(file, residue);
   }
   if (action.before?.kind === 'binary') {
     if ((await stat(file))?.isSymbolicLink()) await fs.unlink(file);
-    await fs.copyFile(await safe(root, `${recovery}/before/${action.path}`), file); return;
+    await fs.copyFile(await safe(recovery, `before/${action.path}`), file); return;
   }
   await putEntry(root, action.path, action.before, { restore: true });
 }
 export async function saveCandidates(root, actions, recovery) {
-  for (const action of actions) for (const candidate of action.candidates || []) await write(root, `${recovery}/${candidate.path}`, candidate.text);
+  for (const action of actions) for (const candidate of action.candidates || []) await write(recovery, candidate.path, candidate.text);
 }

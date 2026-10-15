@@ -4,7 +4,21 @@ import { fileURLToPath } from 'node:url';
 import { files, read, stat, safe, hash, json } from './fs.mjs';
 
 export const BUNDLE = fileURLToPath(new URL('../assets/', import.meta.url));
-export const ASSET_ROOT = '.agents/assets';
+export const ASSET_ROOT = '.agents';
+export const LEGACY_ASSET_ROOT = '.agents/assets';
+export const legacyAssetPath = relative => relative.startsWith(ASSET_ROOT + '/') ? relative.replace(ASSET_ROOT + '/', LEGACY_ASSET_ROOT + '/') : null;
+export async function pruneLegacyAssetDirectories(root, removed) {
+  const directories = new Set();
+  for (const relative of removed) {
+    if (!relative.startsWith(LEGACY_ASSET_ROOT + '/')) continue;
+    for (let parent = path.posix.dirname(relative); parent.startsWith(LEGACY_ASSET_ROOT); parent = path.posix.dirname(parent)) directories.add(parent);
+  }
+  for (const relative of [...directories].sort((a,b) => b.split('/').length - a.split('/').length)) {
+    const directory = await safe(root,relative,{leafLink:true}), info = await stat(directory);
+    if (!info?.isDirectory() || info.isSymbolicLink()) continue;
+    try { await fs.rmdir(directory); } catch (error) { if (!['ENOENT','ENOTEMPTY','EEXIST'].includes(error.code)) throw error; }
+  }
+}
 export const SKILL_SOURCE = `${ASSET_ROOT}/skills`;
 export const namePart = value => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64;
 export const relativePath = value => typeof value === 'string' && value.length > 0 && !value.includes('\\') && !value.includes('\0') && !path.posix.isAbsolute(value) && path.posix.normalize(value) === value && value.split('/').every(part => part !== '..' && part !== '.');
@@ -62,9 +76,15 @@ export function parsePrompt(text, name) {
     description = raw.slice(1, -1).replaceAll("''", "'");
   }
   if (typeof description !== 'string' || !description.trim() || /^[>|][-+]?$/.test(description)) throw Error(`Missing single-line Prompt description: ${name}`);
-  const targets = { codex: `.codex/prompts/${name}.md`, claudecode: `.claude/commands/${name}.md`, cursor: `.cursor/commands/${name}.md`, copilot: `.github/prompts/${name}.prompt.md` };
-  const { copilot, ...globalTargets } = targets;
-  return { name, description, entry: `${name}.md`, targets, globalTargets, flat: true };
+  const targets = promptTargets(name);
+  return { name, description, entry: `${name}.md`, targets, globalTargets: targets, flat: true };
+}
+export const promptTargets = name => ({ codex: `${SKILL_SOURCE}/${name}/SKILL.md`, claudecode: `.claude/skills/${name}/SKILL.md`, cursor: `${SKILL_SOURCE}/${name}/SKILL.md`, copilot: `${SKILL_SOURCE}/${name}/SKILL.md` });
+export const legacyPromptTargets = name => ({ codex: `.codex/prompts/${name}.md`, claudecode: `.claude/commands/${name}.md`, cursor: `.cursor/commands/${name}.md`, copilot: `.github/prompts/${name}.prompt.md` });
+export function renderPromptSkill(asset) {
+  const target = promptTargets(asset.name).codex;
+  const reference = linkTarget(target, `${ASSET_ROOT}/${assetRelative(asset)}`).split('/').map(part => encodeURIComponent(part).replace(/[()]/g,char => '%' + char.charCodeAt(0).toString(16))).join('/');
+  return `---\nname: ${JSON.stringify(asset.name)}\ndescription: ${JSON.stringify(asset.description)}\ndisable-model-invocation: true\n---\n\n用户显式调用本入口时，读取并执行 [${asset.name}](${reference}) 的完整正文，并使用用户在当前消息及对话中提供的参数和上下文。\n\n相对路径以本 SKILL.md 的真实位置为基准；先解析软链接。正文中的相对资源路径以正文文件所在目录为基准。正文无法读取时报告具体路径并停止，不猜测内容或改用其他项目/全局的同名文件。\n`;
 }
 export const assetRelative = (asset, file = asset.entry) => `${asset.type}/${asset.flat ? '' : asset.name + '/'}${file}`;
 export async function extensionCatalog(home) {
@@ -108,6 +128,12 @@ export function addExtensions(desired, extensions, tools, global = false) {
     const selected = tools.filter(tool=>targets[tool]);
     if (!selected.length) continue;
     for (const [file,text] of Object.entries(asset.contents)) addFile(desired,`${ASSET_ROOT}/${assetRelative(asset,file)}`,text);
-    for (const tool of selected) addLink(desired,targets[tool],`${ASSET_ROOT}/${assetRelative(asset)}`);
+    const source = `${ASSET_ROOT}/${assetRelative(asset)}`;
+    if (asset.type === 'prompts') {
+      const entries = promptTargets(asset.name);
+      addFile(desired,entries.codex,renderPromptSkill(asset),{requires:source});
+      addFile(desired,`${SKILL_SOURCE}/${asset.name}/agents/openai.yaml`,'policy:\n  allow_implicit_invocation: false\n',{requires:source});
+      if (selected.includes('claudecode')) addLink(desired,entries.claudecode,entries.codex);
+    } else for (const tool of selected) addLink(desired,targets[tool],source);
   }
 }

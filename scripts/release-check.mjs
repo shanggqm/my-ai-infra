@@ -6,6 +6,8 @@ import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
 import { checkSkillResources } from './check-skill-resources.mjs';
+import { checkCodexDiscovery } from './check-codex-discovery.mjs';
+import { checkClaudeDiscovery } from './check-claude-discovery.mjs';
 import { parseAgent, AGENT_TOOLS, agentFilename } from '../src/agents.mjs';
 import { RULES, ruleTarget } from '../src/rules.mjs';
 
@@ -98,14 +100,30 @@ try {
   await run('mai', ['init','--tools','codex,claudecode,cursor,copilot','--yes'], globalOptions);
   ensure(JSON.parse((await run('mai', ['doctor'], globalOptions)).stdout).healthy, 'Global mai init did not initialize the current directory');
   pass('Global mai and my-ai-infra commands, current-directory init and doctor');
-  const layout = JSON.parse(await fs.readFile(path.join(project,'mai-specs/FEATURE_LAYOUT.json'),'utf8'));
+  const selectedSkills = [...JSON.parse(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8')).skills, 'my-auto-design', 'my-auto-feature', 'my-init-repo-memory'];
+  for (const name of selectedSkills) {
+    const directory = path.join(project,'.agents/skills',name);
+    ensure((await fs.readdir(directory,{withFileTypes:true})).some(entry => entry.name === 'SKILL.md' && entry.isFile()), `Skill manifest must be a regular file: ${name}`);
+  }
+  pass(`All ${selectedSkills.length} selected Skills have discoverable regular SKILL.md files`);
+  if (process.env.MAI_CODEX_BIN) {
+    await checkCodexDiscovery(process.env.MAI_CODEX_BIN,await fs.realpath(project),selectedSkills);
+    pass('Codex app-server skills/list discovers every selected Skill after global mai init');
+  }
+  if (process.env.MAI_CLAUDE_BIN) {
+    await checkClaudeDiscovery(process.env.MAI_CLAUDE_BIN,await fs.realpath(project),selectedSkills,['architecture-review','code-review']);
+    pass('Claude SDK initialization discovers all project Skills, Prompts and review roles without duplicate commands');
+  }
+  await fs.access(path.join(project, 'mai-specs/FEATURE_LAYOUT.json')).then(() => { throw Error('Default layout should stay bundled'); }, error => { if (error.code !== 'ENOENT') throw error; });
+  const layout = JSON.parse(await fs.readFile(path.join(project,'.agents/skills/my-create-feature/template/FEATURE_LAYOUT.json'),'utf8'));
   ensure(!layout.artifacts.some(item => item.id === 'acceptance' || item.skill === 'my-verify-feature'), 'New Feature layout still requires standalone acceptance');
   for (const adapter of ['.agents','.claude','.cursor','.github']) {
     const file = path.join(project,adapter,'skills/my-create-feature/scripts/init-feature.mjs');
     await fs.access(file);
-    ensure((await fs.lstat(file)).isSymbolicLink() === true, `Invalid adapter content source: ${adapter}`);
+    ensure((await fs.lstat(file)).isSymbolicLink() === (adapter !== '.agents'), `Invalid adapter content source: ${adapter}`);
     ensure(await fs.realpath(file) === await fs.realpath(path.join(project,'.agents/skills/my-create-feature/scripts/init-feature.mjs')), `Adapter does not share the canonical source: ${adapter}`);
   }
+  await fs.lstat(path.join(project,'.agents/assets')).then(() => { throw Error('Unexpected nested asset directory'); }, error => { if (error.code !== 'ENOENT') throw error; });
   const roleCatalog = JSON.parse((await run(process.execPath, [cli, 'agents', '--home', home])).stdout);
   for (const name of ['architecture-review', 'code-review']) ensure(roleCatalog.some(agent => agent.name === name), `Packaged Agent asset missing: ${name}`);
   for (const role of roleCatalog) {
@@ -124,7 +142,7 @@ try {
   }
   pass('Packaged role assets and four native Agent formats resolve their installed Skill');
   for (const rule of RULES) {
-    const source = rule.entry === 'CLAUDE.md' ? '.agents/assets/rules/AGENTS.md' : rule.source;
+    const source = rule.entry === 'CLAUDE.md' ? '.agents/rules/AGENTS.md' : rule.source;
     ensure(await fs.readlink(path.join(project,rule.entry)) === ruleTarget(rule, source), `Runtime rule link missing: ${rule.entry}`);
     ensure(await fs.readFile(path.join(project,source),'utf8') === '', `Runtime rules must start empty: ${source}`);
   }
@@ -138,8 +156,12 @@ try {
   await run(process.execPath,[cli,'sync','--home',home,'--project',project]);
   ensure(JSON.parse((await run(process.execPath,[cli,'doctor','--home',home,'--project',project])).stdout).healthy, 'Packaged install drift');
   pass('Four adapters, installed Feature initializer/templates, repeat sync and doctor');
+  if (process.env.MAI_CODEX_BIN) {
+    await checkCodexDiscovery(process.env.MAI_CODEX_BIN,await fs.realpath(project),selectedSkills);
+    pass('Codex Skill discovery remains complete after repeat sync');
+  }
 
-  const protectedFile = path.join(project,'.agents/assets/skills/my-create-prd/SKILL.md');
+  const protectedFile = path.join(project,'.agents/skills/my-create-prd/SKILL.md');
   const original = await fs.readFile(protectedFile,'utf8'), edited = original+'\nProject customization.\n'; await fs.writeFile(protectedFile,edited);
   const beforeConfig = await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8');
   let refused = false;
@@ -149,10 +171,10 @@ try {
   ensure(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8') === beforeConfig, 'Conflict changed project config');
   const merged = JSON.parse((await run(process.execPath,[cli,'sync','--home',home,'--project',project])).stdout);
   ensure(merged.conflict === 'merge' && merged.complete && await fs.readFile(protectedFile,'utf8') === edited, 'Default merge did not preserve project customization');
-  ensure((await fs.readFile(path.join(project,merged.recovery,'incoming/.agents/assets/skills/my-create-prd/SKILL.md'),'utf8')) === original, 'Incoming merge candidate missing');
+  ensure((await fs.readFile(path.join(merged.recovery,'incoming/.agents/skills/my-create-prd/SKILL.md'),'utf8')) === original, 'Incoming merge candidate missing');
   const replaced = JSON.parse((await run(process.execPath,[cli,'sync','--home',home,'--project',project,'--conflict','replace'])).stdout);
   ensure(await fs.readFile(protectedFile,'utf8') === original, 'Explicit replace did not install incoming asset');
-  ensure(await fs.readFile(path.join(project,replaced.recovery,'before/.agents/assets/skills/my-create-prd/SKILL.md'),'utf8') === edited, 'Replacement backup missing');
+  ensure(await fs.readFile(path.join(replaced.recovery,'before/.agents/skills/my-create-prd/SKILL.md'),'utf8') === edited, 'Replacement backup missing');
   pass('Conflict refusal preserves modified project files and config');
 
   const web = await startServer('mai',['web','--port','0'],globalOptions);
