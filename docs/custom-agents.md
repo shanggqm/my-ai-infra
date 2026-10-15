@@ -43,7 +43,7 @@ my-ai-infra sync --project /path/to/project
 
 随包角色源位于 `assets/agents/`，个人角色源位于 `~/.my-ai-infra/assets/agents/`。修改个人源后执行 `sync` 更新项目；更新全局入口使用 `setup`。`upgrade` 更新未修改的内置角色并备份，保留个人修改。
 
-项目的中立源保存在 `.agents/assets/agents/`，原生格式集中生成到 `.agents/assets/.generated/<工具>/agents/`，工具目录全部为软链接入口。修改个人源后同步可更新项目；项目中立源的修改在默认 merge 下保留，并重新生成各工具格式。角色文件支持的字段和引用语法见 [资产说明](../assets/agents/README.md)。
+项目的中立源保存在 `.agents/agents/`，原生格式集中生成到 `.agents/.generated/<工具>/agents/`，工具目录全部为软链接入口。修改个人源后同步可更新项目；项目中立源的修改在默认 merge 下保留，并重新生成各工具格式。角色文件支持的字段和引用语法见 [资产说明](../assets/agents/README.md)。
 
 安装不代替宿主的能力开关、受信任工作区或组织策略。Codex 的 `agents.enabled` 若被显式禁用，需要由用户启用；安装器不覆盖该配置。自动测试核对原生文件、依赖路径、同步、冲突与分发；实际对话判断质量需在所用客户端中观察。
 

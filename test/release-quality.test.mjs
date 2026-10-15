@@ -55,7 +55,7 @@ test('explicit upgrade updates tracked pristine assets, preserves edits, backs u
   assert.ok(upgraded.updated.includes('skills/' + prd)); assert.ok(upgraded.preserved.includes('skills/' + feature));
   assert.equal(await read(home, 'assets/skills/' + prd), await read(PACKAGE, 'assets/skills/' + prd));
   assert.equal(await read(home, 'assets/skills/' + feature), edited);
-  assert.equal(await read(project, '.agents/assets/skills/' + prd), old);
+  assert.equal(await read(project, '.agents/skills/' + prd), old);
   assert.equal(await read(project, '.my-ai-infra.json'), configBefore);
   assert.equal(await read(home, 'defaults.json'), defaultsBefore);
   const backup = (await fs.readdir(path.join(home, 'backups'))).find(p => p.startsWith('bundle-update-'));

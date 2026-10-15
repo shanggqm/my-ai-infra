@@ -61,10 +61,10 @@ CLI 初始化只选择工具，默认装配 catalog 全部 Skill。项目与全�
 
 ## assets 统一管理回归
 
-- 包、个人库、项目和全局源分别位于 assets/、个人库 assets/、.agents/assets/；Codex 与 Claude Code 原生 Skill / Agent 均为相对链接。
+- 包、个人库、项目和全局源分别位于 assets/、个人库 assets/、.agents/；Codex Skill 为源文件，Claude Code Skill 以及各工具 Agent 入口为相对链接。
 - Agent 中立源修改后 sync 更新全部派生格式；原生文件修改受冲突保护。
 - 旧个人库、项目 Skill、Agent 和规则迁移保留正文、基线与备份，plan 只读。
-- Prompt 通过单个 Markdown 文件导入，以文件名与 frontmatter 描述识别，四种工具入口均链接到 `.agents/assets/prompts/<名称>.md`；编辑、重复同步、移动、升级与旧清单兼容通过回归，新旧同名冲突及无效描述不覆盖原文。
+- Prompt 通过单个 Markdown 文件导入，以文件名与 frontmatter 描述识别，四种工具入口均链接到 `.agents/prompts/<名称>.md`；编辑、重复同步、移动、升级与旧清单兼容通过回归，新旧同名冲突及无效描述不覆盖原文。
 - Hook、MCP 及未预置的新类型使用同一清单、导入、编辑、计划、冲突与移除机制；非法目标与过期编辑拒绝。
 - 运行包内 test/assets.test.mjs 和既有冲突、Agent、single-source 回归；测试仅验证装配，宿主执行能力依各工具的配置。
 

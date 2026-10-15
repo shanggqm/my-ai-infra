@@ -45,7 +45,7 @@ test('environment home works and a setup-bound wrapper retains its runtime bindi
   await setup(home, ['codex'], toolHome);
   const direct = await run(wrapper, ['catalog'], dir, { ...process.env, MY_AI_INFRA_HOME: home });
   assert.equal(direct.code, 0, direct.stderr);
-  const global = path.join(toolHome, '.agents/assets/skills/my-ai-infra/scripts/my-ai-infra.mjs');
+  const global = path.join(toolHome, '.agents/skills/my-ai-infra/scripts/my-ai-infra.mjs');
   const result = await run(global, ['catalog'], dir, { ...process.env, MY_AI_INFRA_HOME: path.join(dir, 'wrong') });
   assert.equal(result.code, 0, result.stderr);
   assert.ok(JSON.parse(result.stdout).some(s => s.name === 'my-ai-infra'));

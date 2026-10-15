@@ -28,7 +28,7 @@ async function legacy(t) {
     const block = aliases.includes(relative) ? text.match(/<!-- my-ai-infra:start -->[\s\S]*<!-- my-ai-infra:end -->/)[0] : text;
     state.files[relative] = { kind: aliases.includes(relative) ? 'block' : 'file', hash: hash(block) };
   }
-  await fs.rm(path.join(f.project,'.agents/assets/rules'),{recursive:true});
+  await fs.rm(path.join(f.project,'.agents/rules'),{recursive:true});
   const core = (await fs.readFile(new URL('./fixtures/legacy-instructions-0.0.2.md',import.meta.url),'utf8')).trim();
   const rules = `<!-- my-ai-infra:start -->\n${core}\n\n可用 Skill：my-create-feature, my-review-design。\n<!-- my-ai-infra:end -->`;
   for(const file of aliases) { await write(f.project,file,rules+'\n');state.files[file]={kind:'block',hash:hash(rules)}; }
@@ -39,7 +39,7 @@ test('all adapters use relative file links to .agents and follow canonical edits
   await write(project,'.cursor/rules/user.mdc','User cursor rule');
   await apply(home,project,chosen);
   assert.equal((await doctor(home,project)).healthy,true);
-  const source = '.agents/assets/skills/my-create-feature/SKILL.md';
+  const source = '.agents/skills/my-create-feature/SKILL.md';
   for (const prefix of ['.claude','.cursor','.github']) {
     const alias = path.join(project,prefix,'skills/my-create-feature/SKILL.md');
     assert.ok((await fs.lstat(alias)).isSymbolicLink());
@@ -61,10 +61,10 @@ test('legacy copies migrate with backups, retain human rules and become one cano
   assert.ok((await fs.lstat(path.join(project,'CLAUDE.md'))).isSymbolicLink());
   assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),/Shared user rule/);
   assert.doesNotMatch(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),/my-ai-infra:/);
-  const backups = await fs.readdir(path.join(project,'.my-ai-infra/backups'));
+  const backups = await fs.readdir(path.join(home,'projects',hash(project),'backups'));
   let recovered = false;
   for (const stamp of backups) {
-    const candidate = path.join(project,'.my-ai-infra/backups',stamp,'CLAUDE.md');
+    const candidate = path.join(home,'projects',hash(project),'backups',stamp,'CLAUDE.md');
     try { if (await fs.readFile(candidate,'utf8') === original) recovered = true; } catch (e) { if (e.code !== 'ENOENT') throw e; }
   }
   assert.ok(recovered); assert.equal((await doctor(home,project)).healthy,true);
@@ -105,7 +105,7 @@ test('failed link migration restores original copies, config and state', async t
   assert.ok((await fs.lstat(path.join(project,'CLAUDE.md'))).isFile());
   assert.equal(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),claude);
   await assert.rejects(fs.lstat(path.join(project,'.agents/AGENTS.md')),{code:'ENOENT'});
-  for (const file of ['AGENTS.md','CLAUDE.md','copilot-instructions.md']) await assert.rejects(fs.lstat(path.join(project,'.agents/assets/rules',file)),{code:'ENOENT'});
+  for (const file of ['AGENTS.md','CLAUDE.md','copilot-instructions.md']) await assert.rejects(fs.lstat(path.join(project,'.agents/rules',file)),{code:'ENOENT'});
 });
 test('CLI initialization installs every available Skill without a Skill prompt; sync preserves project selection', async t => {
   const { project, home } = await fixture(t);
@@ -124,7 +124,7 @@ test('CLI initialization installs every available Skill without a Skill prompt; 
 test('global setup keeps a canonical entry even without Codex and links selected adapters to it', async t => {
   const { root, home } = await fixture(t);const tools=path.join(root,'tools');await fs.mkdir(tools);
   await setup(home,['claudecode','cursor','copilot'],tools);
-  const source=path.join(tools,'.agents/assets/skills/my-ai-infra/SKILL.md');
+  const source=path.join(tools,'.agents/skills/my-ai-infra/SKILL.md');
   for(const prefix of ['.claude','.cursor','.copilot']) assert.equal(await fs.realpath(path.join(tools,prefix,'skills/my-ai-infra/SKILL.md')),source);
   assert.ok((await fs.lstat(source)).isFile());
   await setup(home,['claudecode','cursor','copilot'],tools);

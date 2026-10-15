@@ -10,7 +10,10 @@ let checked = 0;
 async function walk(directory) {
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
     if (['node_modules', 'dist', '.git', '__pycache__'].includes(entry.name)) continue;
+    // Installed tool assets and project state are not distribution sources.
+    if (directory === root && ['.agents', '.codex', '.claude', '.cursor', '.my-ai-infra', 'mai-specs', '.my-ai-infra.json', 'AGENTS.md', 'CLAUDE.md'].includes(entry.name)) continue;
     const file = path.join(directory, entry.name);
+    if (path.relative(root, file) === '.github/copilot-instructions.md') continue;
     if (entry.isSymbolicLink()) throw Error(`Unexpected source symlink: ${file}`);
     if (entry.isDirectory()) { await walk(file); continue; }
     if (!/\.(?:mjs|js|json)$/.test(file)) continue;

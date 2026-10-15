@@ -1,6 +1,6 @@
 # 自定义 Prompt
 
-此目录是三个内置快捷指令的分发源。每个指令直接保存为 `<名称>.md`：文件名作为名称，frontmatter 的 `description` 提供简短描述。流程指令用一句话编排已有 Skill，仓库记忆指令独立描述事实提炼与编辑规则。安装后由 `.agents/assets/prompts/<名称>.md` 保存项目实体，安装器统一生成各工具的相对文件软链接。
+此目录是三个内置快捷指令的分发源。每个指令直接保存为 `<名称>.md`：文件名作为名称，frontmatter 的 `description` 提供简短描述。流程指令用一句话编排已有 Skill，仓库记忆指令独立描述事实提炼与编辑规则。安装后由 `.agents/prompts/<名称>.md` 保存项目实体，安装器生成共享 Skill 入口供 ChatGPT/Codex、Cursor、VS Code Copilot 发现，并生成 Claude Code Skill 相对链接；生成入口引用同一正文。
 
 | 名称 | 起点与流程 |
 |---|---|

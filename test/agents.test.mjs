@@ -74,7 +74,7 @@ for (const { name, skill } of roles) {
     const link = [...prompt.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)].find(match => match[1] === skill)?.[2];
     assert.ok(link, file);
     const dependency = path.resolve(path.dirname(file), decodeURIComponent(link));
-    assert.equal(await fs.realpath(dependency), await fs.realpath(path.join(root, '.agents/assets/skills', skill, 'SKILL.md')));
+    assert.equal(await fs.realpath(dependency), await fs.realpath(path.join(root, '.agents/skills', skill, 'SKILL.md')));
     assert.equal(await fs.readFile(dependency, 'utf8'), await fs.readFile(new URL(`../assets/skills/${skill}/SKILL.md`, import.meta.url), 'utf8'));
     if (tool === 'claudecode') assert.ok(text.includes(`skills: ["${skill}"]`));
     if (tool === 'copilot') assert.ok(text.includes('include-custom-instructions: true'));

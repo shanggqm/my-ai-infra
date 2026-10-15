@@ -63,11 +63,17 @@ export function terminalUI({ output = stdout, env = process.env } = {}) {
       field('文件', `新增 ${summary.create || 0} · 更新 ${summary.update || 0} · 移除 ${summary.remove || 0} · 保留 ${(summary.preserve || 0) + (summary.noop || 0)} · 跳过 ${result.skipped.length}`);
       field('冲突策略', policy);
       if (result.review.length) field('冲突处理', `${result.review.length} 处，原文件与候选已保存`);
-      if (result.recovery) field('恢复记录', path.join(result.root, result.recovery));
+      if (result.recovery) field('恢复记录', path.resolve(result.root, result.recovery));
       if (!complete) {
         line(); line(`  ${color.warn('需要处理')}`);
         for (const item of result.skipped) field('跳过', typeof item === 'string' ? item : `${item.path}${item.reason ? ` · ${item.reason}` : ''}`);
         field('操作', '检查保留路径后重试；需要替换时使用 mai sync --conflict replace。');
+      }
+      if (result.discovery?.length) {
+        line(); line(`  ${color.accent(color.bold('资产入口'))}`);
+        const labels = {ready:'文件就绪',planned:'待安装','needs-sync':'需同步','configuration-required':'需配置',unsupported:'未适配'};
+        for (const item of result.discovery) field(`${toolLabel(item.tool)} · ${item.name}`, `${item.invocation} [${labels[item.status] || item.status}]${item.limitation ? ' · ' + item.limitation : ''}`);
+        field('验证范围', '此处检查文件装配；宿主菜单与实际调用需在对应客户端验证。');
       }
       line(); line(`  ${color.accent(color.bold('下一步'))}`);
       if (result.nextSteps.length) {

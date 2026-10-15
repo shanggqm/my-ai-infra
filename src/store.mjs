@@ -4,7 +4,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { files, hash, json, read, readJSON, safe, stat, write, locked } from './fs.mjs';
 import { BUILTINS, NAMING_VERSION, ALIASES, REMOVED_SKILLS, canonicalName, definition, normalizeText } from './names.mjs';
-import { ASSET_ROOT, SKILL_SOURCE, BUNDLE, sourceRoots, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, parseExtension, parsePrompt, assetRelative, namePart } from './assets.mjs';
+import { ASSET_ROOT, SKILL_SOURCE, BUNDLE, sourceRoots, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, parseExtension, parsePrompt, assetRelative, namePart, legacyAssetPath, pruneLegacyAssetDirectories, legacyPromptTargets } from './assets.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { randomUUID } from 'node:crypto';
 import { parseAgent, agentCatalog, GLOBAL_AGENT_TOOLS, agentFilename, renderAgent } from './agents.mjs';
@@ -196,7 +196,7 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
         let text = await read(root,`${sourceName}/${relative}`);
         if (['my-ai-infra', 'my-create-memory'].includes(skill) && relative === 'scripts/my-ai-infra.mjs') text = `#!/usr/bin/env node\nimport { pathToFileURL } from 'node:url';\nconst { main } = await import(pathToFileURL(${JSON.stringify(path.join(home, 'runtime/src/cli.mjs'))}));\nmain(['--home', ${JSON.stringify(home)}, ...process.argv.slice(2)]).catch(e => { console.error(e.message); process.exitCode = e.exitCode || 1; });\n`;
         addFile(desired,target,text);
-        for (const tool of new Set(['codex',...tools])) addLink(desired,`${GLOBAL_TOOLS[tool]}/${skill}/${relative}`,target);
+        for (const tool of tools.filter(tool => tool !== 'codex')) addLink(desired,`${GLOBAL_TOOLS[tool]}/${skill}/${relative}`,target);
       }
     }
     for (const agent of agents) {
@@ -210,14 +210,63 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
         addFile(desired,generated,text); addLink(desired,target,generated);
       }
     }
-    addExtensions(desired,await extensionCatalog(home),tools,true);
+    const extensions = await extensionCatalog(home);
+    addExtensions(desired,extensions,tools,true);
+    const migrated = [];
     for (const [target, output] of desired) {
       const before = await snapshot(toolHome,target), after = output.kind === 'file' ? {kind:'file',text:output.text} : {kind:'symlink',target:output.target};
       const digest = entry => entry?.kind === 'file' ? hash(entry.text) : entry?.kind === 'symlink' ? hash(entry.target) : null;
       const sameFile = before?.kind === 'file' && output.kind === 'symlink' && before.text === desired.get(output.source)?.text;
       if (before && !equalEntry(before,after) && !sameFile && digest(before) !== previous[target]) throw Error(`Global ${target.includes('/agents/') ? 'Agent' : 'asset'} conflict: ${target}`);
       outputs.push({target,before,after}); next[target] = digest(after);
+      if (output.kind === 'file') {
+        const legacy = legacyAssetPath(target);
+        if (previous[legacy]) {
+          const old = await snapshot(toolHome,legacy);
+          if (old && digest(old) !== previous[legacy]) throw Error(`Global asset conflict: ${legacy}`);
+          if (old) migrated.push({target:legacy,before:old,after:null});
+          delete next[legacy];
+        }
+      }
     }
+    // Retire only recorded Prompt aliases for tools being updated in this setup.
+    for (const asset of extensions.filter(asset => asset.type === 'prompts')) for (const tool of tools) {
+      for (const target of new Set([asset.globalTargets?.[tool],legacyPromptTargets(asset.name)[tool]].filter(Boolean))) {
+        if (desired.has(target) || !previous[target] || outputs.some(item => item.target === target)) continue;
+        const before = await snapshot(toolHome,target);
+        if (before && (before.kind !== 'symlink' || hash(before.target) !== previous[target])) throw Error(`Global asset conflict: ${target}`);
+        if (before) outputs.push({target,before,after:null});
+        delete next[target];
+      }
+    }
+    // Keep unselected tools installed while flattening their remaining sources.
+    for (const [legacy, digest] of Object.entries(previous)) {
+      if (!legacy.startsWith('.agents/assets/')) continue;
+      const target = legacy.replace('.agents/assets/','.agents/');
+      if (desired.has(target)) continue;
+      const old = await snapshot(toolHome,legacy);
+      if (!old) continue;
+      if (old.kind !== 'file' || hash(old.text) !== digest) throw Error(`Global asset conflict: ${legacy}`);
+      const before = await snapshot(toolHome,target);
+      const knownAlias = before?.kind === 'symlink' && hash(before.target) === previous[target] && before.target === path.posix.relative(path.posix.dirname(target),legacy);
+      if (before && !equalEntry(before,old) && !knownAlias) throw Error(`Global asset conflict: ${target}`);
+      outputs.push({target,before,after:old}); next[target] = digest;
+      migrated.push({target:legacy,before:old,after:null}); delete next[legacy];
+    }
+    // setup retains previously installed tools, so move their recorded aliases too.
+    const relocated = new Set(migrated.map(item => item.target));
+    const installed = new Set(outputs.map(item => item.target));
+    for (const [target, digest] of Object.entries(previous)) {
+      if (installed.has(target) || relocated.has(target)) continue;
+      const before = await snapshot(toolHome,target);
+      if (before?.kind !== 'symlink') continue;
+      const source = path.posix.normalize(path.posix.join(path.posix.dirname(target),before.target));
+      if (!relocated.has(source)) continue;
+      if (hash(before.target) !== digest) throw Error(`Global asset conflict: ${target}`);
+      const after = {kind:'symlink',target:path.posix.relative(path.posix.dirname(target),source.replace('.agents/assets/','.agents/'))};
+      outputs.push({target,before,after}); next[target] = hash(after.target);
+    }
+    outputs.push(...migrated);
     const changed = outputs.filter(item => !equalEntry(item.before, item.after));
     const backup = `backups/global-${Date.now()}-${randomUUID()}`;
     if (changed.length) await write(home, `${backup}/journal.json`, json(changed));
@@ -232,6 +281,7 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
       for (const item of touched.reverse()) await putEntry(toolHome, item.target, item.before);
       throw error;
     }
+    await pruneLegacyAssetDirectories(toolHome, migrated.map(item => item.target));
     return { home, installed: tools, skills: (await catalog(home)).length, agents: agents.map(agent => agent.name) };
   });
 }

@@ -26,40 +26,44 @@ mai asset list --type prompts
 
 源码开发时将 `mai` 替换为本包的 `node bin/my-ai-infra.mjs`，并传入目标项目绝对路径。`init` / `sync` 自动包含适用于所选工具的 Prompt，无需另行复制文件。个人库升级、冲突、备份、编辑沿用[统一资产管理](../assets/README.md)。
 
-目标项目中的所有入口均指向同一正文，以 `my-auto-feature` 为例：
+目标项目保存一份可编辑正文，并由安装器生成原生入口：
 
 ```text
-.agents/assets/prompts/my-auto-feature.md  # 唯一可编辑正文
-.codex/prompts/my-auto-feature.md -> ../../.agents/assets/prompts/my-auto-feature.md
-.claude/commands/my-auto-feature.md -> ../../.agents/assets/prompts/my-auto-feature.md
-.cursor/commands/my-auto-feature.md -> ../../.agents/assets/prompts/my-auto-feature.md
-.github/prompts/my-auto-feature.prompt.md -> ../../.agents/assets/prompts/my-auto-feature.md
+.agents/prompts/my-auto-feature.md             # 唯一可编辑正文
+.agents/skills/my-auto-feature/SKILL.md         # 生成的 Skill 入口，引用正文
+.agents/skills/my-auto-feature/agents/openai.yaml
+.claude/skills/my-auto-feature/SKILL.md -> ../../../.agents/skills/my-auto-feature/SKILL.md
 ```
 
-项目定制直接编辑中心正文，所有入口即时读取同一文件；宿主已缓存时需开启新会话。整体移动项目后相对链接仍有效。分发源、个人库与项目之间通过显式同步传递版本，各项目可保留定制；“唯一源”指每个安装作用域内各工具共用一份正文。
+ChatGPT/Codex、Cursor 与 VS Code Copilot 共用 `.agents/skills`，Claude Code 使用链接到共享入口的 Skill。生成入口只描述如何读取正文；修改流程请编辑 `.agents/prompts`，保留生成入口。整体移动项目后相对引用仍有效。每个安装作用域维护自己的正文，项目定制由同步冲突策略保护。
 
 ## 在工具中调用
 
-| 工具 | 项目入口 | 调用方式 |
+| 工具 | Prompt 入口 | 调用方式 |
 |---|---|---|
-| Claude Code | `.claude/commands/<名称>.md` | `/my-auto-feature 需求描述` 或 `/my-auto-design 方案路径` |
-| Cursor | `.cursor/commands/<名称>.md` | 支持 commands 的版本使用 `/my-auto-feature` 或 `/my-auto-design`；未显示时显式引用项目 Prompt 文件 |
-| GitHub Copilot（支持 Prompt files 的 IDE） | `.github/prompts/<名称>.prompt.md` | 在 Agent 模式选择 `/my-auto-feature` 或 `/my-auto-design`，在同条消息补充任务或附加材料 |
-| Codex | `.codex/prompts/<名称>.md` | 项目入口用于显式文件引用；全局安装后，支持 custom prompts 的 CLI / IDE 使用 `/prompts:my-auto-feature` 或 `/prompts:my-auto-design` |
+| ChatGPT 桌面项目 | `.agents/skills/<名称>/SKILL.md` | 输入 `@` 选择名称 |
+| Codex CLI / IDE | 同上 | `$my-auto-feature` 或 `/skills` 选择 |
+| Claude Code | `.claude/skills/<名称>/SKILL.md` | `/my-auto-feature` |
+| Cursor IDE | `.agents/skills/<名称>/SKILL.md` | `/my-auto-feature`，也可用 `@` 附加 |
+| VS Code GitHub Copilot | `.agents/skills/<名称>/SKILL.md` | `/my-auto-feature` |
 
-Codex 的 custom prompts 已弃用，官方文档规定从用户级 Codex home 加载，项目 `.codex/prompts/` 不会自动注册斜杠命令。需要兼容旧快捷入口时，运行 `mai setup --tools codex`，默认写入 `~/.codex/prompts/` 并软链到 `~/.agents/assets/prompts/`，随后重启会话。当前安装器使用默认工具主目录；自定义 `CODEX_HOME` 的用户可直接引用项目 Prompt。依据：[OpenAI 官方说明](https://learn.chatgpt.com/docs/custom-prompts)。
+另外两条指令使用对应名称，需求描述或方案路径放在同条消息。原生入口能力随客户端版本变化；安装后刷新或开启新会话，先检查项目是否为当前工作目录。ChatGPT 界面的具体选择符以当前客户端为准。上述映射依据 [OpenAI Skills](https://learn.chatgpt.com/docs/build-skills)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[Cursor Skills](https://cursor.com/help/customization/skills)、[VS Code Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。
 
-Claude Code 仍兼容 commands 文件；Cursor 官方提供 commands 到 skills 的迁移入口；Copilot 的 Prompt files 支持范围与 CLI 有区别，本包不创建未经验证的全局 Copilot Prompt 入口。依据：[Claude Code](https://code.claude.com/docs/en/skills)、[Cursor](https://cursor.com/help/customization/skills)、[GitHub Copilot](https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file)。这些格式正在演进；安装测试验证文件装配，宿主菜单识别及模型行为需在实际客户端复核。
+Prompt 入口以显式调用为用途；生成 Skill 设置 `disable-model-invocation: true`，Codex 配套设置 `allow_implicit_invocation: false`。当前会话内容传递给原流程，不替换成其他项目或全局的同名正文。全局 setup 使用 `~/.agents` 的同一结构；项目 init 无需依赖全局 setup 或旧 Codex custom prompts。
+
+`sync` 将受管的旧 `.codex/prompts`、`.claude/commands`、`.cursor/commands`、`.github/prompts` 入口迁移到上述布局；旧清单式 Prompt 继续按工具键限定适用范围，其路径由原生适配器生成。修改过的旧文件按冲突策略保留或备份，未受管文件保持原状。global setup 校验受管旧链接再备份移除，遇到用户替换内容停止。残留的用户自建同名命令需要自行比较后处理。
+
+`mai doctor` 的 `discovery` 列出资产入口和调用方式，`ready` 仅表示入口文件就绪，`hostVerified: false` 表示该诊断没有执行宿主验证。`planned` 是预览中待安装，`needs-sync` 是缺失/冲突/依赖阻塞，`configuration-required` 表示仍需宿主配置，`unsupported` 表示资产没有声明该工具适配。Hook/MCP 保持原生事件、注册和权限语义，复制文件不会自动激活。
 
 跨工具通用调用示例：
 
 ```text
-请读取并执行 .agents/assets/prompts/my-init-repo-memory.md。
+请读取并执行 .agents/prompts/my-init-repo-memory.md。
 
-请读取并执行 .agents/assets/prompts/my-auto-feature.md。
+请读取并执行 .agents/prompts/my-auto-feature.md。
 本次目标：为现有任务列表增加按负责人筛选，沿用当前权限与分页约定。
 
-请读取并执行 .agents/assets/prompts/my-auto-design.md。
+请读取并执行 .agents/prompts/my-auto-design.md。
 本次方案：mai-specs/997/design/TECH_DESIGN.md。完成评审修复、实现与验收。
 ```
 

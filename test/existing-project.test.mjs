@@ -30,7 +30,7 @@ test('known public-release blocks are removed with missing state, preserving eve
   await write(project,'CLAUDE.md',before);
   const p=await plan(home,project,chosen);assert.equal(p.actions.find(a=>a.path==='CLAUDE.md').action,'update');
   await apply(home,project,chosen,p.revision);assert.equal(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),before.replace(legacy,''));
-  let recovered=false;for(const stamp of await fs.readdir(path.join(project,'.my-ai-infra/backups'))){try{if(await fs.readFile(path.join(project,'.my-ai-infra/backups',stamp,'CLAUDE.md'),'utf8')===before)recovered=true;}catch(e){if(e.code!=='ENOENT')throw e;}}
+  let recovered=false;for(const stamp of await fs.readdir(path.join(home,'projects',hash(project),'backups'))){try{if(await fs.readFile(path.join(home,'projects',hash(project),'backups',stamp,'CLAUDE.md'),'utf8')===before)recovered=true;}catch(e){if(e.code!=='ENOENT')throw e;}}
   assert.ok(recovered);assert.equal((await apply(home,project)).summary.update||0,0);
 });
 test('generated-only shared rules migrate to empty independent rules without leaving dangling links',async t=>{
@@ -57,14 +57,14 @@ test('stale or edited ignore blocks merge additively, retaining comments, CRLF, 
   await fs.unlink(path.join(project,'.my-ai-infra/state.json'));await apply(home,project,chosen);assert.equal(await fs.readFile(path.join(project,'.gitignore'),'utf8'),text);
 });
 test('real asset conflicts and malformed ignore markers report the path, cause and exit 2 without overwriting input',async t=>{
-  const f=await fixture(t);await write(f.project,'.agents/assets/skills/my-create-feature/SKILL.md','# User asset\n');const p=publicPlan(await plan(f.home,f.project,chosen));assert.match(p.actions.find(a=>a.action==='conflict').reason,/没有可信安装记录/);await assert.rejects(apply(f.home,f.project,chosen),e=>e.exitCode===2&&e.message.includes('plan --project'));await assert.rejects(fs.stat(path.join(f.project,'.my-ai-infra.json')),{code:'ENOENT'});
+  const f=await fixture(t);await write(f.project,'.agents/skills/my-create-feature/SKILL.md','# User asset\n');const p=publicPlan(await plan(f.home,f.project,chosen));assert.match(p.actions.find(a=>a.action==='conflict').reason,/没有可信安装记录/);await assert.rejects(apply(f.home,f.project,chosen),e=>e.exitCode===2&&e.message.includes('plan --project'));await assert.rejects(fs.stat(path.join(f.project,'.my-ai-infra.json')),{code:'ENOENT'});
   const g=await fixture(t);const ignore=`# ${START}\nmissing end`;await write(g.project,'.gitignore',ignore);await assert.rejects(apply(g.home,g.project,chosen),e=>e.exitCode===2&&e.message.includes('.gitignore'));assert.equal(await fs.readFile(path.join(g.project,'.gitignore'),'utf8'),ignore);
 });
 
 test('registered dangling legacy rule links are repaired with empty centralized sources',async t=>{
   const {home,project}=await fixture(t);await fs.symlink('.agents/AGENTS.md',path.join(project,'AGENTS.md'));
   await write(project,'.my-ai-infra/state.json',json({version:2,files:{'AGENTS.md':{kind:'symlink',target:'.agents/AGENTS.md',hash:hash('.agents/AGENTS.md')}}}));
-  await apply(home,project,chosen);assert.equal(await fs.readlink(path.join(project,'AGENTS.md')),'.agents/assets/rules/AGENTS.md');assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'');
+  await apply(home,project,chosen);assert.equal(await fs.readlink(path.join(project,'AGENTS.md')),'.agents/rules/AGENTS.md');assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'');
 });
 
 test('selected tools receive required rule entries; Claude uses the shared AGENTS source',async t=>{
@@ -89,7 +89,7 @@ test('existing root rules are centralized even for unselected tools and never mi
   const {home,project}=await fixture(t);const agents='# Codex only\r\nExact bytes.\r\n',claude='# Claude only\nDifferent rules.\n';
   await write(project,'AGENTS.md',agents);await write(project,'CLAUDE.md',claude);
   const result=await apply(home,project,{...chosen,tools:['cursor']});assert.deepEqual(result.nextSteps,[]);
-  assert.equal(await fs.readFile(path.join(project,'.agents/assets/rules/AGENTS.md'),'utf8'),agents);assert.equal(await fs.readFile(path.join(project,'.agents/assets/rules/CLAUDE.md'),'utf8'),claude);
+  assert.equal(await fs.readFile(path.join(project,'.agents/rules/AGENTS.md'),'utf8'),agents);assert.equal(await fs.readFile(path.join(project,'.agents/rules/CLAUDE.md'),'utf8'),claude);
   assert.notEqual(await fs.realpath(path.join(project,'AGENTS.md')),await fs.realpath(path.join(project,'CLAUDE.md')));
   await fs.appendFile(path.join(project,'CLAUDE.md'),'User runtime edit.\n');
   await apply(home,project,{...chosen,tools:['codex']});assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),/User runtime edit/);assert.equal((await doctor(home,project)).healthy,true);
@@ -108,7 +108,7 @@ test('agent initialization can replace an empty root symlink with a file and syn
 test('new AGENTS and CLAUDE always share one editable source across sync, lost state and relocation',async t=>{
   const {root,home,project}=await fixture(t);await apply(home,project,chosen);
   assert.equal(await fs.realpath(path.join(project,'CLAUDE.md')),await fs.realpath(path.join(project,'AGENTS.md')));
-  await assert.rejects(fs.lstat(path.join(project,'.agents/assets/rules/CLAUDE.md')),{code:'ENOENT'});
+  await assert.rejects(fs.lstat(path.join(project,'.agents/rules/CLAUDE.md')),{code:'ENOENT'});
   await fs.writeFile(path.join(project,'CLAUDE.md'),'# One source\r\n');assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'# One source\r\n');
   await apply(home,project,{...chosen,tools:['codex']});assert.equal((await doctor(home,project)).healthy,true);
   await fs.unlink(path.join(project,'.my-ai-infra/state.json'));await apply(home,project,chosen);
@@ -116,7 +116,7 @@ test('new AGENTS and CLAUDE always share one editable source across sync, lost s
 });
 test('adding Claude after a Codex-only initialization reuses AGENTS without creating another source',async t=>{
   const {home,project}=await fixture(t);await apply(home,project,{...chosen,tools:['codex']});await fs.writeFile(path.join(project,'AGENTS.md'),'# Initialized once\n');await apply(home,project,chosen);
-  assert.equal(await fs.realpath(path.join(project,'CLAUDE.md')),await fs.realpath(path.join(project,'AGENTS.md')));await assert.rejects(fs.lstat(path.join(project,'.agents/assets/rules/CLAUDE.md')),{code:'ENOENT'});
+  assert.equal(await fs.realpath(path.join(project,'CLAUDE.md')),await fs.realpath(path.join(project,'AGENTS.md')));await assert.rejects(fs.lstat(path.join(project,'.agents/rules/CLAUDE.md')),{code:'ENOENT'});
 });
 test('a replacement shared entry cannot overwrite different nonempty canonical principles',async t=>{
   const {home,project}=await fixture(t);await apply(home,project,chosen);await fs.writeFile(path.join(project,'AGENTS.md'),'# Canonical\n');await fs.unlink(path.join(project,'CLAUDE.md'));await fs.writeFile(path.join(project,'CLAUDE.md'),'# Different replacement\n');
@@ -130,17 +130,17 @@ test('a concurrent edit of the shared source during preview is retained and requ
   assert.equal(await fs.readFile(path.join(project,SHARED_RULE_SOURCE),'utf8'),'# Concurrent edit\n');assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'# Existing root\n');
 });
 test('different nonempty rule copies cause an explicit conflict and no installation writes',async t=>{
-  const {home,project}=await fixture(t);await write(project,'AGENTS.md','# Root rules\n');await write(project,'.agents/assets/rules/AGENTS.md','# Central rules\n');
-  await assert.rejects(apply(home,project,chosen),e=>e.exitCode===2&&e.message.includes('.agents/assets/rules/AGENTS.md')&&e.message.includes('两份内容均已保留'));
-  assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'# Root rules\n');assert.equal(await fs.readFile(path.join(project,'.agents/assets/rules/AGENTS.md'),'utf8'),'# Central rules\n');await assert.rejects(fs.stat(path.join(project,'.my-ai-infra.json')),{code:'ENOENT'});
+  const {home,project}=await fixture(t);await write(project,'AGENTS.md','# Root rules\n');await write(project,'.agents/rules/AGENTS.md','# Central rules\n');
+  await assert.rejects(apply(home,project,chosen),e=>e.exitCode===2&&e.message.includes('.agents/rules/AGENTS.md')&&e.message.includes('两份内容均已保留'));
+  assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'# Root rules\n');assert.equal(await fs.readFile(path.join(project,'.agents/rules/AGENTS.md'),'utf8'),'# Central rules\n');await assert.rejects(fs.stat(path.join(project,'.my-ai-infra.json')),{code:'ENOENT'});
 });
 test('missing root links are repaired; equal copies migrate; nonempty canonical rules survive empty entries',async t=>{
-  const {home,project}=await fixture(t);await write(project,'.agents/assets/rules/AGENTS.md','# Canonical\n');await write(project,'CLAUDE.md','# Equal\n');await write(project,'.agents/assets/rules/CLAUDE.md','# Equal\n');await apply(home,project,chosen);
+  const {home,project}=await fixture(t);await write(project,'.agents/rules/AGENTS.md','# Canonical\n');await write(project,'CLAUDE.md','# Equal\n');await write(project,'.agents/rules/CLAUDE.md','# Equal\n');await apply(home,project,chosen);
   await fs.unlink(path.join(project,'AGENTS.md'));await apply(home,project);assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'# Canonical\n');
   await fs.unlink(path.join(project,'AGENTS.md'));await fs.writeFile(path.join(project,'AGENTS.md'),'');await apply(home,project);assert.equal(await fs.readFile(path.join(project,'AGENTS.md'),'utf8'),'# Canonical\n');
 });
 test('runtime rule links and canonical paths never follow unknown external links',async t=>{
-  for(const file of ['CLAUDE.md','.agents/assets/rules/CLAUDE.md']){
+  for(const file of ['CLAUDE.md','.agents/rules/CLAUDE.md']){
     const {root,home,project}=await fixture(t);const external=path.join(root,'outside.md');await fs.writeFile(external,'Private outside rules');await fs.mkdir(path.dirname(path.join(project,file)),{recursive:true});await fs.symlink(external,path.join(project,file));
     await assert.rejects(apply(home,project,chosen),e=>e.exitCode===2);assert.equal(await fs.readlink(path.join(project,file)),external);assert.equal(await fs.readFile(external,'utf8'),'Private outside rules');
   }

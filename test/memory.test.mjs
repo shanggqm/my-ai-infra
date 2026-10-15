@@ -124,7 +124,7 @@ test('CLI and custom-home installed wrapper read Markdown without distributing p
   await run(['memory', 'put', '--project', project, '--file', input, '--revision', 'missing']);
   assert.equal((await run(['memory', 'recall', '--project', project, '--scene', 'design'])).entries.length, 1);
   const toolHome = path.join(root, 'tool-home'); await fs.mkdir(toolHome); await setup(home, ['codex'], toolHome, ['my-create-memory']);
-  const wrapper = path.join(toolHome, '.agents/assets/skills/my-create-memory/scripts/my-ai-infra.mjs');
+  const wrapper = path.join(toolHome, '.agents/skills/my-create-memory/scripts/my-ai-infra.mjs');
   assert.equal(JSON.parse((await exec(process.execPath, [wrapper, 'memory', 'get', '--project', project])).stdout).entries.length, 1);
   assert.ok(!(await plan(home, project, chosen)).actions.some(a => a.path.endsWith('/memory.md')));
   await assert.rejects(exec(process.execPath, [cli, 'memory', 'put', '--home', home, '--project', project, '--file', input]), /revision/);

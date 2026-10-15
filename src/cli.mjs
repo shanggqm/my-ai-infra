@@ -179,7 +179,7 @@ export async function main(args = process.argv.slice(2)) {
     if (!result.complete) process.exitCode = 2;
     if (ui.active) { ui.result(result, policy); return; }
     console.log(json(result));
-    if (result.review.length) console.error(`已按 ${policy} 处理 ${result.review.length} 处冲突；原文件、候选与恢复记录：${path.join(result.root,result.recovery)}`);
+    if (result.review.length) console.error(`已按 ${policy} 处理 ${result.review.length} 处冲突；原文件、候选与恢复记录：${result.recovery || '本次无恢复记录'}`);
     if (!result.complete) { console.error(`部分路径已保留并跳过，请检查 skipped 后重试，或明确选择 replace。恢复记录：${result.recovery}`); process.exitCode = 2; }
     if (result.nextSteps.length) console.error('\n项目规则文件尚为空，请完成所选工具的初始化：\n' + result.nextSteps.map(step => `${step.tool} · ${step.file}\n${step.message}`).join('\n\n'));
   }
