@@ -1,17 +1,20 @@
 # 自定义 Prompt 快捷指令
 
-内置两条连续开发指令，面向需求已明确、希望 Agent 自主推进的任务：
+内置三条指令，覆盖连续开发与仓库记忆初始化：
 
 | 指令 | 用法 |
 |---|---|
 | `my-auto-feature` | 从目标开始，自主整理 Feature 与 PRD，完成技术方案、方案 review 与修复、实现、代码 review 与修复、测试验收 |
 | `my-auto-design` | 从明确需求、PRD 或已有技术方案开始；已有方案直接 review，否则先编写方案，再修复、实现、代码 review 与修复、测试验收 |
+| `my-init-repo-memory` | 无需参数，依据当前仓库事实直接生成或精简优化根目录 `AGENTS.md`，保留有效约束并交付差异 |
 
-正文唯一来源见 [Prompt 资产目录](../assets/prompts/README.md)。每条正文仅用一句话编排已安装的 SDD Skill，具体执行规则由各 Skill 维护。默认初始化包含这些 Skill；手工缩减过选择时，应先补齐流程所需 Skill。
+正文唯一来源见 [Prompt 资产目录](../assets/prompts/README.md)。前两条指令用一句话编排已安装的 SDD Skill，具体执行规则由各 Skill 维护。默认初始化包含这些 Skill；手工缩减过选择时，应先补齐流程所需 Skill。`my-init-repo-memory` 自带事实提炼与文件编辑规则，无需其他 Skill。
+
+`my-init-repo-memory` 保留项目特有约束、权威来源和验收入口，按实际内容裁剪章节；已有文件会聚焦修改、保留有效要求，已有软链接保持不变。普通信息缺失时继续查证或省略，仅在无法安全写入或存在关键规范冲突时询问。它维护仓库共享知识；个人偏好由 `my-create-memory` 维护。
 
 ## 安装与同步
 
-使用包含这两个资产的版本，在目标项目执行：
+使用包含这些资产的版本，在目标项目执行：
 
 ```bash
 mai init --project /path/to/repo --tools codex,claudecode,cursor,copilot --yes
@@ -51,6 +54,8 @@ Claude Code 仍兼容 commands 文件；Cursor 官方提供 commands 到 skills 
 跨工具通用调用示例：
 
 ```text
+请读取并执行 .agents/assets/prompts/my-init-repo-memory.md。
+
 请读取并执行 .agents/assets/prompts/my-auto-feature.md。
 本次目标：为现有任务列表增加按负责人筛选，沿用当前权限与分页约定。
 
@@ -59,6 +64,8 @@ Claude Code 仍兼容 commands 文件；Cursor 官方提供 commands 到 skills 
 ```
 
 需求描述或方案路径放在同条消息或当前对话中。项目内定制应通过项目文件引用调用，避免全局快捷入口读取另一份作用域的版本。
+
+仓库记忆初始化无需额外输入。在支持上表快捷入口的宿主中，将命令名替换为 `my-init-repo-memory` 即可；也可以直接引用该 Prompt 文件。安装或同步只装配 Prompt，调用后才会分析并编辑 `AGENTS.md`。
 
 ## 修改个人资产
 

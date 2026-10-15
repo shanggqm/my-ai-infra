@@ -19,7 +19,7 @@ Skill 的 `references/` 保存按需读取的决策规范，`assets/templates/` 
 
 ## Prompt
 
-内置 [my-auto-feature 与 my-auto-design](prompts/README.md) 两个流程 Prompt，每条只用一句话编排已有 Skill，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具入口链接到同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
+内置 [三个 Prompt](prompts/README.md)：`my-auto-feature` 与 `my-auto-design` 用一句话编排已有 Skill；`my-init-repo-memory` 依据仓库事实生成或精简优化根目录 `AGENTS.md`。每个资产只需单个 Markdown，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具入口链接到同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
 
 ```bash
 my-ai-infra asset import /path/to/my-shortcut.md --type prompts

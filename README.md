@@ -44,12 +44,13 @@ mai init
 
 需求 → 产品规格 → 技术方案 → 方案评审 → 测试规划 → 编码实现 → 代码评审 → 测试验收
 
-内置两条 [Prompt 快捷指令](docs/custom-prompts.md)，用一句话编排完整流程：
+内置 [Prompt 快捷指令](docs/custom-prompts.md)，支持连续开发与仓库知识初始化：
 
 | 指令 | 适用场景 |
 |---|---|
 | `my-auto-feature` | 从目标出发，自主细化需求，推进方案、评审、实现与验收 |
 | `my-auto-design` | 需求已经明确，从技术方案开始，评审修复后实现与验收 |
+| `my-init-repo-memory` | 依据当前仓库事实，直接生成或精简优化根目录 `AGENTS.md` |
 
 规格与交付记录保存在项目的 `mai-specs/` 中。各阶段 Skill 也可独立使用，已有方案可以直接接续。
 
