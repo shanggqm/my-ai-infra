@@ -78,13 +78,13 @@ mai catalog
 | [my-review-code](assets/skills/my-review-code/SKILL.md) | 评审代码与交付质量 | 对照需求审查真实路径，按影响分级，附证据与最小修复建议 |
 | [my-create-worktree](assets/skills/my-create-worktree/SKILL.md) | 创建隔离工作区 | 隔离 Git 分支与工作目录，支持并行开发 |
 | [my-create-memory](assets/skills/my-create-memory/SKILL.md) | 沉淀长期偏好 | 审慎提炼、合并和修订偏好，按项目与场景复用 |
-| [my-ai-infra](assets/skills/my-ai-infra/SKILL.md) | 管理 AI 开发配置 | 初始化项目、选择工具与资产，预览、同步并检查安装 |
+| [my-ai-infra](assets/skills/my-ai-infra/SKILL.md) | 维护全局与项目 AI 资产 | 通过 mai 管理个人资产库、项目资产、装配配置与同步检查 |
 
 每个 Skill 都可以独立调用，也可以由 Prompt 连续编排。已有明确需求或方案时，从对应阶段接续即可。
 
 ## 文档
 
-[GitHub 源码仓库](https://github.com/shanggqm/my-ai-infra) · [问题反馈](https://github.com/shanggqm/my-ai-infra/issues)（当前为 private，需要仓库访问权限）
+[GitHub 源码仓库](https://github.com/shanggqm/my-ai-infra) · [问题反馈](https://github.com/shanggqm/my-ai-infra/issues)（公开源码仓库）
 
 - [使用指南](docs/usage.md)：配置、同步、升级与恢复。
 - [资产管理](assets/README.md)：统一维护 Skill、Agent、Prompt 与扩展能力。

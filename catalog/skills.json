@@ -85,7 +85,7 @@
     },
     {
       "name": "my-ai-infra",
-      "label": "初始化与维护项目配置",
+      "label": "维护全局与项目 AI 资产",
       "category": "management",
       "default": false,
       "aliases": []
