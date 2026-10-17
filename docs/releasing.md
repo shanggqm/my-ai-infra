@@ -5,7 +5,7 @@
 
 `0.0.9` 已于 2026-10-15 发布到 npm，`latest` 与 registry integrity 已核验。213 项自动化测试、浏览器回归、Codex/Claude 发现检查及发布后的固定版本安装、四工具 init、doctor、Web 检查通过；宿主模型行为评测未执行。源码标签为 `v0.0.9`，对应提交 `2215f1f270fdc9a0ece8008b8555c34ccd96eb62`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.9)。
 
-`0.0.10` 已获负责人明确发布授权，正在执行发布前验收；本次包括内置与个人 Skill 分离、个人库保留及空目录清理修复。发布结果以 registry 与 GitHub 核验为准。
+`0.0.10` 已于 2026-10-17 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。226 项自动测试、浏览器回归、Codex/Claude 发现检查、实际 npm 卸载重装后的个人 Skill 保留，以及发布后的固定版本安装、四工具 init/doctor、个人 Skill 导入复用和 Web 检查通过。源码标签 `v0.0.10` 指向 `08c51fda312c8c8ed2d2760c59da9a40c43bce01`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.10)。tarball SHA-256 为 `1da01bbcef0cfdc8a8107306765a5c7fb789fa62a4f0f9b8186a0dc3b0bd4f71`；宿主模型行为评测未执行。
 
 ## 发布前的负责人事项
 
