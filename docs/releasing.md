@@ -9,7 +9,7 @@
 
 `0.0.11` 已于 2026-10-17 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。231 项自动化测试、浏览器回归、实际 tarball 安装、Codex/Claude 资产发现和个人 Skill 卸载重装保留检查通过。发布后固定版本安装、CLI/Web 取消工具的目录清理、真源保留、个人 Skill 复用、doctor 和包内 Prompt 与发行源一致性检查通过。源码标签 `v0.0.11` 指向 `994f1fb2fbad85d1b0c3f8a2d0005e2f6305d1a1`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.11)。tarball SHA-256 为 `33e7799a3791fb2a86ca85b8228b980abfdb046aff338bc8a8e6fdee9ae823e8`；宿主模型行为评测未执行。
 
-`0.0.12` 正在按负责人本轮授权准备发布；验证及平台状态以本轮记录为准。
+`0.0.12` 已于 2026-10-17 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。233 项自动测试、6 组浏览器回归、15 项实际 tarball 检查通过，包含 Codex/Claude 发现与个人 Skill 保留；发布后固定版本安装、四工具装配、个人 Skill 导入/编辑/同步、包内 Skill 一致性和 Web 认证共 5 组检查通过。入口 Skill 完成 6 个只读决策演练，未执行宿主模型真实业务调用。源码标签 `v0.0.12` 指向 `f7482aabe1008207ee52537c30d3473f285096b5`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.12)。tarball SHA-256 为 `64a191831d763c7caee3a0b455fca60d22d171de05224a74ead99447ff848627`。
 
 ## 发布前的负责人事项
 
