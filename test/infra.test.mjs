@@ -196,6 +196,7 @@ test('failed project writes roll back previously changed files and configuration
   assert.equal(await read(project, '.my-ai-infra.json'), before);
   assert.match(await read(project, '.agents/skills/my-create-feature/SKILL.md'), /name: "?my-create-feature/);
   assert.equal(await read(project, '.github/skills/my-create-feature/SKILL.md'), null);
+  await assert.rejects(fs.lstat(path.join(project, '.github')), { code: 'ENOENT' });
   assert.equal((await doctor(home, project)).healthy, true);
 });
 test('project initializes from personal defaults without changing an existing project selection', async t => {

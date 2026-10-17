@@ -96,16 +96,17 @@ for (const { name, skill } of roles) {
     for (const tool of Object.keys(AGENT_TOOLS)) await checkInstalled(relocated, tool);
   });
 
-  test(name + ': roles follow selected Skills and tools, remove only owned outputs and preserve unrelated agents', async t => {
+  test(name + ': roles follow selected Skills and tools and archive inactive tool directories', async t => {
     const { project, home } = await fixture(t);
     await apply(home, project, chosen(['cursor'], ['my-create-feature']));
     await absent(path.join(project, '.cursor/agents'));
     await apply(home, project, chosen());
     await fs.writeFile(path.join(project, '.cursor/agents/user-reviewer.md'), '# user role');
-    await apply(home, project, chosen(['codex']));
+    const removed = await apply(home, project, chosen(['codex']));
     await checkInstalled(project, 'codex');
     await absent(path.join(project, `.cursor/agents/${name}.md`));
-    assert.equal(await fs.readFile(path.join(project, '.cursor/agents/user-reviewer.md'), 'utf8'), '# user role');
+    await absent(path.join(project, '.cursor'));
+    assert.equal(await fs.readFile(path.join(removed.recovery, 'before/.cursor/agents/user-reviewer.md'), 'utf8'), '# user role');
     await apply(home, project, chosen(['codex'], ['my-create-feature']));
     await absent(path.join(project, `.codex/agents/${name}.toml`));
     await absent(path.join(project, `.agents/agents/${name}.md`));

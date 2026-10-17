@@ -85,15 +85,15 @@ test('selected tools receive required rule entries; Claude uses the shared AGENT
     else assert.match(result.nextSteps[0].message,/Cursor Agent/);
   }
 });
-test('existing root rules are centralized even for unselected tools and never mixed',async t=>{
+test('existing root rules are centralized without mixing, and inactive aliases are removed on sync',async t=>{
   const {home,project}=await fixture(t);const agents='# Codex only\r\nExact bytes.\r\n',claude='# Claude only\nDifferent rules.\n';
   await write(project,'AGENTS.md',agents);await write(project,'CLAUDE.md',claude);
   const result=await apply(home,project,{...chosen,tools:['cursor']});assert.deepEqual(result.nextSteps,[]);
   assert.equal(await fs.readFile(path.join(project,'.agents/rules/AGENTS.md'),'utf8'),agents);assert.equal(await fs.readFile(path.join(project,'.agents/rules/CLAUDE.md'),'utf8'),claude);
   assert.notEqual(await fs.realpath(path.join(project,'AGENTS.md')),await fs.realpath(path.join(project,'CLAUDE.md')));
   await fs.appendFile(path.join(project,'CLAUDE.md'),'User runtime edit.\n');
-  await apply(home,project,{...chosen,tools:['codex']});assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),/User runtime edit/);assert.equal((await doctor(home,project)).healthy,true);
-  await fs.unlink(path.join(project,'.my-ai-infra/state.json'));await apply(home,project,{...chosen,tools:['codex']});assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),/User runtime edit/);
+  await apply(home,project,{...chosen,tools:['codex']});await assert.rejects(fs.lstat(path.join(project,'CLAUDE.md')),{code:'ENOENT'});assert.match(await fs.readFile(path.join(project,'.agents/rules/CLAUDE.md'),'utf8'),/User runtime edit/);assert.equal((await doctor(home,project)).healthy,true);
+  await fs.unlink(path.join(project,'.my-ai-infra/state.json'));await apply(home,project,{...chosen,tools:['codex','claudecode']});assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),/User runtime edit/);
 });
 test('selecting Claude alongside existing AGENTS links new CLAUDE to its existing content',async t=>{
   const {home,project}=await fixture(t);await write(project,'AGENTS.md','# Already configured\n');

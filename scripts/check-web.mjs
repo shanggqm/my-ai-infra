@@ -125,6 +125,7 @@ try {
   await page.locator('#preview').click();
   await page.locator('#close-preview').click();
   await page.locator('#project-tools input[value="cursor"]').check();
+  await page.locator('#project-tools input[value="claudecode"]').check();
   await page.waitForFunction(() => !document.querySelector('#preview').hasAttribute('aria-busy'));
   assert.equal(await page.locator('#apply').isDisabled(), true);
   assert.equal(await page.locator('#preview-dialog').evaluate(node => node.open), false);
@@ -150,6 +151,19 @@ try {
   assert.ok(config.tools.includes('cursor'));
   await page.locator('#cancel-preview').click();
   pass('Late-response rejection, policy invalidation, inline API error, real apply, saved config and completion hints');
+
+  await fs.mkdir(path.join(project, '.claude/skills/old-orphan/empty'), { recursive: true });
+  await fs.writeFile(path.join(project, '.claude/settings.local.json'), '{"local":true}\n');
+  const canonicalSkill = await fs.readFile(path.join(project, '.agents/skills/my-create-prd/SKILL.md'), 'utf8');
+  await page.locator('#project-tools input[value="claudecode"]').uncheck();
+  await openPreview();
+  assert.ok((await page.locator('#plan').innerText()).includes('.claude'));
+  await page.locator('#apply').click();
+  await page.waitForFunction(() => document.querySelector('#preview-dialog-title').textContent === '项目配置已应用');
+  await assert.rejects(fs.lstat(path.join(project, '.claude')), { code: 'ENOENT' });
+  assert.equal(await fs.readFile(path.join(project, '.agents/skills/my-create-prd/SKILL.md'), 'utf8'), canonicalSkill);
+  await page.locator('#cancel-preview').click();
+  pass('Unchecking Claude Code removes its entire directory, including orphan folders, and preserves canonical Skills');
 
   const edited = path.join(project, '.agents/skills/my-create-prd/SKILL.md');
   await fs.appendFile(edited, '\nProject customization.\n');

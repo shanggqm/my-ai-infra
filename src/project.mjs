@@ -3,11 +3,11 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { catalog, config, defaults, PACKAGE, seed, TOOLS, skillName } from './store.mjs';
 import { normalizeText } from './names.mjs';
-import { files, hash, json, locked, read, readJSON, write } from './fs.mjs';
+import { files, hash, json, locked, read, readJSON, safe, stat, write } from './fs.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { LEGACY_RULE_FILES } from './legacy-instructions.mjs';
 import { RULES, ruleTarget, ruleActions, ruleInitialization, SHARED_RULE_SOURCE } from './rules.mjs';
-import { ASSET_ROOT, legacyAssetPath, pruneAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, promptTargets, legacyPromptTargets } from './assets.mjs';
+import { ASSET_ROOT, legacyAssetPath, pruneAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, assetRelative, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, promptTargets, legacyPromptTargets } from './assets.mjs';
 import { discoveryEntries } from './discovery.mjs';
 import { parseAgent, agentCatalog, AGENT_TOOLS, agentFilename, renderAgent, isManagedAgentPath } from './agents.mjs';
 import { conflictPolicy, pathInspector, inspectEntry, resolveConflicts, recoveryDirectory, pruneBackups, backupEntry, installEntry, restoreEntry, saveCandidates } from './conflicts.mjs';
@@ -18,6 +18,9 @@ const INSTRUCTIONS = '.agents/AGENTS.md';
 const START = '<!-- my-ai-infra:start -->', END = '<!-- my-ai-infra:end -->';
 const instructionAliases = ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md'];
 const aliasTarget = (relative, source) => path.posix.relative(path.posix.dirname(relative), source);
+// GitHub also hosts repository infrastructure; only Copilot namespaces are exclusive.
+const TOOL_DIRECTORIES = { codex: ['.codex'], claudecode: ['.claude'], cursor: ['.cursor'], copilot: ['.copilot', '.github/skills', '.github/agents', '.github/prompts', '.github/instructions'] };
+const within = (relative, directory) => relative === directory || relative.startsWith(directory + '/');
 
 function segment(text, first = START, last = END) {
   let start = text.indexOf(first);
@@ -101,6 +104,10 @@ export async function plan(home, project, override, options = {}) {
     if (![1, 2, 3, 4].includes(old.version) || !old.files || typeof old.files !== 'object' || Array.isArray(old.files)) throw Error('Invalid managed state');
     for (const [relative, entry] of Object.entries(old.files)) validateManaged(relative, entry);
   } catch (error) { stateProblem = error.message; old = { version: 1, files: {} }; }
+  // An initialized project also cleans leftovers from older, file-only removals.
+  // Fresh installations do not take ownership of unselected tool directories.
+  const cleanupTools = rawState !== null && !stateProblem ? Object.keys(TOOLS).filter(tool => !selected.tools.includes(tool)) : [];
+  const cleanupDirectories = cleanupTools.flatMap(tool => TOOL_DIRECTORIES[tool]);
   const desired = new Map();
   const assetList = await catalog(home);
   const selectedAgents = (await agentCatalog(home)).filter(agent => agent.skills.every(skill => selected.skills.includes(skill)));
@@ -137,6 +144,7 @@ export async function plan(home, project, override, options = {}) {
   }
   const extensions = await extensionCatalog(home);
   addExtensions(desired,extensions,selected.tools);
+  const dormantSources = new Set(extensions.filter(asset => !selected.tools.some(tool => asset.targets[tool])).flatMap(asset => Object.keys(asset.contents).map(file => `${ASSET_ROOT}/${assetRelative(asset,file)}`)));
   const promptMigrations = new Map();
   for (const asset of extensions.filter(asset => asset.type === 'prompts')) for (const tool of selected.tools) {
     if (!asset.targets[tool]) continue;
@@ -192,12 +200,31 @@ export async function plan(home, project, override, options = {}) {
     actions.push({ path: relative, action, before, after, ...(output.requires ? {requires:output.requires, expectedText:output.text} : {}), ...(reason ? { reason } : {}), ...(output.note ? { note: output.note } : {}) });
   }
   const rules = await ruleActions(root, selected.tools, old.files, inspect);
+  for (const rule of RULES.filter(rule => rule.entry !== 'AGENTS.md' && rule.tools.every(tool => cleanupTools.includes(tool)))) {
+    const entry = rules.actions.find(action => action.path === rule.entry);
+    if (entry && !entry.unreadable) {
+      Object.assign(entry, { action: entry.before === null ? 'noop' : 'remove', after: null, note: '取消工具后移除规则入口，中心规则源保留' });
+      delete entry.reason;
+    }
+    delete rules.nextFiles[rule.entry];
+  }
   actions.push(...rules.actions); Object.assign(nextFiles, rules.nextFiles);
+  for (const directory of cleanupDirectories) {
+    const before = await inspect(directory);
+    if (before !== null) actions.push({ path: directory, action: 'remove', before, after: null, note: '取消工具后整体备份并移除专属目录，保留 .agents 源文件' });
+  }
   const migratedPaths = new Set([...migrations.values()].map(item => item.legacy));
   for (const { legacy, before } of migrations.values()) actions.push({ path: legacy, action: 'remove', before, after: null, migrationTo: legacy.replace('.agents/assets/', '.agents/'), note: '旧资产迁移到 .agents/ 下，原内容保留备份' });
   for (const [relative, previous] of Object.entries(old.files)) {
-    if (desired.has(relative) || migratedPaths.has(relative) || rules.actions.some(action => action.path === relative) || LEGACY_RULE_FILES.includes(relative)) continue;
+    if (desired.has(relative) || cleanupDirectories.some(directory => within(relative,directory)) || migratedPaths.has(relative) || rules.actions.some(action => action.path === relative) || LEGACY_RULE_FILES.includes(relative)) continue;
     const before = await inspect(relative);
+    if (dormantSources.has(relative)) {
+      if (before !== null) {
+        actions.push({ path: relative, action: 'preserve', before, after: before, note: '未启用对应工具，保留已安装的扩展资产源' });
+        nextFiles[relative] = previous;
+      }
+      continue;
+    }
     let action = 'noop', after = null;
     if (before !== null) {
       if (before.inherited) { action = 'preserve'; after = before; }
@@ -228,6 +255,8 @@ export async function plan(home, project, override, options = {}) {
   } catch (error) { configProblem = error.message; }
   actions.push({ path: CONFIG, action: configProblem ? 'conflict' : rawConfig?.text === json(selected) ? 'noop' : rawConfig === null ? 'create' : 'update', after: { kind: 'file', text: json(selected) }, before: rawConfig, configFile: true, ...(configProblem ? { reason: configProblem } : {}) });
   actions.push({ path: STATE, action: stateProblem ? 'conflict' : 'noop', before: rawState, after: null, internalState: true, ...(stateProblem ? { reason: stateProblem } : {}) });
+  const sharedGitHub = inspection.blockers.get('.github');
+  if (cleanupTools.includes('copilot') && sharedGitHub) Object.assign(sharedGitHub, { unreadable: true, reason: '共享 .github 路径保持原状；无法安全进入该路径清理 Copilot 入口' });
   actions.unshift(...inspection.blockers.values());
   actions.push(...inspection.reused.values());
   for (const issue of inspection.dependencies.values()) { const action = actions.find(action => action.path === issue.path); if (action) Object.assign(action,issue); else actions.push(issue); }
@@ -275,13 +304,26 @@ export async function apply(home, project, override, expectedRevision, options =
       for (const a of p.actions.filter(a=>a.reused)) if (!equalEntry(await inspectEntry(p.root,a.path),a.before)) throw Error(`Directory link changed during installation: ${a.path}`);
       for (const a of changed) {
         if (!equalEntry(await inspectEntry(p.root, a.path), a.before)) throw Error(`File changed during installation: ${a.path}`);
+        a.createdDirectories = [];
+        for (let parent = path.posix.dirname(a.path); parent !== '.'; parent = path.posix.dirname(parent)) {
+          const directory = await safe(p.root, parent);
+          if (await stat(directory)) break;
+          a.createdDirectories.push(directory);
+        }
         touched.push(a); await installEntry(p.root, a, recovery);
       }
       await pruneAssetDirectories(p.root, changed.filter(action => action.action === 'remove' && action.after === null).map(action => action.path));
       const registry = await readJSON(home, 'projects.json', []);
       await write(home, 'projects.json', json([...registry.filter(item => item.path !== p.root), { path: p.root, updated: new Date().toISOString() }]));
     } catch (e) {
-      for (const a of touched.reverse()) await restoreEntry(p.root, a, recovery);
+      for (const a of touched.reverse()) {
+        await restoreEntry(p.root, a, recovery);
+        // Remove only empty parents created by this write, before restoring earlier blockers.
+        for (const directory of a.createdDirectories) {
+          try { await fs.rmdir(directory); }
+          catch (error) { if (!['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(error.code)) throw error; }
+        }
+      }
       await putEntry(home, 'projects.json', registryBefore);
       throw e;
     }
