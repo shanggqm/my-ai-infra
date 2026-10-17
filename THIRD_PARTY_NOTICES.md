@@ -2,7 +2,7 @@
 
 ## 本项目
 
-本项目采用 [MIT 许可证](LICENSE)，版权署名为 `andy`。第三方资产保留各自适用的许可证和版权登记；本项目许可证不替代原始输入的授权核实。源码维护于私有仓库 [shanggqm/my-ai-infra](https://github.com/shanggqm/my-ai-infra)。
+本项目采用 [MIT 许可证](LICENSE)，版权署名为 `andy`。第三方资产保留各自适用的许可证和版权登记；本项目许可证不替代原始输入的授权核实。源码维护于公开仓库 [shanggqm/my-ai-infra](https://github.com/shanggqm/my-ai-infra)。
 
 ## 内置 Skill 来源
 

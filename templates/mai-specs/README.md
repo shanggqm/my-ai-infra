@@ -1,6 +1,6 @@
 # SDD 规格与需求工作区
 
-本目录 `mai-specs/` 由 my-ai-infra 管理工作区规范，按 Feature 维护驱动开发、测试与验收的规格及关联记录。项目初始化或同步时写入本说明、ROADMAP、FEATURE_LAYOUT.json 和 `_templates/`；独立调用 `my-create-feature` 时会创建本目录与需求初始文件，缺少项目契约时使用随包契约。
+本目录 `mai-specs/` 由 my-ai-infra 管理工作区规范，按 Feature 维护驱动开发、测试与验收的规格及关联记录。项目初始化或同步时写入本说明、ROADMAP 和 `_templates/`；独立调用 `my-create-feature` 时会创建本目录与需求初始文件，缺少项目契约时使用随包契约。
 
 每个需求使用 `NNN-<slug>/`，编号交由 my-create-feature 初始化脚本计算：从 999 递减，低于 000 回到 999，跳过已有目录和索引占用的编号。目录与 ID 不带 Feature- 前缀，从 `BRIEF.md` 和 `context/_INDEX.md` 开始，按 PRD、技术设计、方案审查、测试计划、实现、代码审查推进。测试计划可以先于实现，所有本次承诺条件有当前通过证据后才结项。
 

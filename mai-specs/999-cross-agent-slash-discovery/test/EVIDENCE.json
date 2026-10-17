@@ -1,0 +1,75 @@
+{
+  "feature": "999",
+  "head": "f4861bf017bf6dc793c658cfc7c34c16d90ac4e4",
+  "testedAt": "2026-10-15T09:54:41.067Z",
+  "node": "v24.12.0",
+  "automatedTests": {
+    "pass": 212,
+    "fail": 0
+  },
+  "packageChecks": [
+    "Distribution whitelist, resources, executable entry and tarball integrity",
+    "Offline npx bin, read-only version/catalog, packaged documentation and Skill resources",
+    "Global mai and my-ai-infra commands, current-directory init and doctor",
+    "All 13 selected Skills have discoverable regular SKILL.md files",
+    "Codex app-server skills/list discovers every selected Skill after global mai init",
+    "Claude SDK initialization discovers all project Skills, Prompts and review roles without duplicate commands",
+    "Packaged role assets and four native Agent formats resolve their installed Skill",
+    "New AGENTS/CLAUDE share one empty source and relative native entry links",
+    "Four adapters, installed Feature initializer/templates, repeat sync and doctor",
+    "Codex Skill discovery remains complete after repeat sync",
+    "Conflict refusal preserves modified project files and config",
+    "Global mai web selects current directory; packaged resources and API authentication",
+    "Packaged Markdown memory, stable identity, repeat sync, scene recall and Web management"
+  ],
+  "artifact": {
+    "sha256": "fbc78b92dcf11d4cd4919166fa46a3b05dda8fc3b9add6cf50dd74de0a4159ca",
+    "integrity": "sha512-AJbx3ISP0t8wKkfEToGlKpUZMIplKQn54CCBuPMym39dy1o+dJXvrD9GVnDSVRlWdMU3sAvP0U+JkgCx3rMmdQ==",
+    "published": false,
+    "note": "Development validation artifact only; published npm 0.0.8 is unchanged."
+  },
+  "hosts": {
+    "codex": {
+      "version": "0.162.0-alpha.17.2",
+      "discovery": 13,
+      "probe": "MAI_DISCOVERY_PROBE_999",
+      "projectSynced": true
+    },
+    "claudecode": {
+      "version": "2.1.161",
+      "discovery": 13,
+      "roles": [
+        "architecture-review",
+        "code-review"
+      ],
+      "invocation": "blocked: Not logged in · Please run /login"
+    },
+    "cursor": {
+      "version": "3.24.18",
+      "discovery": 13,
+      "duplicates": 0,
+      "probe": "MAI_DISCOVERY_PROBE_999",
+      "method": "Cursor GUI / menu and read-only probe in isolated project"
+    },
+    "copilot": {
+      "vscodeVersion": "1.135.0",
+      "discovery": "not verified",
+      "invocation": "not verified",
+      "reason": "code --list-extensions showed github.copilot-labs only; Copilot Chat environment unavailable"
+    }
+  },
+  "fingerprints": {
+    "src/assets.mjs": "f277b1db0a282f3a311446fd9355a38258f1cdcaf23000b6d17445faeae83100",
+    "src/project.mjs": "0c758e0bb968f1030fa1078eb98ba09f6fb48ce9f7d34bc86ab336f838fc875d",
+    "src/store.mjs": "3556c18aa6f97bc5897319b4787f1ee64b8044a2f6cd2ec99f672482c3a7551d",
+    "src/conflicts.mjs": "0708413087090b5368db32994a533bca774a811c7a6b1c5bff30c165d597769b",
+    "src/discovery.mjs": "f1f9d7ef00e5e3a5e5296810009d70812c6db172e7869817ef0c3552b65c26ee",
+    "src/terminal.mjs": "61bda682a69ee12018006bc3e08efd035044b2605f3b8f09560262006b279eab",
+    "test/discovery.test.mjs": "b988ff7c265bd30cf6f068e8ce225d27e62bff6f9131036e717b9abd78b55214",
+    "test/prompts.test.mjs": "72dafb31275a96fd885acfe71ff9e3a2979365767c29ae2a3450b968998bbcb8",
+    "test/assets.test.mjs": "bd4a8cbc3f30cbc5f4b436aa93df44dd2303fcabcaf61ab6e9fd91fd932a0b3f",
+    "test/terminal.test.mjs": "2fc08fdce760a135ee5fc59fb5b33de2d9d43c24199166b974c4ae163342b9be",
+    "scripts/check-claude-discovery.mjs": "8fe208b5b69205c7215deb08c3ff6b0eb5a16b5c9c3ed25a27fbb98f246ea3b9",
+    "scripts/release-check.mjs": "824cbe2aceadcd295cb32b54159e23665adc22224734d2e835020eceff27ef60"
+  }
+}

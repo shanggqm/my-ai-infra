@@ -1,56 +1,85 @@
 ---
 name: "my-ai-infra"
-description: "初始化或同步项目的个人 AI Coding SDD 基础设施、选择工具与 Skill，或打开本地配置工作台。用于用户要求给项目装配 SDD 流程、修改 AI Coding 配置或维护个人 Skill 资产。"
-compatibility: "需要 Node.js 22+ 和 my-ai-infra 本地命令或已安装的入口脚本。"
+description: "使用全局 mai 命令维护 my-ai-infra 个人资产库和目标项目中的 AI 资产。适用于‘新增一个全局个人 Skill’‘把项目 Skill 收进个人库’‘修改全局或当前项目的资产’‘给项目增减或同步 Skill’及资产装配、配置和检查。单独创作 Skill 内容、执行开发任务或提炼个人记忆时，使用对应专用 Skill。"
+compatibility: "需要 Node.js 22+，且全局 mai 命令在 PATH 中可用。"
 metadata:
   author: "andy"
   source: "assets/skills/my-ai-infra/SKILL.md"
 ---
 
-# 个人 AI Coding 基础设施
+# my-ai-infra 资产维护
 
-使用本 Skill 的 `scripts/my-ai-infra.mjs` 调用已安装的本地工具。全局安装的 wrapper 绑定个人资产库中的稳定 runtime，可在 npx 缓存清理后继续使用。
+在目标项目目录中，将用户的资产维护需求映射为 `mai` 命令，完成所请求范围内的变更和验证。重点处理全局个人资产库与项目资产之间的新增、导入、编辑、装配和同步。
 
-包内或项目副本 wrapper 在导入 runtime 前按 `--home`、`MY_AI_INFRA_HOME`、默认 `~/.my-ai-infra` 的顺序确定个人库；使用自定义库时命令始终携带同一 `--home`。setup 生成的全局 wrapper 绑定安装时 runtime。需要正文依赖时按本 Skill 目录定位 [入口脚本](scripts/my-ai-infra.mjs)。
+## 职责与入口
 
-## 项目配置
+- 用户明确提及个人库、项目资产、安装入口或同步配置时，由本 Skill 承接维护流程。复合请求包含内容创作时，使用可用的 `skill-creator` 等专用 Skill 完成内容，再继续入库或装配；普通“帮我写一个 Skill”交给内容创作 Skill。
+- 需求分析、PRD、技术设计、编码、评审、测试、worktree 和个人记忆提炼/管理由对应专用 Skill 处理。CLI 支持这些辅助命令，不构成本 Skill 扩大触发范围的理由。
+- 在目标项目工作目录直接调用全局 `mai`。先用 `command -v mai` 和 `mai --version` 确认入口，需要时查看 `mai --help`。不要求项目存在 `scripts/`，不切到 Skill 目录，不使用内部 wrapper 作为调用入口。若命令缺失，报告安装前提；用户授权安装时使用已知包 `@easyuseai/my-ai-infra`。
+- 目标项目取用户给定路径，否则取当前工作目录；读取项目说明和已有 `.my-ai-infra.json`。命令示例中的 PATH 换成实际绝对路径，路径含空格时加引号。
+- 个人库按 `--home`、`MY_AI_INFRA_HOME`、默认 `~/.my-ai-infra` 确定，自定义库的每条命令都携带同一 `--home`。不改个人 runtime 或 npm 内置源码来定制资产。
 
-1. 从对话确定目标项目目录。用户指定路径时使用该路径；否则使用当前项目目录。
-2. 读取目标项目说明及现有 `.my-ai-infra.json`。保留已有规则与用户文件。
-3. 工具可选 `codex`、`claudecode`、`cursor`、`copilot`。优先使用用户已表达的偏好或项目已有配置；首次使用且未说明偏好时简短询问一次。未保存固定清单时，新项目默认安装全部可用 Skill（包含个人 Skill），已有默认清单与项目选择优先，不逐项询问；需要缩减项目 Skill 时在 Web 中调整后执行 sync。
-   文档与辅助资产创建统一使用 `my-create-对象`，编码实现使用 `my-implement-code`，审查使用 `my-review-对象`；以 `catalog` 输出的 canonical 名称为准。旧版 Skill 名可作为 CLI 配置输入，解析后统一使用新名；不要复制旧名 Skill 作为第二份资产。
-4. 先调用 `plan --project <绝对路径> --tools <逗号分隔工具>` 查看全面预检。CLI / Web 默认 merge：本地优先补缺，同名差异保存候选，Skill 副本归入中心源；脚本和结构化内容不盲拼。已有初始化或同步授权时，按默认或用户指定的 `--conflict merge|replace|abort` 继续，无需再次确认。replace 先备份再替换；abort 遇冲突终止。交互 CLI 自行展示策略菜单；通过入口脚本执行时显式带上已确定策略。报告 recovery、review 和 skipped；出现 complete: false 时说明部分完成及未处理路径，不宣称全部装配成功。
-   项目 SDD 工作区统一使用 `mai-specs/`。`init` / `sync` 仅补缺该工作区的 README、ROADMAP 和 `_templates/`；`FEATURE_LAYOUT.json` 仅在用户需要自定义产物路径时从已安装的 `my-create-feature/template/FEATURE_LAYOUT.json` 复制并调整，已有文件保持原状；后续 Feature 与规格均写入此目录，不查找或回退到其他根目录。
-5. 执行 `doctor --project <绝对路径>`，报告项目配置、安装目录和检查结果。若结果有 `nextSteps`，转达空规则对应工具的初始化提示，由用户执行；安装健康仅表示装配一致，不代表规则正文已补全。
+## 先确定维护位置
 
-命令示例（从本 Skill 所在目录执行）：
+| 位置 | 查看方式 | 变更路径 |
+|---|---|---|
+| 全局个人资产库 `<home>/assets/` | `mai catalog`、`mai asset list`，读取返回的个人源 | `mai asset import` 新增，`mai asset edit` 修改入口正文 |
+| 目标项目 `.agents/<类型>/` | `mai config --project PATH` 和实际文件；`mai doctor --project PATH` 检查漂移 | 项目定制直接编辑项目源；从库装配用 `mai plan` → `mai init/sync` |
+| 全局工具入口，实体位于用户目录 `.agents/` | setup 输出及实际入口 | `mai setup` 更新当前版本支持的全局入口，具体限制见下文 |
 
-```bash
-node scripts/my-ai-infra.mjs plan --project /path/to/repo --tools codex,copilot
-node scripts/my-ai-infra.mjs init --project /path/to/repo --tools codex,copilot --yes
-node scripts/my-ai-infra.mjs doctor --project /path/to/repo
-node scripts/my-ai-infra.mjs web --project /path/to/repo
-```
+`mai catalog` / `mai asset list` 列出库中可用资产，不能替代项目目录盘点。项目源、个人库源与全局入口分别维护。只改项目时不写回个人库；只入个人库时不自动安装入口或同步已有项目。作用域无法从表达、路径或配置判断且会影响写入位置时，先确认该作用域。
 
-如果本地 runtime 尚未安装，提示用户从本项目安装包执行 `setup`；不要下载未知同名包作为自动回退。
+## 全局个人资产维护
 
-## 维护个人资产
+| 用户需求 | 操作 |
+|---|---|
+| “看看个人库有哪些 Skill / Agent / 资产” | `mai catalog` / `mai agents` / `mai asset list`；按类型用 `mai asset list --type TYPE`，用 origin 区分 builtin 与 personal |
+| “把这个项目 Skill 收进个人库” | 检查完整目录、名称及资源，再 `mai asset import /absolute/my-skill`，回读库中新增项 |
+| “新增一个全局个人自定义 Skill” | 按下方创建并入库流程完成，不停留在操作建议 |
+| “修改个人库里的 Skill / Prompt” | 读取当前个人源，准备更新文本，`mai asset edit NAME --file /absolute/updated.md --type TYPE`，回读验证；Skill 可省略 type |
+| “导入 Agent / Prompt / Hook / MCP” | `mai asset import /absolute/source --type TYPE`；TYPE 取 agents、prompts、hooks 或 mcp，再 `mai asset list --type TYPE` 验证 |
+| “以后项目默认选择这些资产” | `mai defaults` 读取，再 `mai defaults --skills FULL_LIST`；工具偏好用 `--tools FULL_LIST`，不同步已有项目 |
+| “打开资产管理界面” | `mai web --project PATH`，返回实际本地链接并保持进程；端口占用用 `--port 0` |
+| “刷新内置资产 / runtime” | `mai upgrade` 使用当前安装包版本刷新 runtime，报告迁移和恢复路径；该命令不下载新版 npm 包，也不自动同步项目 |
 
-个人源位于 `MY_AI_INFRA_HOME` 指定目录或 `~/.my-ai-infra/assets/`。项目 `.agents/<类型>/` 保存所有 AI 资产实体，Codex 直接使用 `.agents/skills/` 源文件，其他工具的 Skill 入口使用相对软链接，全局入口同样链接到用户主目录 `.agents/`。项目运行规则归入 `.agents/rules/`，原生入口建立相对软链接。新建 CLAUDE.md 时，根目录 AGENTS.md 和 CLAUDE.md 都链接到 `.agents/rules/AGENTS.md` 唯一源，补全一次即可；只选 Claude Code 也创建 AGENTS.md 入口，后续新增 Claude Code 复用已有 AGENTS.md。已有两份不同正文分别迁移保留，Copilot 原生规则独立管理。正文由项目作者维护，不注入 SDD 流程或引用。规则的不同非空副本发生冲突时保留两份，让用户合并后重试。修改个人 Skill 源后显式同步选定项目；旧版未修改受管副本会先备份再迁移，修改冲突保持原状。
+### 创建并入库
 
-- `catalog`：查看 Skill，origin 区分 builtin（内置，只读）与 personal（个人），category 保留业务类别；`asset list`：统一查看所有类型资产，均区分内置 / 个人并标记只读。
-- Agent 唯一可编辑源位于 `assets/agents/`；工具格式生成到 `.agents/.generated/<工具>/agents/`，原生入口软链接到派生文件。修改项目源后执行 sync 重建。
-- Prompt 使用 `assets/prompts/<名称>.md`，文件名作为名称、frontmatter 单行 `description` 作为描述，正文简短编排 Skill，工具入口由安装器统一映射。Hook、MCP 和扩展类型使用 `assets/<类型>/<名称>/asset.json` 声明入口与目标，默认采用相同的备份、同步、冲突和升级策略。共享宿主配置保持独立，不将单个资产覆盖到整份配置。
-- 所有内置 Skill、Agent、Prompt、Hook、MCP 及扩展资产直接读取当前发行包，init / sync / setup 无需先 upgrade；个人新增资产独立保存在个人库 assets/<类型>/，升级和 npm 卸载均保留。旧受管内置副本完整备份迁移，报告 skillMigrations / assetMigrations 和 backup；未知来源同名资产报冲突并保留。项目副本的本地修改继续按 merge / replace / abort 处理。
-- `upgrade`：刷新本地 runtime 的全部内置资产，备份旧资源并移除已退役文件；随后针对用户指定项目执行 plan / sync，不自动同步全部项目。
-- `asset import <Skill目录>`：从项目导入包含 `SKILL.md` 的完整个人文本 Skill 目录（含脚本、模板、references 和 evals），仅新增，内置名称及别名与已有个人名称均禁止覆盖；`--type agents` 导入角色文件，`--type prompts` 导入单个 Markdown 文件，`--type hooks|mcp|<扩展类型>` 导入带 asset.json 的目录；已有同名资产保持原状。旧清单式 Prompt 保持兼容，新旧同名源冲突时先保留现场。
-- `asset edit <名称> --file <新SKILL.md路径>`：编辑个人 Skill 正文并备份旧版本；其他类型通过 --type 指定，所有内置资产均拒绝编辑。内置定制需先使用新目录名、frontmatter name 并修复内部引用，再导入个人库。
-- `web`：打开配置工作台，编辑个人 Skill、默认偏好及目标项目配置。
+1. 从请求提取用途、触发条件与输入输出，仅补问实际缺失信息。查询 catalog 排查内置名、兼容别名与个人名冲突。自有名称默认 `my-动作-对象`，目录名与 frontmatter name 一致。
+2. 使用可用的内容创作 Skill 在临时或指定目录生成并校验完整资产；不因创作而改项目配置。没有辅助 Skill 时，在本次明确的资产创建范围内完成必要内容与校验。仅创建实际需要的资源，核对相对引用和脚本行为。
+3. `mai asset import /absolute/staging/my-skill` 导入完整文本目录。含二进制或符号链接时说明导入限制，处理资源方案后再继续，不静默丢失附件。
+4. `mai catalog` 确认 `origin: personal`，回读个人源确认正文和附属文件完整，报告实际路径。用户要求项目可用时继续该项目的装配流程。
 
-选择一个项目的请求仅授权该项目。全局偏好修改作用于后续新项目；已有项目由各自配置控制。
+导入仅新增，同名拒绝覆盖，无需修改内置 catalog。所有内置资产通过 CLI / Web 只读；定制内置 Skill 时改目录名、frontmatter name 与内部引用，以个人资产导入。个人资产在 npm 升级和卸载后保留。
 
-维护时使用 [evals/cases.md](evals/cases.md)，检查只读、冲突保留、个人库选择和 runtime 定位。
+### 编辑边界与格式
 
-## 个人长期记忆
+- `mai asset edit` 修改入口正文并备份。附件、名称或目录结构变更没有批量编辑命令；按授权保留恢复副本后维护个人源，不用同名 import 绕过保护。删除资产也没有专用 CLI 命令，先定位影响范围再按明确授权处理具体文件。
+- Skill 为包含 `SKILL.md` 的完整文本目录；Agent 为中立 Markdown 文件；Prompt 为单个 Markdown 文件，以文件名命名，frontmatter 提供单行 `description`。保留作者与来源信息。
+- Hook、MCP 和扩展类型为含 `asset.json` 的文本目录，清单声明 name、description、entry、targets 及可选 globalTargets。工具仅装配文件，不自动执行 Hook、启动 MCP 或替换宿主整份共享配置。格式不明时参考当前可用的同类型资产，不臆造清单字段。
 
-使用 `memory get / recall / bind / put / save / delete` 管理全局或当前项目的 Markdown 偏好；Web“个人记忆”支持编辑、候选确认、停用、删除和命中预览。规则、原始会话与项目事实不进入个人偏好库。新偏好的准入与提炼统一使用可用的 [my-create-memory](../my-create-memory/SKILL.md)，宁缺毋滥，不为初始化生成默认偏好。项目 ID 只在首次绑定时创建，sync 保留；独立 fork 用 `memory bind --project PATH --project-id new`。绑定、Markdown 格式和命令详见 [记忆契约](../my-create-memory/references/storage.md)。
+## 目标项目资产维护
+
+### 从个人库或内置库装配
+
+1. `mai config --project PATH` 读取配置，`mai catalog` 核对可用 Skill。工具优先沿用已有选择，首次装配且无偏好时简短询问；可选 codex、claudecode、cursor、copilot。
+2. 增减 Skill 或工具时计算完整目标清单，保留用户未要求改动的项。`--skills` / `--tools` 接收逗号分隔完整清单；不要将“加一个”传成“只保留一个”。取消项目工具可能整体备份并移除对应专属目录，需在预览中明确影响。
+3. 先 `mai plan --project PATH`，再按相同工具、Skill 和冲突策略执行 `mai init --project PATH --conflict merge --yes` 或 `mai sync --project PATH --conflict merge --yes`。需要调整选择时，plan 与写入命令都传同一 `--skills FULL_LIST` / `--tools FULL_LIST`。首次装配用 init，已有项目同步用 sync。
+4. `mai doctor --project PATH` 检查装配结果，并核对用户要求的具体资产。用户只要求查看或诊断时，停留在 config、plan、doctor 与文件读取。
+
+新项目未保存固定清单时默认选择全部可用 Skill，已有默认或项目选择优先。显式 `--skills` 固定清单，CLI 暂无专用开关恢复自动全部选择。Agent 随依赖 Skill 选择，其他资产按工具与清单适配，不臆造通用 `--assets` 选择参数。
+
+### 直接维护项目内容
+
+- “只修改当前项目的某个 Skill”：先核对文件及链接归属，再编辑 `.agents/skills/<名称>/` 实体并验证所改内容；未知外部软链接不直接写其目标；其他工具的相对链接共享该实体。不要用 `mai asset edit` 写到全局库，也不要为保存项目内容额外 sync。
+- “给当前项目创建独有 Skill”：由内容创作 Skill 生成到项目 `.agents/skills/`。需要其余工具入口时检查 CLI 的可装配来源；未入库的项目独有 Skill 不能凭名称加入库清单。说明限制，不自动把项目私有内容导入全局库。
+- “调整项目 Agent”：修改 `.agents/agents/` 中立源，按 plan / sync 流程更新派生入口；检查 merge 下的候选与保留内容，不直接编辑 `.agents/.generated/`。
+- “把项目定制推广为个人资产”：按用户授权将完整资产导入个人库；已有同名个人项走编辑流程。内置同名须先改名，再针对指定项目同步。
+- 项目运行规则位于 `.agents/rules/`，保持原有共享链接和正文。若工具报告空规则，转达 nextSteps；不把资产装配扩展为编写业务规则或推进 SDD 开发。
+
+## 全局入口、冲突与结果
+
+`mai setup --tools FULL_LIST --yes` 维护全局入口，并保存默认偏好；先读 `mai defaults`，保留既有选择，检查 setup 的实际输出。setup 会保留此前安装但本次未选的工具，不能用它卸载全局工具。当前 setup 全局安装管理入口、可选记忆入口及所选 Agent 的依赖 Skill；`--skills` 不会将任意个人 Skill 自动安装到全局。遇到“让这个个人 Skill 在全局可调用”，先说明这个能力边界，再按用户明确的宿主与范围处理入口方案；入库成功不能报告为全局安装成功。全局装配没有 `doctor --global`。
+
+项目冲突默认 merge：保留本地内容、补缺并保存候选；replace 先备份再替换；abort 遇冲突终止。沿用用户授权和指定策略，无需为常规预览重复索要确认。检查 complete、recovery、review、skipped 和 nextSteps；部分完成或冲突未处理时明确报告。旧受管副本迁移保留备份，未知来源同名资产保持现场。
+
+最终报告维护位置、具体变更、验证结果和未完成项。区分已入库、已安装入口、已同步项目及宿主实际可用，不把装配检查作为宿主调用证据。维护本 Skill 时更新或执行 [行为评测](evals/cases.md)。
