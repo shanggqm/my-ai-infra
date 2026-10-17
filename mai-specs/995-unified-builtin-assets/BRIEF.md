@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 |---|---|
-| Phase | done |
+| Phase | completed |
 | 优先级 | P1 |
 | 负责人 | andy |
 | 涉及子系统 | 资产目录、个人库迁移、项目装配、CLI / Web |
