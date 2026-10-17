@@ -17,7 +17,7 @@ metadata:
 
 1. 从对话确定目标项目目录。用户指定路径时使用该路径；否则使用当前项目目录。
 2. 读取目标项目说明及现有 `.my-ai-infra.json`。保留已有规则与用户文件。
-3. 工具可选 `codex`、`claudecode`、`cursor`、`copilot`。优先使用用户已表达的偏好或项目已有配置；首次使用且未说明偏好时简短询问一次。初始化默认安装全部可用 Skill，不逐项询问；需要缩减项目 Skill 时在 Web 中调整后执行 sync。
+3. 工具可选 `codex`、`claudecode`、`cursor`、`copilot`。优先使用用户已表达的偏好或项目已有配置；首次使用且未说明偏好时简短询问一次。未保存固定清单时，新项目默认安装全部可用 Skill（包含个人 Skill），已有默认清单与项目选择优先，不逐项询问；需要缩减项目 Skill 时在 Web 中调整后执行 sync。
    文档与辅助资产创建统一使用 `my-create-对象`，编码实现使用 `my-implement-code`，审查使用 `my-review-对象`；以 `catalog` 输出的 canonical 名称为准。旧版 Skill 名可作为 CLI 配置输入，解析后统一使用新名；不要复制旧名 Skill 作为第二份资产。
 4. 先调用 `plan --project <绝对路径> --tools <逗号分隔工具>` 查看全面预检。CLI / Web 默认 merge：本地优先补缺，同名差异保存候选，Skill 副本归入中心源；脚本和结构化内容不盲拼。已有初始化或同步授权时，按默认或用户指定的 `--conflict merge|replace|abort` 继续，无需再次确认。replace 先备份再替换；abort 遇冲突终止。交互 CLI 自行展示策略菜单；通过入口脚本执行时显式带上已确定策略。报告 recovery、review 和 skipped；出现 complete: false 时说明部分完成及未处理路径，不宣称全部装配成功。
    项目 SDD 工作区统一使用 `mai-specs/`。`init` / `sync` 仅补缺该工作区的 README、ROADMAP 和 `_templates/`；`FEATURE_LAYOUT.json` 仅在用户需要自定义产物路径时从已安装的 `my-create-feature/template/FEATURE_LAYOUT.json` 复制并调整，已有文件保持原状；后续 Feature 与规格均写入此目录，不查找或回退到其他根目录。
@@ -38,12 +38,12 @@ node scripts/my-ai-infra.mjs web --project /path/to/repo
 
 个人源位于 `MY_AI_INFRA_HOME` 指定目录或 `~/.my-ai-infra/assets/`。项目 `.agents/<类型>/` 保存所有 AI 资产实体，Codex 直接使用 `.agents/skills/` 源文件，其他工具的 Skill 入口使用相对软链接，全局入口同样链接到用户主目录 `.agents/`。项目运行规则归入 `.agents/rules/`，原生入口建立相对软链接。新建 CLAUDE.md 时，根目录 AGENTS.md 和 CLAUDE.md 都链接到 `.agents/rules/AGENTS.md` 唯一源，补全一次即可；只选 Claude Code 也创建 AGENTS.md 入口，后续新增 Claude Code 复用已有 AGENTS.md。已有两份不同正文分别迁移保留，Copilot 原生规则独立管理。正文由项目作者维护，不注入 SDD 流程或引用。规则的不同非空副本发生冲突时保留两份，让用户合并后重试。修改个人 Skill 源后显式同步选定项目；旧版未修改受管副本会先备份再迁移，修改冲突保持原状。
 
-- `catalog`：查看 Skill；`asset list`：统一查看所有类型资产。
+- `catalog`：查看 Skill，origin 区分 builtin（内置，只读）与 personal（个人），category 保留业务类别；`asset list`：统一查看所有类型资产。
 - Agent 唯一可编辑源位于 `assets/agents/`；工具格式生成到 `.agents/.generated/<工具>/agents/`，原生入口软链接到派生文件。修改项目源后执行 sync 重建。
 - Prompt 使用 `assets/prompts/<名称>.md`，文件名作为名称、frontmatter 单行 `description` 作为描述，正文简短编排 Skill，工具入口由安装器统一映射。Hook、MCP 和扩展类型使用 `assets/<类型>/<名称>/asset.json` 声明入口与目标，默认采用相同的备份、同步、冲突和升级策略。共享宿主配置保持独立，不将单个资产覆盖到整份配置。
-- `upgrade`：更新个人库与本地 runtime；只有仍匹配上次内置版本摘要的文件自动更新，个人修改与未知来源旧资产保留。随后针对用户指定项目执行 plan / sync，不自动同步全部项目。
-- `asset import <Skill目录>`：导入包含 `SKILL.md` 的个人文本 Skill；`--type agents` 导入角色文件，`--type prompts` 导入单个 Markdown 文件，`--type hooks|mcp|<扩展类型>` 导入带 asset.json 的目录；已有同名资产保持原状。旧清单式 Prompt 保持兼容，新旧同名源冲突时先保留现场。
-- `asset edit <名称> --file <新SKILL.md路径>`：替换正文并备份旧版本。
+- `upgrade`：更新本地 runtime 的内置 Skill；个人 Skill 独立保存在个人库 assets/skills/，升级和 npm 卸载均保留。旧受管内置副本整包备份迁移，报告 skillMigrations 和 backup；未知来源同名资产报冲突并保留。随后针对用户指定项目执行 plan / sync，不自动同步全部项目。其他资产类型继续沿用既有摘要升级规则。
+- `asset import <Skill目录>`：从项目导入包含 `SKILL.md` 的完整个人文本 Skill 目录（含脚本、模板、references 和 evals），仅新增，内置名称及别名与已有个人名称均禁止覆盖；`--type agents` 导入角色文件，`--type prompts` 导入单个 Markdown 文件，`--type hooks|mcp|<扩展类型>` 导入带 asset.json 的目录；已有同名资产保持原状。旧清单式 Prompt 保持兼容，新旧同名源冲突时先保留现场。
+- `asset edit <名称> --file <新SKILL.md路径>`：编辑个人 Skill 正文并备份旧版本；内置 Skill 拒绝编辑。内置定制需先使用新目录名、frontmatter name 并修复内部引用，再导入个人库。
 - `web`：打开配置工作台，编辑个人 Skill、默认偏好及目标项目配置。
 
 选择一个项目的请求仅授权该项目。全局偏好修改作用于后续新项目；已有项目由各自配置控制。

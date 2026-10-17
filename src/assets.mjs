@@ -8,10 +8,15 @@ export const ASSET_ROOT = '.agents';
 export const LEGACY_ASSET_ROOT = '.agents/assets';
 export const legacyAssetPath = relative => relative.startsWith(ASSET_ROOT + '/') ? relative.replace(ASSET_ROOT + '/', LEGACY_ASSET_ROOT + '/') : null;
 export async function pruneLegacyAssetDirectories(root, removed) {
+  return pruneAssetDirectories(root, removed.filter(relative => relative.startsWith(LEGACY_ASSET_ROOT + '/')));
+}
+export async function pruneAssetDirectories(root, removed) {
   const directories = new Set();
   for (const relative of removed) {
-    if (!relative.startsWith(LEGACY_ASSET_ROOT + '/')) continue;
-    for (let parent = path.posix.dirname(relative); parent.startsWith(LEGACY_ASSET_ROOT); parent = path.posix.dirname(parent)) directories.add(parent);
+    const boundary = relative.split('/')[0];
+    if (!relativePath(relative) || !['.agents', '.codex', '.claude', '.cursor', '.github', '.copilot'].includes(boundary)) continue;
+    // Only visit ancestors of removed managed files; keep host roots and user contents.
+    for (let parent = path.posix.dirname(relative); parent.startsWith(boundary + '/'); parent = path.posix.dirname(parent)) directories.add(parent);
   }
   for (const relative of [...directories].sort((a,b) => b.split('/').length - a.split('/').length)) {
     const directory = await safe(root,relative,{leafLink:true}), info = await stat(directory);

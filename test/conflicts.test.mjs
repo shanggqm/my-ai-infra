@@ -7,7 +7,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { apply, plan, doctor } from '../src/project.mjs';
 import { write, read, json } from '../src/fs.mjs';
-import { PACKAGE } from '../src/store.mjs';
+import { PACKAGE, saveAsset } from '../src/store.mjs';
 import { startWeb } from '../src/web.mjs';
 const exec = promisify(execFile);
 const chosen={version:1,tools:['codex','claudecode','cursor','copilot'],skills:['my-create-feature']};
@@ -30,9 +30,17 @@ test('merge centralizes divergent adapter copies and retains all variants',async
 test('replace backs up local text and can explicitly reset a previously merged customization',async t=>{
   const f=await fixture(t);await write(f.project,source,'# Local');await merge(f);const result=await apply(f.home,f.project,chosen,undefined,{conflict:'replace'});assert.equal(await read(result.recovery,`before/${source}`),'# Local');assert.match(await read(f.project,source),/name: "my-create-feature"/);assert.equal((await doctor(f.home,f.project)).healthy,true);
 });
-test('later upstream changes create fresh candidates and keep approved local content protected',async t=>{
-  const f=await fixture(t);await write(f.project,source,'# Local');await merge(f);await fs.appendFile(path.join(f.home,'assets/skills/my-create-feature/SKILL.md'),'\nUpstream update\n');const result=await merge(f);assert.equal(await read(f.project,source),'# Local');assert.match(await read(result.recovery,`incoming/${source}`),/Upstream update/);assert.equal((await doctor(f.home,f.project)).healthy,true);
+test('later personal source changes create fresh candidates and keep approved local content protected',async t=>{
+  const f=await fixture(t), name='team-feature', target=`.agents/skills/${name}/SKILL.md`;
+  const content=`---\nname: ${name}\ndescription: Team workflow\n---\n`;
+  await saveAsset(f.home,name,content,null);
+  const choice={...chosen,skills:[name]};
+  await write(f.project,target,'# Local');await merge(f,choice);
+  await fs.appendFile(path.join(f.home,`assets/skills/${name}/SKILL.md`),'\nUpstream update\n');
+  const result=await merge(f,choice);assert.equal(await read(f.project,target),'# Local');
+  assert.match(await read(result.recovery,`incoming/${target}`),/Upstream update/);assert.equal((await doctor(f.home,f.project)).healthy,true);
 });
+
 test('abort and invalid policies leave project content unchanged',async t=>{
   const f=await fixture(t);await write(f.project,source,'# Local');await assert.rejects(apply(f.home,f.project,chosen,undefined,{conflict:'abort'}),e=>e.exitCode===2);await assert.rejects(plan(f.home,f.project,chosen,{conflict:'oops'}),/Invalid conflict policy/);assert.equal(await read(f.project,source),'# Local');await assert.rejects(fs.stat(path.join(f.project,'.my-ai-infra.json')),{code:'ENOENT'});
 });

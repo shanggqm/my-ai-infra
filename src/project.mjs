@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { catalog, config, defaultConfig, PACKAGE, seed, TOOLS, skillName } from './store.mjs';
+import { catalog, config, defaults, PACKAGE, seed, TOOLS, skillName } from './store.mjs';
 import { normalizeText } from './names.mjs';
 import { files, hash, json, locked, read, readJSON, write } from './fs.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { LEGACY_RULE_FILES } from './legacy-instructions.mjs';
 import { RULES, ruleTarget, ruleActions, ruleInitialization, SHARED_RULE_SOURCE } from './rules.mjs';
-import { ASSET_ROOT, legacyAssetPath, pruneLegacyAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, promptTargets, legacyPromptTargets } from './assets.mjs';
+import { ASSET_ROOT, legacyAssetPath, pruneAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, promptTargets, legacyPromptTargets } from './assets.mjs';
 import { discoveryEntries } from './discovery.mjs';
 import { parseAgent, agentCatalog, AGENT_TOOLS, agentFilename, renderAgent, isManagedAgentPath } from './agents.mjs';
 import { conflictPolicy, pathInspector, inspectEntry, resolveConflicts, recoveryDirectory, pruneBackups, backupEntry, installEntry, restoreEntry, saveCandidates } from './conflicts.mjs';
@@ -83,9 +83,9 @@ export async function projectRoot(project) {
   return root;
 }
 export async function projectConfig(home, root, { recover = false } = {}) {
-  const defaults = await config(await readJSON(home, 'defaults.json', defaultConfig()), home, { allowEmpty: true, allowProjectId: false });
-  try { return await config(await readJSON(root, CONFIG, defaults), home, { allowEmpty: true }); }
-  catch (error) { if (!recover) throw error; return config(defaults, home, { allowEmpty: true }); }
+  const fallback = await defaults(home);
+  try { return await config(await readJSON(root, CONFIG, fallback), home, { allowEmpty: true }); }
+  catch (error) { if (!recover) throw error; return config(fallback, home, { allowEmpty: true }); }
 }
 export async function plan(home, project, override, options = {}) {
   const policy = conflictPolicy(options.conflict);
@@ -106,14 +106,9 @@ export async function plan(home, project, override, options = {}) {
   const selectedAgents = (await agentCatalog(home)).filter(agent => agent.skills.every(skill => selected.skills.includes(skill)));
   for (const name of selected.skills) {
     const { sourceName, sourceRoot: source } = assetList.find(a => a.name === name);
-    const bundled = path.join(PACKAGE, 'assets/skills', name);
-    let bundledFiles = [];
-    try { bundledFiles = await files(bundled); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-    const resources = new Set([...await files(path.join(source, sourceName)), ...bundledFiles]);
-    for (const relative of [...resources].sort()) {
+    for (const relative of await files(path.join(source, sourceName))) {
       let text = await read(source, `${sourceName}/${relative}`);
       if (text !== null && sourceName !== name) text = normalizeText(text);
-      if (text === null) text = await read(bundled, relative);
       desired.set(`${SKILL_SOURCE}/${name}/${relative}`, { text, kind: 'file' });
     }
   }
@@ -253,15 +248,16 @@ export async function plan(home, project, override, options = {}) {
   }
   const summary = {};
   for (const a of actions) summary[a.action] = (summary[a.action] || 0) + 1;
-  return { root, config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
+  return { root, skillMigrations: assetList.flatMap(asset => asset.legacyCopies), config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
 }
-export const publicPlan = (p, phase = 'plan') => ({ root: p.root, config: p.config, agents: p.agents, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
+export const publicPlan = (p, phase = 'plan') => ({ root: p.root, skillMigrations: p.skillMigrations, config: p.config, agents: p.agents, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
 
 export async function apply(home, project, override, expectedRevision, options = {}) {
   return locked(home, async () => {
     const initial = await plan(home, project, override, options);
     if (initial.actions.some(a => a.action === 'conflict')) throw conflictError(initial);
-    await seed(home);
+    if (expectedRevision !== undefined && initial.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
+    const seeded = await seed(home);
     const p = await plan(home, project, override, options);
     if (expectedRevision !== undefined && p.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
     if (p.actions.some(a => a.action === 'conflict')) throw conflictError(p);
@@ -281,6 +277,7 @@ export async function apply(home, project, override, expectedRevision, options =
         if (!equalEntry(await inspectEntry(p.root, a.path), a.before)) throw Error(`File changed during installation: ${a.path}`);
         touched.push(a); await installEntry(p.root, a, recovery);
       }
+      await pruneAssetDirectories(p.root, changed.filter(action => action.action === 'remove' && action.after === null).map(action => action.path));
       const registry = await readJSON(home, 'projects.json', []);
       await write(home, 'projects.json', json([...registry.filter(item => item.path !== p.root), { path: p.root, updated: new Date().toISOString() }]));
     } catch (e) {
@@ -291,9 +288,8 @@ export async function apply(home, project, override, expectedRevision, options =
     if (hasRecovery) {
       await write(recovery, 'completed.json', json({ project: p.root, completedAt: Date.now() }));
       await pruneBackups(home, p.root);
-      await pruneLegacyAssetDirectories(p.root, changed.filter(action => action.action === 'remove').map(action => action.path));
     }
-    return { ...publicPlan(p,'applied'), applied: true, recovery };
+    return { ...publicPlan(p,'applied'), applied: true, recovery, skillMigrations: seeded.skillMigrations };
   });
 }
 export async function doctor(home, project) {

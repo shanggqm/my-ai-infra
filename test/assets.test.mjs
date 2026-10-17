@@ -6,7 +6,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { apply, plan, doctor } from '../src/project.mjs';
-import { seed, setup, allAssets, importAsset, saveAsset, PACKAGE } from '../src/store.mjs';
+import { seed, setup, catalog, allAssets, importAsset, saveAsset, PACKAGE } from '../src/store.mjs';
 import { hash, json, write } from '../src/fs.mjs';
 import { parseExtension } from '../src/assets.mjs';
 import { startWeb } from '../src/web.mjs';
@@ -45,11 +45,11 @@ test('legacy personal roots migrate intact and retain old upgrade baselines; div
   const text='---\nname: "my-review-code"\ndescription: "Legacy version"\n---\nOld version\n';
   await write(home,'skills/my-review-code/SKILL.md',text);
   await write(home,'bundle-state.json',json({version:1,files:{'my-review-code/SKILL.md':hash(text)}}));
-  await seed(home);
-  assert.equal(await fs.readFile(path.join(home,'assets/skills/my-review-code/SKILL.md'),'utf8'),text);
+  const migrated = await seed(home);
+  assert.equal(await fs.readFile(path.join(migrated.skillMigrations[0].backup,'SKILL.md'),'utf8'),text);
   await assert.rejects(fs.lstat(path.join(home,'skills')),{code:'ENOENT'});
   await seed(home,{updateBuiltins:true});
-  assert.notEqual(await fs.readFile(path.join(home,'assets/skills/my-review-code/SKILL.md'),'utf8'),text);
+  assert.notEqual((await catalog(home)).find(a=>a.name==='my-review-code').content,text);
   await write(home,'agents/code-review.md','different source');
   await assert.rejects(seed(home),/migration conflict/);
   assert.equal(await fs.readFile(path.join(home,'agents/code-review.md'),'utf8'),'different source');
@@ -58,7 +58,7 @@ test('v3 flat sources and shared rules remain intact through read-only preview a
   const {home,project}=await fixture(t); await seed(home);
   const files={};
   for(const [target,source] of [['.agents/skills/my-review-code/SKILL.md','assets/skills/my-review-code/SKILL.md'],['.agents/agents/code-review.md','assets/agents/code-review.md']]) {
-    const text=await fs.readFile(path.join(home,source),'utf8'); await write(project,target,text);files[target]={kind:'file',hash:hash(text)};
+    const text=await fs.readFile(path.join(source.startsWith('assets/skills/')?PACKAGE:home,source),'utf8'); await write(project,target,text);files[target]={kind:'file',hash:hash(text)};
   }
   await write(project,'.agents/rules/AGENTS.md','# Keep my principles\n');
   for(const entry of ['AGENTS.md','CLAUDE.md']) {await fs.symlink('.agents/rules/AGENTS.md',path.join(project,entry));files[entry]={kind:'symlink',target:'.agents/rules/AGENTS.md',hash:hash('.agents/rules/AGENTS.md')};}

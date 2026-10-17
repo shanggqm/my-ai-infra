@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { stdin, stdout } from 'node:process';
-import { allAssets, catalog, config, defaultConfig, importAsset, personalHome, saveAsset, seed, setup, TOOLS, PACKAGE } from './store.mjs';
-import { json, locked, readJSON, write } from './fs.mjs';
+import { allAssets, catalog, config, defaults, writeDefaults, importAsset, personalHome, saveAsset, seed, setup, TOOLS, PACKAGE } from './store.mjs';
+import { json, locked, readJSON } from './fs.mjs';
 import { apply, doctor, plan, projectConfig, projectRoot, publicPlan } from './project.mjs';
 import { startWeb } from './web.mjs';
 import { canonicalName } from './names.mjs';
@@ -42,9 +42,10 @@ mai 与 my-ai-infra 共用全部命令和选项。
 --help        显示帮助
 --version     显示版本（或 -v）
 项目路径必须已存在。未指定路径时使用当前目录。
-交互初始化使用 ↑/↓ 移动、空格多选、Enter 确认工具；Skill 默认全部安装。
+交互初始化使用 ↑/↓ 移动、空格多选、Enter 确认工具；未保存固定清单时默认安装全部 Skill。
 非交互环境沿用已保存工具偏好（初始为 Codex）。
-upgrade 更新个人库与本地 runtime；同步项目仍需显式执行 sync。
+内置 Skill 随发行更新且只读；个人 Skill 导入个人库，同名拒绝覆盖。
+upgrade 更新本地 runtime 并迁移旧内置副本；同步项目仍需显式执行 sync。
 Web 必须通过本地命令启动，不能直接打开 HTML 文件。`;
 
 function parse(args) {
@@ -67,9 +68,8 @@ function parse(args) {
 const csv = text => text.split(',').map(t => t.trim()).filter(Boolean);
 const aliases = tools => tools.map(t => ({ claude: 'claudecode', 'claude-code': 'claudecode', 'github-copilot': 'copilot' })[t] || t);
 
-async function preferences(base, options, interactive, home) {
+async function preferences(base, options, interactive) {
   const result = { ...base };
-  if (interactive && !options.skills) result.skills = (await catalog(home)).map(asset => asset.name);
   if (options.tools) result.tools = aliases(csv(options.tools));
   if (interactive && !options.yes && stdin.isTTY && stdout.isTTY) {
     if (!options.tools) {
@@ -129,17 +129,17 @@ export async function main(args = process.argv.slice(2)) {
   }
   if (command === 'catalog' || (command === 'asset' && sub === 'list')) { const list = command === 'catalog' ? await catalog(home) : await allAssets(home); console.log(json(list.filter(a=>!options.type || a.type===options.type).map(({content,contents,body,...item})=>item))); return; }
   if (command === 'setup') {
-    const defaults = await readJSON(home, 'defaults.json', defaultConfig());
-    const chosen = await config(await preferences(defaults, options, true, home), home);
+    const base = await defaults(home);
+    const chosen = await config(await preferences(base, options, true, home), home);
     console.log(json(await setup(home, chosen.tools, undefined, chosen.skills)));
-    await locked(home, () => write(home, 'defaults.json', json(chosen)));
+    await locked(home, () => writeDefaults(home, chosen, { selectSkills: Boolean(options.skills) }));
     return;
   }
   if (command === 'defaults') {
-    const current = await readJSON(home, 'defaults.json', defaultConfig());
+    const current = await defaults(home);
     if (!options.tools && !options.skills) { console.log(json(await config(current, home, { allowProjectId: false }))); return; }
     const chosen = await config(await preferences(current, options, false, home), home, { allowProjectId: false });
-    await locked(home, async () => { await seed(home); await write(home, 'defaults.json', json(chosen)); });
+    await locked(home, async () => { await seed(home); await writeDefaults(home, chosen, { selectSkills: Boolean(options.skills) }); });
     console.log(json(chosen)); return;
   }
   if (command === 'asset') {

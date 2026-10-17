@@ -202,6 +202,27 @@ try {
   ensure(!names.some(file => file.startsWith('projects/') || file === 'memory.md'), 'Private memory leaked into package');
   pass('Packaged Markdown memory, stable identity, repeat sync, scene recall and Web management');
 
+  const personalName = 'team-release-skill', personalSource = path.join(temp, personalName);
+  const personalBody = `---\nname: ${personalName}\ndescription: Personal reusable workflow\n---\nKeep across uninstall.\n`;
+  await fs.mkdir(path.join(personalSource, 'references'), { recursive: true });
+  await fs.writeFile(path.join(personalSource, 'SKILL.md'), personalBody);
+  await fs.writeFile(path.join(personalSource, 'references/notes.md'), 'Complete directory import');
+  await run('mai', ['asset', 'import', personalSource], globalOptions);
+  let listed = JSON.parse((await run('mai', ['catalog'], globalOptions)).stdout);
+  ensure(listed.find(item => item.name === personalName)?.origin === 'personal', 'Personal origin missing');
+  ensure(listed.find(item => item.name === 'my-review-code')?.origin === 'builtin', 'Builtin origin missing');
+  await run('mai', ['upgrade'], globalOptions);
+  await npmRun(['uninstall', '--global', '--prefix', globalPrefix, '--offline', pkg.name]);
+  ensure(await fs.readFile(path.join(home, 'assets/skills', personalName, 'SKILL.md'), 'utf8') === personalBody, 'Uninstall removed personal data');
+  ensure(await fs.readFile(path.join(project, '.agents/skills/my-create-prd/SKILL.md'), 'utf8') === original, 'Uninstall removed project data');
+  await npmRun(['install', '--global', '--prefix', globalPrefix, '--offline', '--no-audit', '--no-fund', artifact]);
+  listed = JSON.parse((await run('mai', ['catalog'], globalOptions)).stdout);
+  ensure(listed.some(item => item.name === personalName && item.origin === 'personal'), 'Reinstall failed to rediscover personal Skill');
+  const nextProject = path.join(temp, 'next-project'); await fs.mkdir(nextProject);
+  await run('mai', ['init', '--project', nextProject, '--tools', 'codex', '--yes'], globalOptions);
+  ensure(await fs.readFile(path.join(nextProject, '.agents/skills', personalName, 'references/notes.md'), 'utf8') === 'Complete directory import', 'New project omitted personal Skill resources');
+  pass('Personal Skill import, upgrade isolation, npm global uninstall/reinstall persistence and new-project reuse');
+
   const report = { checkedAt:new Date().toISOString(), package:pkg.name, version:pkg.version, node:process.version, platform:process.platform, filename:info.filename, size:info.size, unpackedSize:info.unpackedSize, entryCount:info.entryCount, sha256:createHash('sha256').update(bytes).digest('hex'), integrity, checks, files:names, publication:'not-published', deferred:['owner-provided asset distribution authorization'] };
   await fs.writeFile(path.join(output,'release-report.json'),JSON.stringify(report,null,2)+'\n');
   console.log(`Release artifact verified: ${artifact}\nReport: ${path.join(output,'release-report.json')}`);
