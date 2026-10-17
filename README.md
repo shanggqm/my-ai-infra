@@ -30,6 +30,15 @@ mai init
 
 按提示选择 Coding 工具，即可装配内置 Skill 与 SDD 工作区。需要可视化管理时运行 `mai web`，通过终端给出的本机链接打开工作台。
 
+内置 Skill 在工作台中只读，随 npm 版本更新。自己的 Skill 可从项目导入：
+
+```bash
+mai asset import .agents/skills/my-team-review
+mai catalog
+```
+
+个人 Skill 保存在 `~/.my-ai-infra/assets/skills/`（可自定义 home），列表标记为“个人”，npm 升级和卸载均保留。同名导入会拒绝；定制内置 Skill 时先改为新的名称。重新安装工具后可继续使用同一个人库。
+
 ## 我们的 SDD 理念
 
 **先对齐要交付什么，再让 AI 按规格实现，用证据判断是否完成。** SDD（Spec-Driven Development，规格驱动开发）把需求、设计与验收标准变成开发者和 Coding Agent 共享的上下文，让每次实现都有依据，每次评审都有参照。

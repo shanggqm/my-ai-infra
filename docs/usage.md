@@ -24,7 +24,7 @@ Esc、关闭按钮和遮罩可关闭预览，返回配置继续调整；正在�
 | `catalog` / `asset list` | 查看可用资产 | `--home` |
 | `defaults` | 查看或修改新项目默认项 | `--tools` |
 | `setup` | 安装/更新全局入口 | `--tools`、`--yes` |
-| `upgrade` | 升级个人库与 runtime | `--home` |
+| `upgrade` | 更新内置 runtime，保留个人 Skill | `--home` |
 | `asset import PATH` | 导入文本 Skill 包 | `--home` |
 | `asset edit NAME` | 修改正文并备份 | `--file`、`--home` |
 | `web` | 启动本地配置器 | `--project`、`--port`、`--home` |
@@ -42,7 +42,7 @@ my-ai-infra web --project "/path/to/my repo" --home "/path/to/personal assets" -
 
 工具值为 `codex`、`claudecode`、`cursor`、`copilot`；CLI 也接受 `claude`、`claude-code`、`github-copilot`。
 
-从 `0.0.2` 起，交互式 `init` / `setup` 只展示工具多选菜单，Skill 默认全部安装。工具菜单：↑/↓ 移动、空格切换选中、`a` 全选/清空、Enter 确认。已有工具偏好默认勾选；至少保留一项。Esc 或 Ctrl+C 取消，取消时不安装资产、不写入项目。标准输入或输出未连接终端时使用已保存选择；脚本建议显式传入工具；Skill 默认全部安装。项目 `init` / `sync` 的 `--yes` 跳过工具和冲突策略选择，默认按 merge 处理；可通过 `--conflict merge|replace|abort` 明确指定策略。全局 `setup` 仍保护同名修改并报告冲突。
+交互式 `init` / `setup` 只展示工具多选菜单：↑/↓ 移动、空格切换选中、`a` 全选/清空、Enter 确认。已有工具偏好默认勾选；至少保留一项。Esc 或 Ctrl+C 取消，取消时不安装资产、不写入项目。未保存固定 Skill 清单时，CLI 与 Web 新项目默认选择所有可用 Skill，包含新增个人 Skill；显式保存过 Skill 清单或已有项目配置时沿用清单，`--skills` 可显式覆盖。标准输入或输出未连接终端时沿用相同规则。项目 `init` / `sync` 的 `--yes` 跳过工具和冲突策略选择，默认按 merge 处理；可通过 `--conflict merge|replace|abort` 明确指定策略。全局 `setup` 仍保护工具入口的同名修改并报告冲突。
 
 配置 `.my-ai-infra.json` 只有三个字段：
 
@@ -56,9 +56,19 @@ my-ai-infra web --project "/path/to/my repo" --home "/path/to/personal assets" -
 
 工具与 Skill 列表不能为空。名称与兼容别名以 `catalog` 输出为准；`my-create-code` 等旧名解析到 canonical 名，不重复安装。未知配置字段会被拒绝。
 
+仅设置工具偏好时保留自动发现模式，defaults.json 用 `allSkills: true` 记录；显式设置 `--skills` 或在 Web 保存 Skill 选择时固定清单。旧 defaults.json 没有该标记时按固定清单保留。
+
 ## 维护个人资产
 
-个人源位于个人库 `assets/skills/`，项目中的副本供 AI Coding 工具消费。先修改个人源，再显式同步指定项目。新建 Skill 默认使用中文元信息：
+Skill 分为 `builtin`（内置）和 `personal`（个人），独立于 SDD、辅助等 category。来源由工具依据内置清单与存储位置判定，SKILL.md 自报 origin 不改变分类。
+
+| 来源 | 位置 | 维护方式 |
+|---|---|---|
+| 内置 | 当前 npm 包的 `assets/skills/` | CLI / Web 只读，随包版本更新 |
+| 个人 | `~/.my-ai-infra/assets/skills/` | 从项目导入或 Web 新建，独立持久保存 |
+| 项目副本 | 项目 `.agents/skills/` | 可按项目定制，显式 sync 更新 |
+
+`--home`、`MY_AI_INFRA_HOME`、默认 `~/.my-ai-infra` 依次确定个人库。稳定 runtime 内的内置资源由工具管理，不作为个人编辑源。内置 Skill 定制如需复用，先复制为新名称，同时修改目录名、frontmatter name 及相关内部引用，再导入个人库。新建 Skill 默认使用中文元信息：
 
 ```yaml
 ---
@@ -76,11 +86,11 @@ metadata:
 读取器支持 JSON 兼容的双引号字符串、单引号字符串、旧版无引号及折叠/字面量多行说明；它读取必要字符串字段，不提供任意 YAML 对象解析或代码求值。文档产出用 `create`，实现用 `implement`，审查用 `review`。
 
 ```bash
-my-ai-infra asset import /path/to/my-review-api
+mai asset import .agents/skills/my-review-api
 my-ai-infra asset edit my-review-api --file /path/to/updated-SKILL.md
 ```
 
-导入同名资产会停止；编辑正文会校验最新摘要并备份旧内容。正文编辑不处理附属资源，修改资源时应保留恢复副本。二进制资源和符号链接不在自定义导入范围内。Web 支持搜索、新建、正文编辑、未保存保护与 Ctrl/⌘+S；在另一页面编辑默认偏好不会同步全部项目。
+导入完整目录，包含 scripts、references、模板与 evals。导入与内置名称（含兼容别名）或已有个人 Skill 同名时停止，禁止覆盖。列表自动发现新增个人 Skill，无需修改 catalog/skills.json；导入后新项目按默认清单选择规则装配。个人正文编辑会校验最新摘要并备份旧内容；内置正文保存请求由服务端拒绝。正文编辑不处理附属资源，修改资源时应保留恢复副本。二进制资源和符号链接不在自定义导入范围内。Web 显示“内置 / 个人”来源；内置正文只读，个人 Skill 支持搜索、新建、正文编辑、未保存保护与 Ctrl/⌘+S；在另一页面编辑默认偏好不会同步全部项目。
 
 ## 升级与恢复
 
@@ -95,11 +105,13 @@ npx --yes @easyuseai/my-ai-infra@latest sync --project /path/to/repo --home /pat
 npx --yes @easyuseai/my-ai-infra@latest doctor --project /path/to/repo --home /path/to/personal
 ```
 
-`bundle-state.json` 记录本工具曾写入的内置文件摘要。显式 upgrade / setup 更新仍匹配该基线的内置文件；个人修改与没有可信基线的旧文件保持原状，并在 upgrade 结果中列为 preserved。普通 init/sync 保持当前个人源，避免预览期间隐式改写正文。新增包内资源会补齐，个人附加文件不会自动删除。
+内置 Skill 直接使用当前发行包的完整目录，个人 Skill 不参与 npm 升级。`upgrade` 刷新稳定 runtime 的内置资源，移除旧版本遗留的文件并保留恢复副本；当前项目不随之自动同步。新 npm 版本引入的内置名称与个人 Skill 重名时，报错并保留现场，需要先将个人 Skill 改名。
 
-升级替换前的内容位于 `backups/bundle-update-*`；个人正文修改和命名迁移也有各自备份。项目更改的旧文件与 journal 位于全局存储的 `projects/<项目真实路径的 SHA-256>/backups/`（默认全局根目录为 `~/.my-ai-infra`，可由 `--home` 或 `MY_AI_INFRA_HOME` 指定）。需要恢复时先停止相关写入，按具体操作的备份核对文件，恢复旧内容或删除该次新建且未被人工修改的文件，再重新 plan。安装记录也要与恢复后的状态一起核对；保留 journal，不用整目录删除代替恢复。
+旧版本可能在个人库 `assets/skills/` 或 `skills/` 中保留内置副本。工具通过 `bundle-state.json` 判断是否为历史受管副本；只读列表/预览显示 `legacyCopies` / `skillMigrations`，写入流程将整个旧目录原样移到 `backups/builtin-skills-*`，返回备份绝对路径。定制正文与附属资源完整保留，请改名后重新导入。缺少可信来源记录的同名目录报告冲突，保留原文，不静默启用或覆盖。其他资产类型继续采用已有摘要升级规则。
 
-安装包降级不会自动回滚个人正文与项目文件；恢复具体资产后，再用所需版本预览并同步。没有一键清空个人库或卸载所有项目文件的命令。`npm uninstall --global my-ai-infra` 仅移除全局 npm 命令，个人资产、工具入口和项目文件保留。
+升级替换前的内容位于 `backups/bundle-update-*`，稳定 runtime 旧 Skill 目录位于 `backups/runtime-skills-*`；个人正文修改和命名迁移也有各自备份。项目更改的旧文件与 journal 位于全局存储的 `projects/<项目真实路径的 SHA-256>/backups/`（默认全局根目录为 `~/.my-ai-infra`，可由 `--home` 或 `MY_AI_INFRA_HOME` 指定）。需要恢复时先停止相关写入，按具体操作的备份核对文件，恢复旧内容或删除该次新建且未被人工修改的文件，再重新 plan。安装记录也要与恢复后的状态一起核对；保留 journal，不用整目录删除代替恢复。
+
+安装包降级不会自动回滚个人正文与项目文件；恢复具体资产后，再用所需版本预览并同步。没有一键清空个人库或卸载所有项目文件的命令。`npm uninstall --global @easyuseai/my-ai-infra` 仅移除 npm 包与命令，个人资产、稳定 runtime、工具入口和项目文件保留。重新安装后读取同一个个人库即可恢复个人 Skill 列表；个人库清理需要用户显式执行。
 
 Web 升级后需重启进程。全局入口已经绑定个人 runtime；若需修改全局工具选择，使用相应版本重新 setup。不能将个人 runtime 当源码发布仓库。
 
@@ -119,7 +131,7 @@ CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用�
 
 通过规则软链接编辑内容会更新中心文件，sync 保留这些正文修改。如果外部工具把空规则链接替换成普通文件，sync 会将新正文归入中心文件并恢复链接；中心文件与入口均有不同非空内容时，默认 merge 保留中心正文，把入口原文归档为 local/ 候选，再恢复链接。选择 abort 时保留现场并退出 2。中心文件仍有内容而入口副本为空时，保留中心正文。
 
-CLI 初始化默认安装全部可用 Skill；Web 可按项目选择，sync 保留项目配置。旧 --skills 参数保持脚本兼容，不参与交互选择。
+CLI 与 Web 在未保存固定清单时默认安装全部可用 Skill；显式默认清单与项目配置优先，sync 保留项目选择。--skills 可指定本次清单，不参与交互选择。
 
 .gitignore 增量补缺并去重，保留已有规则、注释、换行和显式反向规则。删除安装记录后留下的旧片段不会仅因没有旧 hash 而阻止安装。项目规格文档只补缺，已有正文保留。CLI 与 Web 默认 merge，交互终端发现冲突时提供 merge / replace / 终止单选。使用 --conflict 显式指定策略；--yes 或非交互环境采用默认 merge。plan 返回 conflicts、review、skipped、complete 与逐项 resolution，链接项包含 target。冲突内容的恢复方式与不同类型处理见 [初始化冲突处理](#初始化冲突处理)。
 
@@ -171,6 +183,8 @@ merge 以本地优先的目录合并补齐资产，同名不同正文保留候�
 文件已存在时，可让对应工具补全已有内容。新建的 AGENTS.md 与 CLAUDE.md 共用源，Codex、Cursor、Claude Code 可选一个生成原则；原有独立规则保持独立。通过现有链接写入后内容立即集中生效；如果初始化工具将空链接替换成普通文件，执行 `my-ai-infra sync --project .` 重新归入中心目录。已有两份不同的非空内容时，先合并差异后再同步。
 
 ## 初始化冲突处理
+
+取消选择 Skill 或移除资产入口时，会删除对应受管文件，并从深到浅清理因此变空的资产目录和工具入口目录；重新选择时重建文件与相对软链接。工具根目录保留，用户自行添加的文件、目录和外部链接保留，修改过的受管文件继续遵循冲突策略。目录清理失败时回滚本次文件与配置变更。
 
 `init` / `sync` 会在写入前集中检查计划安装和移除的路径，包括 Skill / Agent、运行规则、父目录类型、文件链接、配置、安装记录与忽略标记。无关文件保持原状。交互终端发现冲突时用方向键选择处理方式，Enter 默认选择 merge；完成后显示简短摘要与恢复目录。`--yes` 和非交互命令直接采用默认策略，非交互输出保持 JSON。Web 提供相同策略，并要求重新预览后应用。
 

@@ -58,7 +58,9 @@ for (const linked of [false, true]) test(`retired verification upgrades safely a
   assert.deepEqual((await projectConfig(home, project)).skills, ['my-review-code']);
   assert.deepEqual(JSON.parse(await read(home, 'defaults.json')).skills, ['my-review-code']);
   assert.equal(await read(home, `assets/skills/${retired}/SKILL.md`), body);
-  assert.equal(await read(home, `runtime/assets/skills/${retired}/SKILL.md`), body);
+  assert.equal(await read(home, `runtime/assets/skills/${retired}/SKILL.md`), null);
+  const archived = (await fs.readdir(path.join(home, 'backups'))).find(name => name.startsWith('runtime-skills-'));
+  assert.equal(await read(home, `backups/${archived}/${retired}/SKILL.md`), body);
   const { catalog: runtimeCatalog } = await import(pathToFileURL(path.join(home, 'runtime/src/store.mjs')));
   const runtime = await runtimeCatalog(home);
   assert.ok(!runtime.some(a => a.name === retired));

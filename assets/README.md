@@ -1,6 +1,6 @@
 # AI 资产唯一源
 
-此目录统一保存分发资产，按类型分目录。新增类型共用目录发现、个人库升级、安装、冲突、备份与编辑流程。
+此目录统一保存分发资产，按类型分目录。内置 Skill 通过 CLI / Web 只读，个人 Skill 独立保存；其他资产类型沿用现有导入、编辑与升级流程。
 
 | 类型 | 结构 | 原生适配 |
 |---|---|---|
@@ -12,6 +12,20 @@
 项目源位于 `.agents/`，个人库源位于 `<home>/assets/`，全局入口源位于用户目录 `.agents/`。项目运行规则单独保存在项目 `.agents/rules/`，正文由项目维护。
 
 Agent 原生格式保存在 `.agents/.generated/<工具>/agents/`，属于可重建的派生结果。编辑 `agents/<名称>.md` 后运行 sync；工具格式文件的手工修改会受到冲突保护：abort 停止，merge 保存修改候选后从中立源重建，replace 备份后重建。转换格式的正文仅来自对应角色源。
+
+## Skill 来源与个人库
+
+内置 Skill 从当前包的 `assets/skills/` 读取，标记 `origin: builtin`、`readOnly: true`。个人 Skill 保存在 `<home>/assets/skills/`，标记 `origin: personal`；默认 home 为 `~/.my-ai-infra`，支持 `--home` 或 `MY_AI_INFRA_HOME`。来源独立于类别，CLI 与 Web 均显示。
+
+```bash
+mai asset import .agents/skills/my-team-review
+mai catalog
+mai init --project /path/to/new-project
+```
+
+导入完整文本目录，仅支持新增；同名个人或内置 Skill（含别名）均拒绝覆盖。内置定制需先修改目录名、frontmatter name 及内部引用，再以个人 Skill 导入。个人正文仍可通过 asset edit 或 Web 编辑。新项目未保存固定清单时包含全部可用 Skill，已有选择继续保留。
+
+npm 升级不修改个人 Skill，卸载保留个人库与项目文件，重新安装可继续发现个人资产。旧受管内置副本完整移入备份，未知来源同名冲突需先改名；详见[升级与恢复](../docs/usage.md#升级与恢复)。
 
 ## Skill 附属资源
 

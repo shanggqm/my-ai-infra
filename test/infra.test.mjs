@@ -75,15 +75,15 @@ test('unknown same-name assets block the whole project installation', async t =>
 });
 test('global edits sync to projects while modified project copies block updates', async t => {
   const { home, project } = await fixture(t);
-  await apply(home, project);
-  const asset = (await catalog(home)).find(a => a.name === 'my-create-feature');
+  await saveAsset(home, 'team-feature', '---\nname: team-feature\ndescription: Personal test\n---\n', null); await apply(home, project);
+  const asset = (await catalog(home)).find(a => a.name === 'team-feature');
   const modified = asset.content + '\nPersonal addition.\n';
   await saveAsset(home, asset.name, modified, asset.revision);
   await apply(home, project);
-  assert.equal(await read(project, '.agents/skills/my-create-feature/SKILL.md'), modified);
-  await write(project, '.agents/skills/my-create-feature/SKILL.md', modified + '\nProject edit');
-  await assert.rejects(apply(home, project, config(['claudecode'])), /Conflicting files/);
-  assert.equal(await read(project, '.claude/skills/my-create-feature/SKILL.md'), null);
+  assert.equal(await read(project, '.agents/skills/team-feature/SKILL.md'), modified);
+  await write(project, '.agents/skills/team-feature/SKILL.md', modified + '\nProject edit');
+  await assert.rejects(apply(home, project, config(['claudecode'], ['team-feature'])), /Conflicting files/);
+  assert.equal(await read(project, '.claude/skills/team-feature/SKILL.md'), null);
 });
 test('switching tools retains the canonical assets and unrelated files', async t => {
   const { home, project } = await fixture(t);
@@ -97,12 +97,12 @@ test('switching tools retains the canonical assets and unrelated files', async t
 });
 test('rejects stale previews after project files or global assets change', async t => {
   const { home, project } = await fixture(t);
-  await apply(home, project);
+  await saveAsset(home, 'team-feature', '---\nname: team-feature\ndescription: Personal test\n---\n', null); await apply(home, project);
   const p = await plan(home, project);
   await write(project, '.agents/rules/AGENTS.md', 'Concurrent project rule.\n');
   await assert.rejects(apply(home, project, p.config, p.revision), /changed since preview/);
   const p2 = await plan(home, project);
-  const asset = (await catalog(home)).find(a => a.name === 'my-create-feature');
+  const asset = (await catalog(home)).find(a => a.name === 'team-feature');
   await saveAsset(home, asset.name, asset.content + '\nchanged global', asset.revision);
   await assert.rejects(apply(home, project, p2.config, p2.revision), /changed since preview/);
 });
@@ -142,8 +142,8 @@ test('imports custom assets and rejects duplicates, malformed metadata and symli
   await assert.rejects(importAsset(home, custom), /symlink/);
 });
 test('saveAsset requires the latest revision and backs up replaced content', async t => {
-  const { home, project } = await fixture(t); await apply(home, project);
-  const asset = (await catalog(home))[0];
+  const { home, project } = await fixture(t); await saveAsset(home, 'team-feature', '---\nname: team-feature\ndescription: Personal test\n---\n', null); await apply(home, project);
+  const asset = (await catalog(home)).find(a => a.name === 'team-feature');
   await saveAsset(home, asset.name, asset.content + '\nA', asset.revision);
   await assert.rejects(saveAsset(home, asset.name, asset.content + '\nB', asset.revision), /changed since/);
   assert.ok((await fs.readdir(path.join(home, 'backups'))).length > 0);
@@ -234,6 +234,7 @@ test('legacy configuration names resolve without creating a second installed ide
 test('legacy personal assets and managed project copies migrate with edits, attachments and preview intact', async t => {
   const { home, project } = await fixture(t);
   const text = '---\nname: create-tech-design\ndescription: Personal customized design\n---\n\nKeep my custom decisions.\n';
+  await write(home, 'bundle-state.json', json({version:1,files:{'create-tech-design/SKILL.md':hash(text)}}));
   await write(home, 'assets/skills/create-tech-design/SKILL.md', text);
   await write(home, 'assets/skills/create-tech-design/references/notes.md', 'Personal notes');
   await write(project, '.my-ai-infra.json', json(config(['copilot'], ['create-tech-design'])));
@@ -244,12 +245,12 @@ test('legacy personal assets and managed project copies migrate with edits, atta
   assert.equal(await read(home, 'assets/skills/create-tech-design/SKILL.md'), text);
   await apply(home, project, p.config, p.revision);
   assert.equal(await read(home, 'assets/skills/create-tech-design/SKILL.md'), null);
-  assert.equal(await read(home, 'assets/skills/my-create-design/SKILL.md'), normalizeText(text));
-  assert.equal(await read(project, '.github/skills/my-create-design/references/notes.md'), 'Personal notes');
+  assert.equal(await read(home, 'assets/skills/my-create-design/SKILL.md'), null);
+  assert.equal(await read(project, '.github/skills/my-create-design/references/notes.md'), null);
   assert.equal(await read(project, '.github/skills/create-tech-design/SKILL.md'), null);
   assert.equal((await doctor(home, project)).healthy, true);
   const backups = await fs.readdir(path.join(home, 'backups'));
-  const naming = backups.find(name => name.startsWith(`naming-v${NAMING_VERSION}-`));
+  const naming = backups.find(name => name.startsWith('builtin-skills-'));
   assert.equal(await read(home, `backups/${naming}/create-tech-design/SKILL.md`), text);
 });
 test('duplicate legacy and canonical personal sources stop migration before any rewrite', async t => {
@@ -257,7 +258,7 @@ test('duplicate legacy and canonical personal sources stop migration before any 
   const body = name => `---\nname: ${name}\ndescription: Custom\n---\n`;
   await write(home, 'assets/skills/create-feature/SKILL.md', body('create-feature'));
   await write(home, 'assets/skills/my-create-feature/SKILL.md', body('my-create-feature'));
-  await assert.rejects(apply(home, project), /Both legacy and canonical/);
+  await assert.rejects(apply(home, project), /conflicts with builtin/);
   assert.equal(await read(home, 'assets/skills/create-feature/SKILL.md'), body('create-feature'));
   assert.equal(await read(project, '.my-ai-infra.json'), null);
 });
@@ -275,6 +276,7 @@ test('P0 additions are available to an existing store without replacing its pers
   const { home, project } = await fixture(t);
   const oldChoice = config(['copilot'], ['my-create-feature']);
   const personal = '---\nname: my-create-feature\ndescription: Personal feature\n---\nKeep my workflow.\n';
+  await write(home, 'bundle-state.json', json({version:1,files:{'my-create-feature/SKILL.md':hash(personal)}}));
   await write(home, 'assets/skills/my-create-feature/SKILL.md', personal);
   await write(home, 'defaults.json', json(oldChoice));
   const entries = await catalog(home);
@@ -283,7 +285,7 @@ test('P0 additions are available to an existing store without replacing its pers
   const preview = await plan(home, project, chosen);
   assert.equal(await read(home, 'assets/skills/my-review-design/SKILL.md'), null);
   await apply(home, project, chosen, preview.revision);
-  assert.equal(await read(project, '.github/skills/my-create-feature/SKILL.md'), personal);
+  assert.notEqual(await read(project, '.github/skills/my-create-feature/SKILL.md'), personal);
   assert.equal(await read(home, 'defaults.json'), json(oldChoice));
   assert.match(await read(project, '.github/skills/my-review-design/SKILL.md'), /name: "?my-review-design/);
   assert.equal((await doctor(home, project)).healthy, true);
@@ -292,6 +294,7 @@ test('my-create-code migrates to my-implement-code across adapters while preserv
   const { home, project } = await fixture(t);
   const original = '---\nname: my-create-code\ndescription: Personal implementation\n---\nKeep my implementation workflow.\n';
   const oldChoice = config(Object.keys(TOOLS), ['my-create-code']);
+  await write(home, 'bundle-state.json', json({version:1,files:{'my-create-code/SKILL.md':hash(original)}}));
   await write(home, 'assets/skills/my-create-code/SKILL.md', original);
   await write(home, 'assets/skills/my-create-code/references/custom.md', 'Personal notes');
   await write(home, 'defaults.json', json(oldChoice));
@@ -308,15 +311,15 @@ test('my-create-code migrates to my-implement-code across adapters while preserv
   assert.equal(await read(home, 'assets/skills/my-create-code/SKILL.md'), original);
   await apply(home, project, p.config, p.revision);
   assert.equal(await read(home, 'assets/skills/my-create-code/SKILL.md'), null);
-  assert.equal(await read(home, 'assets/skills/my-implement-code/SKILL.md'), normalizeText(original));
+  assert.equal(await read(home, 'assets/skills/my-implement-code/SKILL.md'), null);
   assert.deepEqual(JSON.parse(await read(home, 'defaults.json')).skills, ['my-implement-code']);
   for (const prefix of Object.values(TOOLS)) {
     assert.equal(await read(project, `${prefix}/my-create-code/SKILL.md`), null);
-    assert.equal(await read(project, `${prefix}/my-implement-code/SKILL.md`), normalizeText(original));
-    assert.equal(await read(project, `${prefix}/my-implement-code/references/custom.md`), 'Personal notes');
+    assert.match(await read(project, `${prefix}/my-implement-code/SKILL.md`), /name: "my-implement-code"/);
+    assert.equal(await read(project, `${prefix}/my-implement-code/references/custom.md`), null);
   }
   const backups = await fs.readdir(path.join(home, 'backups'));
-  const naming = backups.find(name => name.startsWith(`naming-v${NAMING_VERSION}-`));
+  const naming = backups.find(name => name.startsWith('builtin-skills-'));
   assert.equal(await read(home, `backups/${naming}/my-create-code/SKILL.md`), original);
   assert.equal((await doctor(home, project)).healthy, true);
 });
@@ -365,6 +368,6 @@ test('updating a stable runtime removes obsolete bundled aliases from its active
   assert.equal(entries.length, BUILTINS.length);
   assert.ok(entries.some(s => s.name === 'my-implement-code'));
   const backups = await fs.readdir(path.join(home, 'backups'));
-  const runtime = backups.find(name => name.startsWith(`runtime-naming-v${NAMING_VERSION}-`));
+  const runtime = backups.find(name => name.startsWith('runtime-skills-'));
   assert.equal(await read(home, `backups/${runtime}/my-create-code/SKILL.md`), old);
 });

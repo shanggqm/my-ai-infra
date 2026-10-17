@@ -1,6 +1,6 @@
 {
   "name": "@easyuseai/my-ai-infra",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "面向企业级 AI Coding 的轻量 SDD 脚手架，以规格驱动交付，让开发经验持续沉淀与复用。",
   "type": "module",
   "bin": {

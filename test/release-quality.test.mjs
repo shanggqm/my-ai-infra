@@ -38,39 +38,29 @@ test('equals options and tool aliases work with spaces in paths', async t => {
   assert.deepEqual(config.skills, ['my-create-feature']);
   assert.equal((await doctor(home, project)).healthy, true);
 });
-test('explicit upgrade updates tracked pristine assets, preserves edits, backs up replacements and does not sync projects', async t => {
+test('upgrade backs up tracked legacy builtin edits and leaves project copies unchanged', async t => {
   const { home, project } = await fixture(t);
-  await seed(home);
-  const prd = 'my-create-prd/SKILL.md', feature = 'my-create-feature/SKILL.md';
-  const old = '---\nname: my-create-prd\ndescription: Previous bundled PRD\n---\nOld bundled workflow.\n';
-  await write(home, 'assets/skills/' + prd, old);
-  const baseline = await readJSON(home, 'bundle-state.json'); baseline.files['assets/skills/' + prd] = hash(old);
+  await apply(home, project);
+  const original = await read(PACKAGE, 'assets/skills/my-create-prd/SKILL.md');
+  const edited = original + '\nPersonal rule.\n';
+  await write(home, 'assets/skills/my-create-prd/SKILL.md', edited);
+  const baseline = await readJSON(home, 'bundle-state.json');
+  baseline.files['assets/skills/my-create-prd/SKILL.md'] = hash(original);
   await write(home, 'bundle-state.json', json(baseline));
-  const edited = (await read(home, 'assets/skills/' + feature)) + '\nPersonal rule.\n';
-  await write(home, 'assets/skills/' + feature, edited);
-  const chosen = { version:1, tools:['codex'], skills:['my-create-prd','my-create-feature'] };
-  await apply(home, project, chosen);
-  const configBefore = await read(project, '.my-ai-infra.json'), defaultsBefore = await read(home, 'defaults.json');
+  await write(project, '.agents/skills/my-create-prd/SKILL.md', 'Project edit');
   const upgraded = JSON.parse((await run(process.execPath, [cli, 'upgrade', '--home', home])).stdout);
-  assert.ok(upgraded.updated.includes('skills/' + prd)); assert.ok(upgraded.preserved.includes('skills/' + feature));
-  assert.equal(await read(home, 'assets/skills/' + prd), await read(PACKAGE, 'assets/skills/' + prd));
-  assert.equal(await read(home, 'assets/skills/' + feature), edited);
-  assert.equal(await read(project, '.agents/skills/' + prd), old);
-  assert.equal(await read(project, '.my-ai-infra.json'), configBefore);
-  assert.equal(await read(home, 'defaults.json'), defaultsBefore);
-  const backup = (await fs.readdir(path.join(home, 'backups'))).find(p => p.startsWith('bundle-update-'));
-  assert.equal(await read(home, `backups/${backup}/skills/${prd}`), old);
-  const preview = await plan(home, project); await apply(home, project, preview.config, preview.revision);
-  assert.equal((await doctor(home, project)).healthy, true);
+  assert.equal(upgraded.skillMigrations.length, 1);
+  assert.equal(await read(upgraded.skillMigrations[0].backup, 'SKILL.md'), edited);
+  assert.equal(await read(home, 'assets/skills/my-create-prd/SKILL.md'), null);
+  assert.equal(await read(project, '.agents/skills/my-create-prd/SKILL.md'), 'Project edit');
 });
-test('upgrade conservatively preserves legacy assets without a known baseline', async t => {
+test('upgrade rejects unknown builtin namesakes without changing personal data', async t => {
   const { home } = await fixture(t);
-  const body = '---\nname: my-create-prd\ndescription: Unknown legacy source\n---\nKeep this custom content.\n';
+  const body = '---\nname: my-create-prd\ndescription: Unknown source\n---\nKeep this custom content.\n';
   await write(home, 'assets/skills/my-create-prd/SKILL.md', body);
-  const result = await seed(home, { updateBuiltins: true });
-  assert.ok(result.preserved.includes('skills/my-create-prd/SKILL.md'));
+  await assert.rejects(seed(home, { updateBuiltins: true }), /conflicts with builtin/);
   assert.equal(await read(home, 'assets/skills/my-create-prd/SKILL.md'), body);
-  assert.equal((await readJSON(home, 'bundle-state.json')).files['my-create-prd/SKILL.md'], undefined);
+  assert.equal(await read(home, 'bundle-state.json'), null);
 });
 
 test('Feature CLIs run through a directory alias instead of silently skipping main', async t => {

@@ -2,6 +2,7 @@ import { mountCogTrain } from './cog-train.js';
 
 const $ = id => document.getElementById(id);
 const labels = { codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot' };
+const originLabel = asset => asset.type === 'skills' || asset.origin ? (asset.origin === 'builtin' ? '内置' : '个人') : '';
 const groups = { sdd: 'SDD 主流程', support: '编码辅助', management: '资产管理', custom: '个人扩展' };
 const token = (/^[a-f0-9]{48}$/.test(location.hash.slice(1)) ? location.hash.slice(1) : '') || sessionStorage.getItem('my-ai-token') || '';
 if (token) sessionStorage.setItem('my-ai-token', token);
@@ -59,7 +60,7 @@ function choices(prefix, config) {
     const section = element('div', undefined, 'skill-group'), items = element('div', undefined, 'skill-group-items'); section.append(element('h3', title), items);
     for (const asset of assets) {
       const label = element('label', undefined, 'skill-card'), input = element('input'); input.type = 'checkbox'; input.value = asset.name; input.checked = config.skills.includes(asset.name); input.setAttribute('aria-label', asset.name + ' ' + asset.label);
-      const body = element('div'); body.append(element('strong', asset.label || asset.name), element('code', asset.name)); label.append(input, body); items.append(label);
+      const body = element('div'); body.append(element('strong', asset.label || asset.name), element('code', asset.name), element('small', originLabel(asset), 'hint')); label.append(input, body); items.append(label);
     }
     skills.append(section);
   }
@@ -167,6 +168,7 @@ function renderPlan(result, applied = false) {
     const hints = element('details', undefined, 'initialization-hints'); hints.open = applied;
     hints.append(element('summary', applied ? '下一步：补全项目运行规则' : '应用后的项目初始化提示'), initializationHints(result.nextSteps)); plan.append(hints);
   }
+  for (const migration of result.skillMigrations || []) plan.append(element('p', migration.backup ? `旧内置 Skill ${migration.sourceName} 已备份到 ${migration.backup}；定制内容请改名导入个人库。` : `旧内置 Skill ${migration.sourceName} 将备份迁移；项目将使用发行版本。`, 'hint'));
   if (applied && result.recovery) plan.append(element('p', '恢复记录：' + result.recovery, 'recovery-location'));
 }
 async function requestPreview() {
@@ -228,7 +230,7 @@ $('doctor').onclick = () => task($('doctor'), async () => {
 function renderAssets() {
   $('asset-count').textContent = state.inventory.length; $('assets-list').replaceChildren();
   for (const asset of state.inventory) {
-    const button = element('button', asset.label || asset.name, 'asset-item'); button.dataset.name = asset.type + '/' + asset.name; button.append(element('small', asset.type + '/' + asset.name)); button.setAttribute('aria-label', asset.type + ' ' + asset.name + ' ' + (asset.label || asset.description));
+    const button = element('button', asset.label || asset.name, 'asset-item'); button.dataset.name = asset.type + '/' + asset.name; button.append(element('small', asset.type + '/' + asset.name + (originLabel(asset) ? ' · ' + originLabel(asset) : ''))); button.setAttribute('aria-label', asset.type + ' ' + asset.name + ' ' + (asset.label || asset.description));
     if (selectedAsset?.name === asset.name && selectedAsset?.type === asset.type && !newAsset) { button.classList.add('selected'); button.setAttribute('aria-current', 'true'); }
     button.onclick = async () => { if (selectedAsset?.name === asset.name && selectedAsset?.type === asset.type && !newAsset) return; if (await mayDiscard(editorDirty())) editAsset(asset); }; $('assets-list').append(button);
   }
@@ -242,8 +244,12 @@ function searchAssets() {
 $('asset-search').oninput = searchAssets;
 function updateEditor() {
   const dirty = editorDirty(), available = newAsset || Boolean(selectedAsset);
-  $('editor-status').textContent = !available ? '未选择' : dirty ? '未保存' : '已保存';
-  $('save-asset').disabled = !dirty || $('save-asset').getAttribute('aria-busy') === 'true';
+  const readOnly = Boolean(selectedAsset?.readOnly && !newAsset);
+  $('asset-content').readOnly = readOnly;
+  $('editor-status').textContent = !available ? '未选择' : readOnly ? '内置 · 只读' : dirty ? '未保存' : '已保存';
+  $('editor-help').textContent = readOnly ? '内置 Skill 随工具版本更新。需要定制时，请使用新名称导入个人 Skill。' : '改动仅保存到个人资产库。';
+  if (readOnly && selectedAsset.legacyCopies?.length) $('editor-help').textContent += ' 发现旧版内置副本，下次 upgrade 或安装时会备份迁移；定制内容请改名导入。';
+  $('save-asset').disabled = readOnly || !dirty || $('save-asset').getAttribute('aria-busy') === 'true';
 }
 function editAsset(asset) {
   selectedAsset = asset; newAsset = false; $('asset-name').value = asset.name; $('asset-name').readOnly = true; $('asset-content').disabled = false; $('asset-content').value = asset.content; $('editor-title').textContent = asset.label || asset.name; clearEditorError();
@@ -274,12 +280,12 @@ $('save-asset').onclick = () => task($('save-asset'), async () => {
     $('editor-error').textContent = '请填写有效名称（小写字母、数字与单连字符，最多 64 字符），并与头部 name 保持一致；description 不可为空。'; $('editor-error').hidden = false; $('asset-name').setAttribute('aria-invalid', 'true'); $('asset-content').setAttribute('aria-invalid', 'true'); return;
   }
   const type = selectedAsset?.type || 'skills';
-  await api('asset', { name, content, type, revision: selectedAsset?.revision || null });
+  const saved = await api('asset', { name, content, type, revision: selectedAsset?.revision || null });
   const projectChoice = selection('project'); const defaultsChoice = selection('default'); const previousDefaults = state.defaults;
   newAsset = false; selectedAsset = null; await load(state.project); choices('project', projectChoice); choices('default', defaultsChoice); state.defaults = previousDefaults; updateCount(); updateDefaults();
-  editAsset(state.inventory.find(a => a.name === name && a.type === type)); notice('资产已保存到个人资产库。需要更新项目副本时，请到项目配置中预览并应用。');
+  editAsset(state.inventory.find(a => a.name === name && a.type === type)); notice('资产已保存到个人资产库。需要更新项目副本时，请到项目配置中预览并应用。' + (saved.skillMigrations || []).map(item => ` 旧内置副本已备份：${item.backup}；定制内容请改名导入。`).join(''));
 });
-$('save-defaults').onclick = () => task($('save-defaults'), async () => { const chosen = selection('default'); await api('defaults', { config: chosen, previous: state.defaults }); state.defaults = chosen; updateDefaults(); notice('默认偏好已保存，Web 新项目将沿用这些选择；CLI 初始化默认安装全部 Skill。'); });
+$('save-defaults').onclick = () => task($('save-defaults'), async () => { const chosen = selection('default'); await api('defaults', { config: chosen, previous: state.defaults }); state.defaults = chosen; updateDefaults(); notice('默认偏好已保存，CLI 与 Web 新项目将沿用这些选择。'); });
 document.addEventListener('keydown', event => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's' && !$('assets-view').hidden) { event.preventDefault(); $('save-asset').click(); } });
 window.addEventListener('beforeunload', event => { if (memoryDirty() || editorDirty() || projectSelectionDirty() || (state && !same(selection('default'), state.defaults))) { event.preventDefault(); event.returnValue = ''; } });
 if (location.protocol === 'file:') {

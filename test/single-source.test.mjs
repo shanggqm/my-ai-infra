@@ -107,7 +107,7 @@ test('failed link migration restores original copies, config and state', async t
   await assert.rejects(fs.lstat(path.join(project,'.agents/AGENTS.md')),{code:'ENOENT'});
   for (const file of ['AGENTS.md','CLAUDE.md','copilot-instructions.md']) await assert.rejects(fs.lstat(path.join(project,'.agents/rules',file)),{code:'ENOENT'});
 });
-test('CLI initialization installs every available Skill without a Skill prompt; sync preserves project selection', async t => {
+test('CLI initialization respects explicit defaults without a Skill prompt; sync preserves project selection', async t => {
   const { project, home } = await fixture(t);
   assert.equal(defaultConfig().skills.length,10);
   await write(home,'defaults.json',json({version:1,tools:['copilot'],skills:['my-create-feature']}));
@@ -116,7 +116,7 @@ test('CLI initialization installs every available Skill without a Skill prompt; 
   assert.doesNotMatch(result.stdout,/选择 Skill/);
   assert.equal(JSON.parse(result.stdout).nextSteps[0].tool,'copilot');
   assert.match(result.stderr,/copilot init/);
-  assert.deepEqual(new Set((await readJSON(project,'.my-ai-infra.json')).skills),new Set((await catalog(home)).map(a=>a.name)));
+  assert.deepEqual((await readJSON(project,'.my-ai-infra.json')).skills,['my-create-feature']);
   await apply(home,project,{version:1,tools:['copilot'],skills:['my-create-feature']});
   await exec(process.execPath,[cli,'sync','--home',home,'--project',project]);
   assert.deepEqual((await readJSON(project,'.my-ai-infra.json')).skills,['my-create-feature']);

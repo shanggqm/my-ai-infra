@@ -2,7 +2,7 @@ import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { allAssets, catalog, config, defaultConfig, PACKAGE, saveAsset, seed, TOOLS } from './store.mjs';
+import { allAssets, catalog, config, defaults, PACKAGE, saveAsset, seed, TOOLS } from './store.mjs';
 import { json, locked, read, readJSON, write } from './fs.mjs';
 import { apply, doctor, plan, projectConfig, projectRoot, publicPlan } from './project.mjs';
 import { agentCatalog } from './agents.mjs';
@@ -41,7 +41,7 @@ export async function startWeb({ home, project, port = 4317 }) {
         const selected = url.searchParams.get('project') || project;
         const root = selected ? await projectRoot(selected) : null;
         const raw = root ? await pathInspector(root).inspect('.my-ai-infra.json') : null;
-        return send(200, { home, tools: TOOLS, projects: await readJSON(home, 'projects.json', []), assets: await catalog(home), inventory: await allAssets(home), agents: (await agentCatalog(home)).map(({ body, content, ...item }) => item), defaults: await config(await readJSON(home, 'defaults.json', defaultConfig()), home, { allowEmpty: true, allowProjectId: false }), project: root, config: root ? await projectConfig(home, root, { recover: true }) : null, initialized: raw !== null });
+        return send(200, { home, tools: TOOLS, projects: await readJSON(home, 'projects.json', []), assets: await catalog(home), inventory: await allAssets(home), agents: (await agentCatalog(home)).map(({ body, content, ...item }) => item), defaults: await defaults(home), project: root, config: root ? await projectConfig(home, root, { recover: true }) : null, initialized: raw !== null });
       }
       if (req.method !== 'POST') return send(404, { error: 'Not found' });
       let size = 0, chunks = [];
@@ -69,7 +69,7 @@ export async function startWeb({ home, project, port = 4317 }) {
       if (url.pathname === '/api/defaults') {
         const chosen = await config(body.config, home, { allowProjectId: false });
         await locked(home, async () => {
-          if (json(await config(await readJSON(home, 'defaults.json', defaultConfig()), home, { allowEmpty: true, allowProjectId: false })) !== json(body.previous)) throw Error('Preferences changed; reload first');
+          if (json(await defaults(home)) !== json(body.previous)) throw Error('Preferences changed; reload first');
           await seed(home); await write(home, 'defaults.json', json(chosen));
         });
         return send(200, chosen);
