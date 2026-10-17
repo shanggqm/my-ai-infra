@@ -64,6 +64,7 @@ export function terminalUI({ output = stdout, env = process.env } = {}) {
       field('冲突策略', policy);
       if (result.review.length) field('冲突处理', `${result.review.length} 处，原文件与候选已保存`);
       for (const item of result.skillMigrations || []) field('旧内置 Skill 备份', `${item.sourceName} → ${item.backup}；定制内容请改名导入。`);
+      for (const item of result.assetMigrations || []) field('旧内置资产备份', `${item.type}/${item.sourceName} → ${item.backup}；定制内容请改名导入。`);
       if (result.recovery) field('恢复记录', path.resolve(result.root, result.recovery));
       if (!complete) {
         line(); line(`  ${color.warn('需要处理')}`);

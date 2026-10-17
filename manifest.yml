@@ -47,6 +47,8 @@ configuration:
   global_home: ~/.my-ai-infra
   personal_skills: ~/.my-ai-infra/assets/skills/
   builtin_skill_policy: read-only-package-source
+  builtin_asset_policy: read-only-package-source
+  personal_assets: ~/.my-ai-infra/assets/
   project_config: .my-ai-infra.json
   specifications_root: mai-specs/
   project_state: .my-ai-infra/state.json

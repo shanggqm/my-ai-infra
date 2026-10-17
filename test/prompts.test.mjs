@@ -79,7 +79,7 @@ test('prompt body edits stay centralized and merge protects project customizatio
   assert.equal(await read(project, center), customized);
 });
 
-test('prompt upgrade preserves edits, updates tracked builtins, and setup links supported global entries', async t => {
+test('builtin Prompt copies are archived and setup uses current package content', async t => {
   const { home, toolHome } = await fixture(t);
   await seed(home);
   const oldKey = 'assets/prompts/my-auto-feature.md';
@@ -89,19 +89,22 @@ test('prompt upgrade preserves edits, updates tracked builtins, and setup links 
   const baseline = await readJSON(home, 'bundle-state.json');
   baseline.files[oldKey] = hash(old);
   await write(home, 'bundle-state.json', json(baseline));
-  const personal = (await read(home, personalKey)) + '\nPersonal acceptance rule.\n';
+  const personal = (await read(PACKAGE, personalKey)) + '\nPersonal acceptance rule.\n';
   await write(home, personalKey, personal);
+  baseline.files[personalKey] = hash(await read(PACKAGE,personalKey));
+  await write(home, 'bundle-state.json', json(baseline));
   const upgraded = await seed(home, { updateBuiltins: true });
-  assert.ok(upgraded.updated.includes('prompts/my-auto-feature.md'));
-  assert.ok(upgraded.preserved.includes('prompts/my-auto-design.md'));
-  assert.equal(await read(home, oldKey), await read(PACKAGE, oldKey));
-  assert.equal(await read(home, personalKey), personal);
+  assert.equal(upgraded.assetMigrations.length,2);
+  assert.equal(await read(home,oldKey),null);
+  assert.equal(await read(home,personalKey),null);
+  const archived = upgraded.assetMigrations.find(copy => copy.name === 'my-auto-design');
+  assert.equal(await fs.readFile(archived.backup,'utf8'),personal);
   await setup(home, tools, toolHome);
   const assets = (await extensionCatalog(home)).filter(a => a.type === 'prompts');
   await checkLinks(toolHome, assets, true);
   for (const asset of assets) assert.equal(asset.globalTargets.copilot, `.agents/skills/${asset.name}/SKILL.md`);
   await assert.rejects(fs.stat(path.join(toolHome, '.copilot/prompts')), { code: 'ENOENT' });
-  assert.equal(await read(toolHome, '.agents/prompts/my-auto-design.md'), personal);
+  assert.equal(await read(toolHome, '.agents/prompts/my-auto-design.md'), await read(PACKAGE,personalKey));
 });
 
 test('single-file Prompt import and edit validate metadata, reject duplicates and stale writes', async t => {
@@ -129,14 +132,14 @@ test('single-file Prompt import and edit validate metadata, reject duplicates an
 
 test('legacy personal Prompt remains its sole source on upgrade; ambiguous flat and folder sources reject', async t => {
   const { home } = await fixture(t);
-  const name = 'my-auto-feature';
+  const name = 'team-legacy';
   await write(home, `assets/prompts/${name}/asset.json`, json({ name, description: 'Personal legacy prompt', entry: 'prompt.md', targets: { claudecode: `.claude/commands/${name}.md` } }));
   await write(home, `assets/prompts/${name}/prompt.md`, 'Keep my legacy customization.\n');
-  await write(home, `runtime/assets/prompts/${name}/prompt.md`, 'Old runtime body\n');
+  await write(home, 'runtime/assets/prompts/my-auto-feature/prompt.md', 'Old runtime body\n');
   await seed(home, { updateBuiltins: true });
-  await assert.rejects(fs.stat(path.join(home, `runtime/assets/prompts/${name}`)), { code: 'ENOENT' });
-  const backup = (await fs.readdir(path.join(home, 'backups'))).find(p => p.startsWith('runtime-prompts-'));
-  assert.equal(await read(home, `backups/${backup}/${name}/prompt.md`), 'Old runtime body\n');
+  await assert.rejects(fs.stat(path.join(home, 'runtime/assets/prompts/my-auto-feature')), { code: 'ENOENT' });
+  const backup = (await fs.readdir(path.join(home, 'backups'))).find(p => p.startsWith('runtime-assets-'));
+  assert.equal(await read(home, `backups/${backup}/prompts/my-auto-feature/prompt.md`), 'Old runtime body\n');
   const assets = (await extensionCatalog(home)).filter(a => a.type === 'prompts' && a.name === name);
   assert.equal(assets.length, 1);
   assert.equal(assets[0].content, 'Keep my legacy customization.\n');

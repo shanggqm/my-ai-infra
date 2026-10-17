@@ -30,7 +30,7 @@ mai init
 
 按提示选择 Coding 工具，即可装配内置 Skill 与 SDD 工作区。需要可视化管理时运行 `mai web`，通过终端给出的本机链接打开工作台。
 
-内置 Skill 在工作台中只读，随 npm 版本更新。自己的 Skill 可从项目导入：
+内置 Skill、Agent、Prompt、Hook 等资产在工作台中统一只读；`init` / `sync` 使用当前 npm 版本的资产内容，无需先执行 `upgrade`。自己的 Skill 可从项目导入：
 
 ```bash
 mai asset import .agents/skills/my-team-review

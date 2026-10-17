@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 import { agentCatalog, parseAgent, renderAgent, AGENT_TOOLS, GLOBAL_AGENT_TOOLS, agentFilename } from '../src/agents.mjs';
 import { apply, plan, doctor } from '../src/project.mjs';
 import { setup, seed } from '../src/store.mjs';
-import { hash } from '../src/fs.mjs';
+import { hash, write, json } from '../src/fs.mjs';
 
 const exec = promisify(execFile);
 const roles = [
@@ -128,12 +128,15 @@ for (const { name, skill } of roles) {
 
   test(name + ': personal role edits invalidate previews and sync to every native format', async t => {
     const { project, home } = await fixture(t);
+    const personal = 'team-' + name;
+    const original = (await agentCatalog(home)).find(a => a.name === name).content;
+    await write(home, `assets/agents/${personal}.md`, original.replaceAll(name, personal));
     await apply(home, project, chosen());
     const preview = await plan(home, project);
-    await fs.appendFile(path.join(home, `assets/agents/${name}.md`), '\n额外关注恢复时间目标。\n');
+    await fs.appendFile(path.join(home, `assets/agents/${personal}.md`), '\n额外关注恢复时间目标。\n');
     await assert.rejects(apply(home, project, undefined, preview.revision), /changed since preview/);
     await apply(home, project);
-    for (const tool of Object.keys(AGENT_TOOLS)) assert.ok((await checkInstalled(project, tool)).includes('额外关注恢复时间目标'));
+    for (const tool of Object.keys(AGENT_TOOLS)) assert.match(await fs.readFile(path.join(project, AGENT_TOOLS[tool], agentFilename(tool,personal)), 'utf8'), /额外关注恢复时间目标/);
   });
 
   test(name + ': setup installs global roles and dependencies, preserves edits and keeps relocated runtime functional', async t => {
@@ -146,29 +149,25 @@ for (const { name, skill } of roles) {
     assert.deepEqual(JSON.parse(listing.stdout).map(agent => agent.name), roles.map(role => role.name));
     const target = path.join(toolHome, `.claude/agents/${name}.md`);
     await fs.appendFile(target, '\nPersonal native edit\n');
-    await fs.appendFile(path.join(home, `assets/agents/${name}.md`), '\nUpdated role source\n');
     const codexBefore = await fs.readFile(path.join(toolHome, `.codex/agents/${name}.toml`));
     await assert.rejects(setup(home, Object.keys(AGENT_TOOLS), toolHome, [skill]), /Global Agent conflict/);
     assert.deepEqual(await fs.readFile(path.join(toolHome, `.codex/agents/${name}.toml`)), codexBefore);
     assert.ok((await fs.readFile(target, 'utf8')).includes('Personal native edit'));
   });
 
-  test(name + ': setup selection excludes roles without their dependency and upgrade preserves personal role edits', async t => {
+  test(name + ': setup excludes roles without dependencies and archives legacy builtin edits', async t => {
     const { home, toolHome } = await fixture(t);
     const result = await setup(home, ['codex'], toolHome, ['my-create-feature']);
     assert.deepEqual(result.agents, []);
     await absent(path.join(toolHome, '.codex/agents'));
-    const file = path.join(home, `assets/agents/${name}.md`), original = await fs.readFile(file, 'utf8');
-    await fs.appendFile(file, '\nUser change\n');
-    const report = await seed(home, { updateBuiltins: true });
-    assert.ok(report.preserved.includes(`agents/${name}.md`));
-    assert.ok((await fs.readFile(file, 'utf8')).includes('User change'));
-    const baselineFile = path.join(home, 'bundle-state.json'), baseline = JSON.parse(await fs.readFile(baselineFile, 'utf8'));
-    baseline.files[`assets/agents/${name}.md`] = hash(await fs.readFile(file));
-    await fs.writeFile(baselineFile, JSON.stringify(baseline));
-    const upgraded = await seed(home, { updateBuiltins: true });
-    assert.ok(upgraded.updated.includes(`agents/${name}.md`));
-    assert.equal(await fs.readFile(file, 'utf8'), original);
+    const original = (await agentCatalog(home)).find(a => a.name === name).content;
+    const key = `assets/agents/${name}.md`, customized = original + '\nUser change\n';
+    await write(home,key,customized);
+    await write(home,'bundle-state.json',json({version:1,files:{[key]:hash(original)}}));
+    const report = await seed(home);
+    assert.equal(await fs.readFile(report.assetMigrations[0].backup,'utf8'),customized);
+    await absent(path.join(home,key));
+    assert.equal((await agentCatalog(home)).find(a => a.name === name).content,original);
   });
 
   test(name + ': Agent metadata rejects missing dependencies, traversal and unregistered placeholders', async t => {

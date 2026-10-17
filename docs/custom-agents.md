@@ -41,7 +41,7 @@ my-ai-infra plan --project /path/to/project
 my-ai-infra sync --project /path/to/project
 ```
 
-随包角色源位于 `assets/agents/`，个人角色源位于 `~/.my-ai-infra/assets/agents/`。修改个人源后执行 `sync` 更新项目；更新全局入口使用 `setup`。`upgrade` 更新未修改的内置角色并备份，保留个人修改。
+随包角色源位于 `assets/agents/`，个人角色源位于 `~/.my-ai-infra/assets/agents/`。修改个人源后执行 `sync` 更新项目；更新全局入口使用 `setup`。内置角色在 CLI / Web 中只读，`init` / `sync` / `setup` 直接读取当前发行包。旧个人库中的受管内置副本完整备份后退出生效目录；需复用定制时先改为新的角色名称再导入。
 
 项目的中立源保存在 `.agents/agents/`，原生格式集中生成到 `.agents/.generated/<工具>/agents/`，工具目录全部为软链接入口。修改个人源后同步可更新项目；项目中立源的修改在默认 merge 下保留，并重新生成各工具格式。角色文件支持的字段和引用语法见 [资产说明](../assets/agents/README.md)。
 

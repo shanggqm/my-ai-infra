@@ -369,6 +369,6 @@ test('updating a stable runtime removes obsolete bundled aliases from its active
   assert.equal(entries.length, BUILTINS.length);
   assert.ok(entries.some(s => s.name === 'my-implement-code'));
   const backups = await fs.readdir(path.join(home, 'backups'));
-  const runtime = backups.find(name => name.startsWith('runtime-skills-'));
-  assert.equal(await read(home, `backups/${runtime}/my-create-code/SKILL.md`), old);
+  const runtime = backups.find(name => name.startsWith('runtime-assets-'));
+  assert.equal(await read(home, `backups/${runtime}/skills/my-create-code/SKILL.md`), old);
 });

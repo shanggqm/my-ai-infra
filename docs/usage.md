@@ -24,7 +24,7 @@ Esc、关闭按钮和遮罩可关闭预览，返回配置继续调整；正在�
 | `catalog` / `asset list` | 查看可用资产 | `--home` |
 | `defaults` | 查看或修改新项目默认项 | `--tools` |
 | `setup` | 安装/更新全局入口 | `--tools`、`--yes` |
-| `upgrade` | 更新内置 runtime，保留个人 Skill | `--home` |
+| `upgrade` | 更新内置 runtime，保留个人资产 | `--home` |
 | `asset import PATH` | 导入文本 Skill 包 | `--home` |
 | `asset edit NAME` | 修改正文并备份 | `--file`、`--home` |
 | `web` | 启动本地配置器 | `--project`、`--port`、`--home` |
@@ -60,13 +60,13 @@ my-ai-infra web --project "/path/to/my repo" --home "/path/to/personal assets" -
 
 ## 维护个人资产
 
-Skill 分为 `builtin`（内置）和 `personal`（个人），独立于 SDD、辅助等 category。来源由工具依据内置清单与存储位置判定，SKILL.md 自报 origin 不改变分类。
+所有资产（Skill、Agent、Prompt、Hook、MCP 和扩展类型）统一分为 `builtin`（内置）和 `personal`（个人），独立于 SDD、辅助等 category。来源由工具依据内置清单与存储位置判定，SKILL.md 自报 origin 不改变分类。
 
 | 来源 | 位置 | 维护方式 |
 |---|---|---|
-| 内置 | 当前 npm 包的 `assets/skills/` | CLI / Web 只读，随包版本更新 |
-| 个人 | `~/.my-ai-infra/assets/skills/` | 从项目导入或 Web 新建，独立持久保存 |
-| 项目副本 | 项目 `.agents/skills/` | 可按项目定制，显式 sync 更新 |
+| 内置 | 当前 npm 包的 `assets/<类型>/` | CLI / Web 只读，随包版本更新 |
+| 个人 | `~/.my-ai-infra/assets/<类型>/` | 从项目导入或 Web 新建，独立持久保存 |
+| 项目副本 | 项目 `.agents/<类型>/` | 可按项目定制，显式 sync 更新 |
 
 `--home`、`MY_AI_INFRA_HOME`、默认 `~/.my-ai-infra` 依次确定个人库。稳定 runtime 内的内置资源由工具管理，不作为个人编辑源。内置 Skill 定制如需复用，先复制为新名称，同时修改目录名、frontmatter name 及相关内部引用，再导入个人库。新建 Skill 默认使用中文元信息：
 
@@ -105,11 +105,11 @@ npx --yes @easyuseai/my-ai-infra@latest sync --project /path/to/repo --home /pat
 npx --yes @easyuseai/my-ai-infra@latest doctor --project /path/to/repo --home /path/to/personal
 ```
 
-内置 Skill 直接使用当前发行包的完整目录，个人 Skill 不参与 npm 升级。`upgrade` 刷新稳定 runtime 的内置资源，移除旧版本遗留的文件并保留恢复副本；当前项目不随之自动同步。新 npm 版本引入的内置名称与个人 Skill 重名时，报错并保留现场，需要先将个人 Skill 改名。
+所有内置资产直接使用当前运行的发行包，`init` / `sync` / `setup` 均生效，无需先运行 `upgrade`。个人新增资产不参与 npm 升级。项目中未修改的受管副本自动更新；已定制的项目副本沿用 `merge / replace / abort` 冲突策略，默认 `merge` 保留本地内容并保存候选。新包引入的内置名称与个人资产重名时，报错并保留现场，需要先将个人资产改名。
 
-旧版本可能在个人库 `assets/skills/` 或 `skills/` 中保留内置副本。工具通过 `bundle-state.json` 判断是否为历史受管副本；只读列表/预览显示 `legacyCopies` / `skillMigrations`，写入流程将整个旧目录原样移到 `backups/builtin-skills-*`，返回备份绝对路径。定制正文与附属资源完整保留，请改名后重新导入。缺少可信来源记录的同名目录报告冲突，保留原文，不静默启用或覆盖。其他资产类型继续采用已有摘要升级规则。
+旧版本可能在个人库 `assets/<类型>/` 或旧 `skills/`、`agents/` 中留下内置副本。工具通过 `bundle-state.json` 识别历史受管副本；只读列表/预览显示 `legacyCopies` 及 `skillMigrations` / `assetMigrations`。写入流程将旧文件或整个目录原样移到 `backups/builtin-skills-*` / `backups/builtin-assets-*`，返回备份绝对路径。定制正文与附属资源完整保留，请改名后重新导入。缺少可信来源记录的同名资产报告冲突，保留原文。
 
-升级替换前的内容位于 `backups/bundle-update-*`，稳定 runtime 旧 Skill 目录位于 `backups/runtime-skills-*`；个人正文修改和命名迁移也有各自备份。项目更改的旧文件与 journal 位于全局存储的 `projects/<项目真实路径的 SHA-256>/backups/`（默认全局根目录为 `~/.my-ai-infra`，可由 `--home` 或 `MY_AI_INFRA_HOME` 指定）。需要恢复时先停止相关写入，按具体操作的备份核对文件，恢复旧内容或删除该次新建且未被人工修改的文件，再重新 plan。安装记录也要与恢复后的状态一起核对；保留 journal，不用整目录删除代替恢复。
+`upgrade` 刷新稳定 runtime 并迁移历史副本，不自动同步项目；`init` / `sync` / `setup` 也会刷新 runtime。runtime 的全部内置资产整体替换，旧资源移入 `backups/runtime-assets-*`，避免已删除资源残留。早期版本的 `backups/bundle-update-*`、`backups/runtime-skills-*` 仍可用于恢复。个人正文修改和命名迁移也有各自备份。项目更改的旧文件与 journal 位于全局存储的 `projects/<项目真实路径的 SHA-256>/backups/`。恢复时先停止相关写入，按具体操作备份核对文件与安装记录，再重新 plan；保留 journal。
 
 安装包降级不会自动回滚个人正文与项目文件；恢复具体资产后，再用所需版本预览并同步。没有一键清空个人库或卸载所有项目文件的命令。`npm uninstall --global @easyuseai/my-ai-infra` 仅移除 npm 包与命令，个人资产、稳定 runtime、工具入口和项目文件保留。重新安装后读取同一个个人库即可恢复个人 Skill 列表；个人库清理需要用户显式执行。
 

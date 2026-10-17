@@ -50,15 +50,16 @@ test('legacy personal roots migrate intact and retain old upgrade baselines; div
   await assert.rejects(fs.lstat(path.join(home,'skills')),{code:'ENOENT'});
   await seed(home,{updateBuiltins:true});
   assert.notEqual((await catalog(home)).find(a=>a.name==='my-review-code').content,text);
-  await write(home,'agents/code-review.md','different source');
+  await write(home,'assets/agents/team-review.md','current source');
+  await write(home,'agents/team-review.md','different source');
   await assert.rejects(seed(home),/migration conflict/);
-  assert.equal(await fs.readFile(path.join(home,'agents/code-review.md'),'utf8'),'different source');
+  assert.equal(await fs.readFile(path.join(home,'agents/team-review.md'),'utf8'),'different source');
 });
 test('v3 flat sources and shared rules remain intact through read-only preview and sync',async t=>{
   const {home,project}=await fixture(t); await seed(home);
   const files={};
   for(const [target,source] of [['.agents/skills/my-review-code/SKILL.md','assets/skills/my-review-code/SKILL.md'],['.agents/agents/code-review.md','assets/agents/code-review.md']]) {
-    const text=await fs.readFile(path.join(source.startsWith('assets/skills/')?PACKAGE:home,source),'utf8'); await write(project,target,text);files[target]={kind:'file',hash:hash(text)};
+    const text=await fs.readFile(path.join(PACKAGE,source),'utf8'); await write(project,target,text);files[target]={kind:'file',hash:hash(text)};
   }
   await write(project,'.agents/rules/AGENTS.md','# Keep my principles\n');
   for(const entry of ['AGENTS.md','CLAUDE.md']) {await fs.symlink('.agents/rules/AGENTS.md',path.join(project,entry));files[entry]={kind:'symlink',target:'.agents/rules/AGENTS.md',hash:hash('.agents/rules/AGENTS.md')};}

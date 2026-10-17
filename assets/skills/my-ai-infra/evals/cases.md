@@ -85,3 +85,11 @@ CLI 初始化只选择工具，未保存固定清单时默认装配 catalog 全�
 - 升级旧内置副本时正文与附属文件原样备份，未知来源同名目录保持原状并报错；runtime 按完整目录更新，已删除内置文件不再补回。
 - npm 全局卸载和重装保留个人库，重新初始化能安装个人 Skill 及附件；不操作真实用户配置。
 - 确定性覆盖：test/personal-skills.test.mjs、test/release-quality.test.mjs、scripts/check-web.mjs、scripts/release-check.mjs。自然语言入口行为另行人工对话复核，自动回归不宣称模型对话通过。
+
+## 所有内置资产来源统一回归
+
+- init / sync / setup 直接使用当前发行包中的 Skill、Agent、Prompt、Hook、MCP 和扩展类型；旧个人库副本不能遮蔽新版本，无需先执行 upgrade。
+- 有来源记录的旧副本整体备份，包含本地定制与附属文件；未知来源的同名资产报冲突，个人新增资产保持可编辑。
+- CLI 与 Web 均标记内置 / 个人；内置资产保存和同名导入被拒绝。
+- 包更新后，未改动的项目副本更新，已删除资源清理，定制项目副本继续按冲突策略处理；runtime 整体刷新并保留恢复副本。
+- 确定性覆盖：test/builtin-assets.test.mjs、test/agents.test.mjs、test/prompts.test.mjs、scripts/check-web.mjs。本次修改资产装配与入口说明，不新增独立自然语言对话评测。

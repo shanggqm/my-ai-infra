@@ -83,11 +83,13 @@ try {
   await page.waitForTimeout(120);
   assert.equal(await imageData(), offscreen);
   await page.locator('.nav[data-tab="assets"]').click();
-  await page.locator('[data-name="skills/my-review-design"]').click();
-  assert.match(await page.locator('[data-name="skills/my-review-design"]').textContent(), /内置/);
-  assert.equal(await page.locator('#asset-content').evaluate(node => node.readOnly), true);
-  assert.equal(await page.locator('#save-asset').isDisabled(), true);
-  assert.match(await page.locator('#editor-help').textContent(), /新名称/);
+  for (const key of ['prompts/my-init-repo-memory', 'agents/code-review', 'skills/my-review-design']) {
+    await page.locator(`[data-name="${key}"]`).click();
+    assert.match(await page.locator(`[data-name="${key}"]`).textContent(), /内置/);
+    assert.equal(await page.locator('#asset-content').evaluate(node => node.readOnly), true);
+    assert.equal(await page.locator('#save-asset').isDisabled(), true);
+    assert.match(await page.locator('#editor-help').textContent(), /新名称/);
+  }
   await page.locator('#new-asset').click();
   await page.locator('#asset-name').fill('team-browser-skill');
   assert.equal(await page.locator('#asset-content').evaluate(node => node.readOnly), false);

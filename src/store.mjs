@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { files, hash, json, read, readJSON, safe, stat, write, locked } from './fs.mjs';
-import { BUILTINS, NAMING_VERSION, ALIASES, REMOVED_SKILLS, canonicalName, definition, normalizeText } from './names.mjs';
+import { BUILTINS, NAMING_VERSION, REMOVED_SKILLS, canonicalName, definition, normalizeText } from './names.mjs';
 import { ASSET_ROOT, SKILL_SOURCE, BUNDLE, sourceRoots, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, parseExtension, parsePrompt, assetRelative, namePart, legacyAssetPath, pruneLegacyAssetDirectories, legacyPromptTargets } from './assets.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { randomUUID } from 'node:crypto';
@@ -122,7 +122,7 @@ export async function config(input, home, { allowEmpty = false, allowProjectId =
   if (!skills.length && !allowEmpty) throw Error('No available Skill selected; 已移除的 Skill 不再安装，请通过 --skills 或 Web 选择至少一个可用 Skill。');
   return { version: 1, tools: [...new Set(input.tools)], skills, ...(input.projectId ? { projectId: input.projectId } : {}) };
 }
-export async function seed(home, { updateBuiltins = false } = {}) {
+export async function seed(home) {
   // Move legacy personal roots intact; reject divergent duplicates before mutation.
   const moves = [];
   for (const type of ['skills','agents']) {
@@ -147,7 +147,7 @@ export async function seed(home, { updateBuiltins = false } = {}) {
     const backup = await safe(home,`backups/assets-migration-${Date.now()}-${randomUUID()}/${type}`);
     await fs.mkdir(path.dirname(backup),{recursive:true}); await fs.rename(legacy,backup);
   }
-  const report = { added: [], updated: [], preserved: [], skillMigrations: [] };
+  const report = { added: [], updated: [], preserved: [], skillMigrations: [], assetMigrations: [] };
   const nextBaseline = { version: 1, files: { ...baseline.files } };
   for (const copy of await legacySkillCopies(home)) {
     const backup = `backups/builtin-skills-${Date.now()}-${randomUUID()}/${copy.sourceName}`;
@@ -159,25 +159,14 @@ export async function seed(home, { updateBuiltins = false } = {}) {
       if (key.startsWith(`assets/skills/${copy.sourceName}/`) || key.startsWith(`${copy.sourceName}/`)) delete nextBaseline.files[key];
     }
   }
-  for (const relative of await files(BUNDLE)) {
-    if (relative.startsWith('skills/')) continue;
-    // Keep an existing manifest-based personal Prompt as its sole source.
-    const promptName = relative.match(/^prompts\/([a-z0-9-]+)\.md$/)?.[1];
-    if (promptName && await stat(await safe(home, `assets/prompts/${promptName}`))) {
-      report.preserved.push(`prompts/${promptName}`); continue;
-    }
-    const key = `assets/${relative}`, before = await read(home,key), bundled = await read(BUNDLE,relative), digest = hash(bundled);
-    const legacyKey = relative.startsWith('skills/') ? relative.slice(7) : relative;
-    const tracked = baseline.files[key] || baseline.files[legacyKey];
-    if (tracked) nextBaseline.files[key] = tracked;
-    if (before === null) {
-      await write(home,key,bundled); report.added.push(relative); nextBaseline.files[key] = digest;
-    } else if (hash(before) === digest) nextBaseline.files[key] = digest;
-    else if (updateBuiltins && tracked === hash(before)) {
-      await write(home,`backups/bundle-update-${Date.now()}/${relative}`,before);
-      await write(home,key,bundled); report.updated.push(relative); nextBaseline.files[key] = digest;
-    } else report.preserved.push(relative);
-    delete nextBaseline.files[legacyKey];
+  const typed = [...await agentCatalog(home), ...await extensionCatalog(home)];
+  for (const copy of typed.flatMap(asset => asset.legacyCopies)) {
+    const backup = `backups/builtin-assets-${Date.now()}-${randomUUID()}/${copy.type}/${copy.sourceName}`;
+    const destination = await safe(home,backup);
+    await fs.mkdir(path.dirname(destination),{recursive:true});
+    await fs.rename(await safe(home,copy.relative),destination);
+    report.assetMigrations.push({...copy,backup:destination,next:'旧副本已备份；个人定制请改名后导入。'});
+    for (const key of copy.keys) delete nextBaseline.files[key];
   }
   const previousDefaults = await readJSON(home, 'defaults.json', null);
   if (previousDefaults) {
@@ -188,42 +177,24 @@ export async function seed(home, { updateBuiltins = false } = {}) {
     }
   }
   // Install a stable local runtime so the global Skill survives npx cache eviction.
-  for (const dir of ['src', 'bin', 'web', 'templates', 'catalog', 'assets']) {
+  for (const dir of ['src', 'bin', 'web', 'templates', 'catalog']) {
     for (const relative of await files(path.join(PACKAGE, dir))) {
-      if (dir === 'assets' && relative.startsWith('skills/')) continue;
       if (dir === 'web' && relative === 'assets/logo.png') continue;
       const text = await read(PACKAGE, `${dir}/${relative}`);
       await write(home, `runtime/${dir}/${relative}`, text);
     }
   }
-  await refreshRuntimeSkills(home);
-  // Archive obsolete bundled Prompt folders so the stable runtime has one source per name.
-  for (const relative of await files(path.join(BUNDLE, 'prompts'))) {
-    if (!/^[a-z0-9-]+\.md$/.test(relative)) continue;
-    const name = relative.slice(0, -3), legacy = await safe(home, `runtime/assets/prompts/${name}`);
-    if (!await stat(legacy)) continue;
-    const backup = await safe(home, `backups/runtime-prompts-${Date.now()}-${randomUUID()}/${name}`);
-    await fs.mkdir(path.dirname(backup), { recursive: true });
-    await fs.rename(legacy, backup);
-  }
+  await refreshRuntimeAssets(home);
   // Design assets are trusted bundled binaries; custom Skill imports remain text-only.
   for (const relative of ['web/assets/logo.png', 'design-system/bxy-design-tokens.css', 'design-system/assets/icons/material-symbols-rounded.css', 'design-system/assets/icons/material-symbols-rounded.woff2']) {
     await write(home, `runtime/${relative}`, await fs.readFile(path.join(PACKAGE, relative)));
   }
   await write(home, 'runtime/package.json', await read(PACKAGE, 'package.json'));
-  // A previous bundle may retain old folder names; keep recovery copies outside the active runtime.
-  for (const alias of Object.keys(ALIASES)) {
-    const legacy = await safe(home, `runtime/assets/skills/${alias}`);
-    if (!(await stat(legacy))) continue;
-    const backup = await safe(home, `backups/runtime-naming-v${NAMING_VERSION}-${Date.now()}/${alias}`);
-    await fs.mkdir(path.dirname(backup), { recursive: true });
-    await fs.rename(legacy, backup);
-  }
   await write(home, 'bundle-state.json', json(nextBaseline));
   return report;
 }
-async function refreshRuntimeSkills(home) {
-  const source = path.join(BUNDLE, 'skills'), target = await safe(home, 'runtime/assets/skills');
+async function refreshRuntimeAssets(home) {
+  const source = BUNDLE, target = await safe(home, 'runtime/assets');
   if (path.resolve(source) === target) return;
   const sourceFiles = await files(source);
   if (await stat(target)) {
@@ -234,8 +205,8 @@ async function refreshRuntimeSkills(home) {
       if (equal) return;
     }
   }
-  const staging = `runtime/assets/.skills-${randomUUID()}`;
-  const backup = `backups/runtime-skills-${Date.now()}-${randomUUID()}`;
+  const staging = `runtime/.assets-${randomUUID()}`;
+  const backup = `backups/runtime-assets-${Date.now()}-${randomUUID()}`;
   let moved = false;
   try {
     for (const relative of await files(source)) await write(home, `${staging}/${relative}`, await read(source, relative));
@@ -251,7 +222,7 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
   if (!tools.length || tools.some(t => !Object.hasOwn(TOOLS, t))) throw Error('Unsupported tool');
   ({ tools, skills } = await config({ version: 1, tools, skills }, home));
   return locked(home, async () => {
-    const seeded = await seed(home, { updateBuiltins: true });
+    const seeded = await seed(home);
     const previous = await readJSON(home, 'global-state.json', {}), next = { ...previous };
     const outputs = [], desired = new Map();
     const agents = (await agentCatalog(home)).filter(agent => agent.skills.every(skill => skills.includes(skill)));
@@ -350,7 +321,7 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
       throw error;
     }
     await pruneLegacyAssetDirectories(toolHome, migrated.map(item => item.target));
-    return { home, skillMigrations: seeded.skillMigrations, installed: tools, skills: (await catalog(home)).length, agents: agents.map(agent => agent.name) };
+    return { home, skillMigrations: seeded.skillMigrations, assetMigrations: seeded.assetMigrations, installed: tools, skills: (await catalog(home)).length, agents: agents.map(agent => agent.name) };
   });
 }
 export async function saveAsset(home, name, text, revision, type = 'skills') {
@@ -405,8 +376,9 @@ export async function allAssets(home) {
 async function saveTypedAsset(home,name,text,revision,type) {
   if (!namePart(name) || !namePart(type)) throw Error('Invalid asset name/type');
   return locked(home,async()=>{
-    await seed(home);
     const asset = (await allAssets(home)).find(a=>a.type===type && a.name===name);
+    if (asset?.readOnly) throw Error(`Builtin asset is read-only: ${type}/${name}; use a new personal asset name`);
+    await seed(home);
     if (!asset || asset.revision !== revision) throw Error('Asset changed since it was loaded; reload first');
     if (type==='agents') parseAgent(text,name);
     if (type==='prompts' && asset.flat) parsePrompt(text,name);
@@ -432,8 +404,8 @@ async function importTypedAsset(home,source,type) {
     if (!contents.has(`${name}/${manifest.entry}`)) throw Error('Missing asset entry');
   }
   return locked(home,async()=>{
-    await seed(home);
     if ((await allAssets(home)).some(asset=>asset.type===type && asset.name===name)) throw Error(`Asset already exists: ${type}/${name}`);
+    await seed(home);
     for (const [file,text] of contents) await write(home,`assets/${type}/${file}`,text);
     return {imported:name,type,files:contents.size};
   });

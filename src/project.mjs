@@ -110,7 +110,8 @@ export async function plan(home, project, override, options = {}) {
   const cleanupDirectories = cleanupTools.flatMap(tool => TOOL_DIRECTORIES[tool]);
   const desired = new Map();
   const assetList = await catalog(home);
-  const selectedAgents = (await agentCatalog(home)).filter(agent => agent.skills.every(skill => selected.skills.includes(skill)));
+  const availableAgents = await agentCatalog(home);
+  const selectedAgents = availableAgents.filter(agent => agent.skills.every(skill => selected.skills.includes(skill)));
   for (const name of selected.skills) {
     const { sourceName, sourceRoot: source } = assetList.find(a => a.name === name);
     for (const relative of await files(path.join(source, sourceName))) {
@@ -277,9 +278,9 @@ export async function plan(home, project, override, options = {}) {
   }
   const summary = {};
   for (const a of actions) summary[a.action] = (summary[a.action] || 0) + 1;
-  return { root, skillMigrations: assetList.flatMap(asset => asset.legacyCopies), config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
+  return { root, assetMigrations: [...availableAgents,...extensions].flatMap(asset => asset.legacyCopies), skillMigrations: assetList.flatMap(asset => asset.legacyCopies), config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
 }
-export const publicPlan = (p, phase = 'plan') => ({ root: p.root, skillMigrations: p.skillMigrations, config: p.config, agents: p.agents, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
+export const publicPlan = (p, phase = 'plan') => ({ root: p.root, assetMigrations: p.assetMigrations, skillMigrations: p.skillMigrations, config: p.config, agents: p.agents, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
 
 export async function apply(home, project, override, expectedRevision, options = {}) {
   return locked(home, async () => {
@@ -331,7 +332,7 @@ export async function apply(home, project, override, expectedRevision, options =
       await write(recovery, 'completed.json', json({ project: p.root, completedAt: Date.now() }));
       await pruneBackups(home, p.root);
     }
-    return { ...publicPlan(p,'applied'), applied: true, recovery, skillMigrations: seeded.skillMigrations };
+    return { ...publicPlan(p,'applied'), applied: true, recovery, assetMigrations: seeded.assetMigrations, skillMigrations: seeded.skillMigrations };
   });
 }
 export async function doctor(home, project) {

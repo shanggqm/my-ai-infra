@@ -168,6 +168,7 @@ function renderPlan(result, applied = false) {
     const hints = element('details', undefined, 'initialization-hints'); hints.open = applied;
     hints.append(element('summary', applied ? '下一步：补全项目运行规则' : '应用后的项目初始化提示'), initializationHints(result.nextSteps)); plan.append(hints);
   }
+  for (const migration of result.assetMigrations || []) plan.append(element('p', migration.backup ? `旧内置资产 ${migration.type}/${migration.name} 已备份到 ${migration.backup}；定制内容请改名导入。` : `旧内置资产 ${migration.type}/${migration.name} 将备份迁移；项目将使用发行版本。`, 'hint'));
   for (const migration of result.skillMigrations || []) plan.append(element('p', migration.backup ? `旧内置 Skill ${migration.sourceName} 已备份到 ${migration.backup}；定制内容请改名导入个人库。` : `旧内置 Skill ${migration.sourceName} 将备份迁移；项目将使用发行版本。`, 'hint'));
   if (applied && result.recovery) plan.append(element('p', '恢复记录：' + result.recovery, 'recovery-location'));
 }
@@ -247,7 +248,7 @@ function updateEditor() {
   const readOnly = Boolean(selectedAsset?.readOnly && !newAsset);
   $('asset-content').readOnly = readOnly;
   $('editor-status').textContent = !available ? '未选择' : readOnly ? '内置 · 只读' : dirty ? '未保存' : '已保存';
-  $('editor-help').textContent = readOnly ? '内置 Skill 随工具版本更新。需要定制时，请使用新名称导入个人 Skill。' : '改动仅保存到个人资产库。';
+  $('editor-help').textContent = readOnly ? '内置资产随工具版本更新。需要定制时，请使用新名称导入个人资产。' : '改动仅保存到个人资产库。';
   if (readOnly && selectedAsset.legacyCopies?.length) $('editor-help').textContent += ' 发现旧版内置副本，下次 upgrade 或安装时会备份迁移；定制内容请改名导入。';
   $('save-asset').disabled = readOnly || !dirty || $('save-asset').getAttribute('aria-busy') === 'true';
 }

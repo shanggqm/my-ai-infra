@@ -77,10 +77,10 @@ Prompt 入口以显式调用为用途；生成 Skill 设置 `disable-model-invoc
 
 ```bash
 mai asset import /path/to/my-shortcut.md --type prompts
-mai asset edit my-auto-feature --type prompts --file /path/to/prompt.md
+mai asset edit my-shortcut --type prompts --file /path/to/prompt.md
 mai sync --project /path/to/repo
 # 更新此前显式安装的全局入口
 mai setup --tools codex,claudecode,cursor
 ```
 
-Web 的资产列表也可编辑 Prompt 正文。同步遇到项目定制按 merge / replace / abort 处理；默认保留本地内容并保存候选。不要把各工具入口替换为独立副本。已有清单式个人 Prompt 保持兼容，同名新文件不会覆盖它；同一目录中的新旧同名资产会报冲突，需保留一个源。
+Web 的资产列表可编辑个人 Prompt 正文；内置 Prompt 只读，初始化与同步直接读取当前包。定制内置 Prompt 并复用到其他项目时，先另存为新文件名再导入。同步遇到项目定制按 merge / replace / abort 处理；默认保留本地内容并保存候选。不要把各工具入口替换为独立副本。已有清单式个人 Prompt 保持兼容，同名新文件不会覆盖它；同一目录中的新旧同名资产会报冲突，需保留一个源。

@@ -144,14 +144,14 @@ test('a future bundle claiming a personal name fails before migration or runtime
 test('failed runtime Skill replacement restores the previous complete directory', async t => {
   const { home } = await fixture(t); await seed(home);
   await write(home, 'runtime/assets/skills/my-review-code/references/old.md', 'old resource');
-  const rename = fs.rename, target = path.join(home, 'runtime/assets/skills');
+  const rename = fs.rename, target = path.join(home, 'runtime/assets');
   fs.rename = async (from, to) => {
-    if (to === target && path.basename(from).startsWith('.skills-')) throw Error('injected runtime failure');
+    if (to === target && path.basename(from).startsWith('.assets-')) throw Error('injected runtime failure');
     return rename(from, to);
   };
   try { await assert.rejects(seed(home, { updateBuiltins: true }), /injected runtime failure/); }
   finally { fs.rename = rename; }
   assert.equal(await read(home, 'runtime/assets/skills/my-review-code/references/old.md'), 'old resource');
   assert.ok(await read(home, 'runtime/assets/skills/my-review-code/SKILL.md'));
-  assert.ok(!(await fs.readdir(path.join(home, 'runtime/assets'))).some(name => name.startsWith('.skills-')));
+  assert.ok(!(await fs.readdir(path.join(home, 'runtime'))).some(name => name.startsWith('.assets-')));
 });

@@ -1,7 +1,6 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
-import { sourceRoots } from './assets.mjs';
-import { read, stat } from './fs.mjs';
+import { typedSources } from './assets.mjs';
+import { read } from './fs.mjs';
 
 const validName = value => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64;
 export const AGENT_TOOLS = { codex: '.codex/agents', claudecode: '.claude/agents', cursor: '.cursor/agents', copilot: '.github/agents' };
@@ -25,20 +24,9 @@ export function parseAgent(content, expectedName) {
 }
 
 export async function agentCatalog(home) {
-  const result = new Map();
-  for (const root of await sourceRoots(home, 'agents')) {
-    const info = await stat(root);
-    if (!info) continue;
-    if (!info.isDirectory() || info.isSymbolicLink()) throw Error(`Invalid Agent source directory: ${root}`);
-    for (const entry of await fs.readdir(root, { withFileTypes: true })) {
-      if (entry.name === 'README.md') continue;
-      if (!entry.isFile() || !entry.name.endsWith('.md')) throw Error(`Invalid Agent source: ${entry.name}`);
-      const name = entry.name.slice(0, -3);
-      if (result.has(name)) continue;
-      result.set(name, { ...parseAgent(await read(root, entry.name), name), sourceRoot: root });
-    }
-  }
-  return [...result.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const result = [];
+  for (const source of await typedSources(home,'agents')) result.push({...parseAgent(await read(source.sourceRoot,source.sourceName),source.name),...source});
+  return result.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function renderAgent(agent, tool, skillPath) {

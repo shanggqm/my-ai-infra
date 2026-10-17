@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { files, read, stat, safe, hash, json } from './fs.mjs';
+import { files, read, readJSON, stat, safe, hash, json } from './fs.mjs';
 
 export const BUNDLE = fileURLToPath(new URL('../assets/', import.meta.url));
 export const ASSET_ROOT = '.agents';
@@ -53,9 +53,42 @@ export async function sourceRoots(home, type) {
     const info = await stat(await safe(path.dirname(root),path.basename(root)));
     if (!info) continue;
     if (!info.isDirectory() || info.isSymbolicLink()) throw Error(`Invalid asset source directory: ${root}`);
-    result.push(root);
+    if (!result.includes(root)) result.push(root);
   }
   return result;
+}
+// Every typed builtin is read from the package. Recorded personal-library copies
+// are migration inputs, never overrides; unrecorded collisions require renaming.
+export async function typedSources(home, type) {
+  const roots = await sourceRoots(home,type), bundle = path.join(BUNDLE,type);
+  const baseline = await readJSON(home,'bundle-state.json',{version:1,files:{}});
+  if (baseline.version !== 1 || !baseline.files || typeof baseline.files !== 'object' || Array.isArray(baseline.files) || Object.values(baseline.files).some(value => typeof value !== 'string' || !/^[a-f0-9]{64}$/.test(value))) throw Error('Invalid builtin asset tracking');
+  const result = new Map();
+  for (const root of [...roots.filter(root => root === bundle), ...roots.filter(root => root !== bundle)]) {
+    const seen = new Set();
+    for (const item of await fs.readdir(root,{withFileTypes:true})) {
+      if (item.name === 'README.md') continue;
+      const flat = ['agents','prompts'].includes(type) && item.isFile() && item.name.endsWith('.md');
+      const name = flat ? item.name.slice(0,-3) : item.name;
+      if (!namePart(name) || (!flat && (type === 'agents' || !item.isDirectory()))) throw Error(`Invalid asset: ${type}/${item.name}`);
+      if (seen.has(name)) throw Error(`Duplicate asset: ${type}/${name}; keep one source`);
+      seen.add(name);
+      const previous = result.get(name), builtin = root === bundle;
+      if (previous?.origin === 'builtin') {
+        const key = `${type}/${item.name}`;
+        const keys = Object.keys(baseline.files).filter(candidate => [key,`assets/${key}`].some(prefix => candidate === prefix || !flat && candidate.startsWith(prefix+'/')));
+        if (!keys.length) throw Error(`Personal asset conflicts with builtin: ${type}/${name}; rename the personal asset before retrying`);
+        const contents = {};
+        if (flat) contents[item.name] = await read(root,item.name);
+        else for (const file of await files(path.join(root,item.name))) contents[file] = await read(root,`${item.name}/${file}`);
+        previous.legacyCopies.push({type,name,sourceName:item.name,relative:path.relative(home,path.join(root,item.name)),revision:hash(json(contents)),keys});
+        continue;
+      }
+      if (previous) throw Error(`Duplicate personal asset: ${type}/${name}`);
+      result.set(name,{name,type,flat,sourceName:item.name,sourceRoot:root,origin:builtin?'builtin':'personal',readOnly:builtin,legacyCopies:[]});
+    }
+  }
+  return [...result.values()];
 }
 export function parseExtension(text, type, name) {
   if (!namePart(type) || !namePart(name) || ['skills','agents','rules'].includes(type)) throw Error('Invalid extension asset type/name');
@@ -99,23 +132,14 @@ export async function extensionCatalog(home) {
     for (const entry of await fs.readdir(root,{withFileTypes:true})) if (entry.isDirectory() && !['skills','agents','rules'].includes(entry.name)) types.add(entry.name);
   }
   const result = [];
-  for (const type of [...types].sort()) for (const root of await sourceRoots(home,type)) {
-    const seen = new Set();
-    for (const item of await fs.readdir(root,{withFileTypes:true})) {
-      if (item.name === 'README.md') continue;
-      const flat = type === 'prompts' && item.isFile() && item.name.endsWith('.md');
-      const name = flat ? item.name.slice(0, -3) : item.name;
-      if ((!flat && !item.isDirectory()) || !namePart(name)) throw Error(`Invalid asset: ${type}/${item.name}`);
-      if (seen.has(name)) throw Error(`Duplicate asset: ${type}/${name}; keep one source`);
-      seen.add(name);
-      if (result.some(a=>a.type===type && a.name===name)) continue;
-      const manifest = flat ? parsePrompt(await read(root,item.name),name) : parseExtension(await read(root,`${name}/asset.json`),type,name);
-      const contents = {};
-      if (flat) contents[item.name] = await read(root,item.name);
-      else for (const file of await files(path.join(root,name))) contents[file] = await read(root,`${name}/${file}`);
-      if (!Object.hasOwn(contents,manifest.entry)) throw Error(`Missing asset entry: ${type}/${item.name}`);
-      result.push({...manifest,type,flat,sourceRoot:root,contents,content:contents[manifest.entry],revision:hash(json(contents))});
-    }
+  for (const type of [...types].sort()) for (const source of await typedSources(home,type)) {
+    const {name,flat,sourceName,sourceRoot:root} = source;
+    const manifest = flat ? parsePrompt(await read(root,sourceName),name) : parseExtension(await read(root,`${name}/asset.json`),type,name);
+    const contents = {};
+    if (flat) contents[sourceName] = await read(root,sourceName);
+    else for (const file of await files(path.join(root,name))) contents[file] = await read(root,`${name}/${file}`);
+    if (!Object.hasOwn(contents,manifest.entry)) throw Error(`Missing asset entry: ${type}/${sourceName}`);
+    result.push({...manifest,...source,contents,content:contents[manifest.entry],revision:hash(json(contents))});
   }
   return result;
 }

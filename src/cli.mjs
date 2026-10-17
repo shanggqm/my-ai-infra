@@ -44,7 +44,7 @@ mai 与 my-ai-infra 共用全部命令和选项。
 项目路径必须已存在。未指定路径时使用当前目录。
 交互初始化使用 ↑/↓ 移动、空格多选、Enter 确认工具；未保存固定清单时默认安装全部 Skill。
 非交互环境沿用已保存工具偏好（初始为 Codex）。
-内置 Skill 随发行更新且只读；个人 Skill 导入个人库，同名拒绝覆盖。
+所有内置资产随发行更新且只读；init / sync 使用当前包，个人资产同名拒绝覆盖。
 upgrade 更新本地 runtime 并迁移旧内置副本；同步项目仍需显式执行 sync。
 Web 必须通过本地命令启动，不能直接打开 HTML 文件。`;
 
@@ -114,7 +114,7 @@ export async function main(args = process.argv.slice(2)) {
   }
   if (command === 'agents') { console.log(json((await agentCatalog(home)).map(({ body, content, ...item }) => item))); return; }
   if (command === 'upgrade') {
-    const result = await locked(home, () => seed(home, { updateBuiltins: true }));
+    const result = await locked(home, () => seed(home));
     console.log(json({ version: (await readJSON(PACKAGE, 'package.json')).version, home, ...result, next: '使用 plan / sync 显式更新目标项目' })); return;
   }
   if (command === 'web') {

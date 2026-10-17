@@ -97,7 +97,15 @@ try {
   const binDirectory = process.platform === 'win32' ? globalPrefix : path.join(globalPrefix, 'bin');
   const globalOptions = { cwd: project, env: { ...process.env, PATH: binDirectory + path.delimiter + process.env.PATH, MY_AI_INFRA_HOME: home }, shell: process.platform === 'win32' };
   for (const command of ['mai', 'my-ai-infra']) ensure((await run(command, ['--version'], globalOptions)).stdout.trim() === pkg.version, `Global ${command} version mismatch`);
-  await run('mai', ['init','--tools','codex,claudecode,cursor,copilot','--yes'], globalOptions);
+  const promptKey = 'assets/prompts/my-init-repo-memory.md', oldPrompt = '---\ndescription: Previous package prompt\n---\nOld prompt body\n';
+  await fs.mkdir(path.join(home, 'assets/prompts'), { recursive: true });
+  await fs.writeFile(path.join(home, promptKey), oldPrompt);
+  await fs.writeFile(path.join(home, 'bundle-state.json'), JSON.stringify({ version: 1, files: { [promptKey]: createHash('sha256').update(oldPrompt).digest('hex') } }));
+  const initialized = JSON.parse((await run('mai', ['init','--tools','codex,claudecode,cursor,copilot','--yes'], globalOptions)).stdout);
+  const promptMigration = initialized.assetMigrations.find(item => item.type === 'prompts' && item.name === 'my-init-repo-memory');
+  ensure(promptMigration && await fs.readFile(promptMigration.backup, 'utf8') === oldPrompt, 'Legacy packaged Prompt was not backed up');
+  ensure(await fs.readFile(path.join(project, '.agents/prompts/my-init-repo-memory.md'), 'utf8') === await fs.readFile(path.join(installedRoot, promptKey), 'utf8'), 'Init used a stale personal Prompt instead of the package');
+  pass('Installed CLI init replaces a recorded legacy Prompt with the current package without a separate upgrade');
   ensure(JSON.parse((await run('mai', ['doctor'], globalOptions)).stdout).healthy, 'Global mai init did not initialize the current directory');
   pass('Global mai and my-ai-infra commands, current-directory init and doctor');
   const selectedSkills = [...JSON.parse(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8')).skills, 'my-auto-design', 'my-auto-feature', 'my-init-repo-memory'];

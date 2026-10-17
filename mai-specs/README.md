@@ -4,3 +4,5 @@
 
 - [997：内置 Skill 只读与个人 Skill 独立存储](997-personal-skill-library/BRIEF.md)
 - [996：取消 Coding 工具时清理专属目录](996-tool-directory-cleanup/BRIEF.md)
+
+- [995：统一内置资产初始化来源](995-unified-builtin-assets/BRIEF.md)
