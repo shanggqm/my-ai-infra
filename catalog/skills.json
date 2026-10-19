@@ -68,6 +68,13 @@
       ]
     },
     {
+      "name": "my-analyze-debt",
+      "label": "技术债分析与偿债建议",
+      "category": "support",
+      "default": false,
+      "aliases": []
+    },
+    {
       "name": "my-create-worktree",
       "label": "隔离开发分支与环境",
       "category": "support",

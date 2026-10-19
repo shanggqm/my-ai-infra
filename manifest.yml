@@ -1,8 +1,8 @@
 name: my-ai-infra
 package_name: "@easyuseai/my-ai-infra"
 license: MIT
-version: 0.0.12
-status: released
+version: 0.0.13
+status: release-candidate
 purpose: Lightweight SDD scaffolding for enterprise AI coding, with reusable assets and persistent development preferences
 repository:
   url: https://github.com/shanggqm/my-ai-infra
@@ -29,6 +29,8 @@ canonical:
   prompt_assets: assets/prompts/
   prompt_usage: docs/custom-prompts.md
   feature_initializer: assets/skills/my-create-feature/scripts/init-feature.mjs
+  feature_profiles: assets/skills/my-create-feature/references/FEATURE_PROFILES.json
+  stage_contracts: assets/skills/my-create-feature/references/stage-contracts.md
   feature_layout: assets/skills/my-create-feature/template/FEATURE_LAYOUT.json
   feature_validator: assets/skills/my-create-feature/scripts/validate-feature.mjs
   feature_template: assets/skills/my-create-feature/template/
@@ -43,6 +45,7 @@ canonical:
   attribution: THIRD_PARTY_NOTICES.md
   skill_registry: catalog/skills.json
   design_review_skill: assets/skills/my-review-design/SKILL.md
+  debt_analysis_skill: assets/skills/my-analyze-debt/SKILL.md
 configuration:
   global_home: ~/.my-ai-infra
   personal_skills: ~/.my-ai-infra/assets/skills/
@@ -66,6 +69,7 @@ deliverables:
 - assets/prompts/README.md
 - assets/prompts/my-auto-feature.md
 - assets/prompts/my-auto-design.md
+- assets/prompts/my-simple-feature.md
 - assets/prompts/my-init-repo-memory.md
 - docs/custom-prompts.md
 - assets/skills/my-create-memory/SKILL.md
@@ -106,6 +110,16 @@ deliverables:
 - assets/skills/my-create-worktree/SKILL.md
 - assets/skills/my-create-worktree/scripts/create-worktree.sh
 - assets/skills/my-review-design/SKILL.md
+- assets/skills/my-analyze-debt/SKILL.md
+- assets/skills/my-analyze-debt/references/debt-taxonomy.md
+- assets/skills/my-analyze-debt/references/report-output.md
+- assets/skills/my-analyze-debt/assets/templates/DEBT_ANALYSIS.tmpl.md
+- assets/skills/my-analyze-debt/evals/cases.md
+- assets/skills/my-analyze-debt/evals/fixtures/refunds/
+- assets/skills/my-create-feature/references/FEATURE_PROFILES.json
+- assets/skills/my-create-feature/references/stage-contracts.md
+- assets/skills/my-create-prd/assets/templates/PRD.simple.tmpl.md
+- assets/skills/my-create-design/assets/templates/TECH_DESIGN.simple.tmpl.md
 validation:
   commands:
   - npm run verify
@@ -113,12 +127,12 @@ validation:
   scope: Source-and-packed-CLI-Web-adapters-upgrades-conflicts-Feature-resources-and-documentation
   isolated: true
 publication:
-  npm: published
-  previous_version: 0.0.11
+  npm: pending
+  previous_version: 0.0.12
   dist_tag: latest
   url: https://www.npmjs.com/package/@easyuseai/my-ai-infra
-  published_at: "2026-10-17T05:31:32.495Z"
-  git_tag: v0.0.12
-  source_commit: f7482aabe1008207ee52537c30d3473f285096b5
-  github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.12
-  github_published_at: "2026-10-17T05:32:15Z"
+  published_at: null
+  git_tag: v0.0.13
+  source_commit: null
+  github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.13
+  github_published_at: null

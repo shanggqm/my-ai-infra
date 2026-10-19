@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { apply, doctor, plan } from '../src/project.mjs';
 import { PACKAGE, catalog, defaultConfig, setup } from '../src/store.mjs';
 import { hash, json, readJSON, write } from '../src/fs.mjs';
+import { BUILTINS } from '../src/names.mjs';
 const exec = promisify(execFile);
 const chosen = { version: 1, tools: ['codex','claudecode','cursor','copilot'], skills: ['my-create-feature','my-review-design'] };
 const aliases = ['AGENTS.md','CLAUDE.md','.github/copilot-instructions.md'];
@@ -109,7 +110,8 @@ test('failed link migration restores original copies, config and state', async t
 });
 test('CLI initialization respects explicit defaults without a Skill prompt; sync preserves project selection', async t => {
   const { project, home } = await fixture(t);
-  assert.equal(defaultConfig().skills.length,10);
+  assert.deepEqual(defaultConfig().skills,BUILTINS.map(skill => skill.name));
+  assert.ok(defaultConfig().skills.includes('my-analyze-debt'));
   await write(home,'defaults.json',json({version:1,tools:['copilot'],skills:['my-create-feature']}));
   const cli=path.join(PACKAGE,'bin/my-ai-infra.mjs');
   const result=await exec(process.execPath,[cli,'init','--home',home,'--project',project,'--yes']);
@@ -128,4 +130,33 @@ test('global setup keeps a canonical entry even without Codex and links selected
   for(const prefix of ['.claude','.cursor','.copilot']) assert.equal(await fs.realpath(path.join(tools,prefix,'skills/my-ai-infra/SKILL.md')),source);
   assert.ok((await fs.lstat(source)).isFile());
   await setup(home,['claudecode','cursor','copilot'],tools);
+});
+
+test('adaptive resources survive selected installs, moves and sync while project templates and four-column indexes are preserved', async t => {
+  const { root, project, home } = await fixture(t);
+  const roadmap = '# 需求\r\n## 规划中\r\n| 需求 | 标题 | 优先级 | 说明 |\r\n|---|---|---|---|\r\n';
+  await write(project, 'mai-specs/ROADMAP.md', roadmap);
+  await write(project, 'mai-specs/_templates/simple/PRD.tmpl.md', '# 私有简版\n人工批注\n');
+  await apply(home, project, { ...chosen, skills: ['my-create-feature', 'my-create-prd', 'my-create-design'] });
+  const resources = [
+    'my-create-feature/references/FEATURE_PROFILES.json',
+    'my-create-feature/references/stage-contracts.md',
+    'my-create-prd/assets/templates/PRD.simple.tmpl.md',
+    'my-create-design/assets/templates/TECH_DESIGN.simple.tmpl.md',
+  ];
+  const moved = path.join(root, 'moved-adaptive'); await fs.rename(project, moved);
+  for (const resource of resources) {
+    const source = path.join(moved, '.agents/skills', resource);
+    assert.deepEqual(await fs.readFile(source), await fs.readFile(path.join(PACKAGE, 'assets/skills', resource)));
+    for (const adapter of ['.claude', '.cursor', '.github']) assert.equal(await fs.realpath(path.join(moved, adapter, 'skills', resource)), source);
+  }
+  await apply(home, moved);
+  assert.equal(await fs.readFile(path.join(moved, 'mai-specs/ROADMAP.md'), 'utf8'), roadmap);
+  assert.equal(await fs.readFile(path.join(moved, 'mai-specs/_templates/simple/PRD.tmpl.md'), 'utf8'), '# 私有简版\n人工批注\n');
+  const { stdout } = await exec(process.execPath, [path.join(moved, '.agents/skills/my-create-feature/scripts/init-feature.mjs'), '--project', moved, '--slug', 'adaptive', '--title', '简版', '--profile', 'simple']);
+  assert.equal(JSON.parse(stdout).profile, 'simple');
+  const index = await fs.readFile(path.join(moved, 'mai-specs/ROADMAP.md'), 'utf8');
+  assert.ok(index.startsWith(roadmap));
+  assert.match(index, /规格：simple；/);
+  await assert.rejects(fs.stat(path.join(moved, '.agents/skills/my-review-code')), { code: 'ENOENT' });
 });

@@ -1,16 +1,19 @@
 # 自定义 Prompt 快捷指令
 
-内置三条指令，覆盖连续开发与仓库记忆初始化：
+内置四条指令，覆盖连续开发与仓库记忆初始化：
 
 | 指令 | 用法 |
 |---|---|
 | `my-auto-feature` | 从目标开始，自主整理 Feature 与 PRD，完成技术方案、方案 review 与修复、实现、代码 review 与修复、测试验收 |
+| `my-simple-feature` | 小功能、Demo 和模拟链路；充分输入直接简版设计，需要梳理产品时先简版 PRD，按复杂度分阶段、按风险补控制 |
 | `my-auto-design` | 从明确需求、PRD 或已有技术方案开始；已有方案直接 review，否则先编写方案，再修复、实现、代码 review 与修复、测试验收 |
 | `my-init-repo-memory` | 无需参数，依据当前仓库事实直接生成或精简优化根目录 `AGENTS.md`，保留有效约束并交付差异 |
 
-正文唯一来源见 [Prompt 资产目录](../assets/prompts/README.md)。前两条指令用一句话编排已安装的 SDD Skill，具体执行规则由各 Skill 维护。默认初始化包含这些 Skill；手工缩减过选择时，应先补齐流程所需 Skill。`my-init-repo-memory` 自带事实提炼与文件编辑规则，无需其他 Skill。
+正文唯一来源见 [Prompt 资产目录](../assets/prompts/README.md)。三条开发指令组合原子 Skill，并负责输入交接、修复复评与阶段状态；具体执行规则由各 Skill 维护。默认初始化包含这些 Skill；手工缩减过选择时，应先补齐流程所需 Skill。`my-init-repo-memory` 自带事实提炼与文件编辑规则，无需其他 Skill。
 
 `my-init-repo-memory` 核实仓库事实并维护开发入口、规则和验证要求。知识与参考聚焦重要且稳定的仓库级规范与业务领域知识，不列 SDD 需求文档；按实际内容裁剪章节。已有明确要求、未提交修改与软链接保持，普通信息缺失时查证或省略，关键冲突再询问。个人偏好由 `my-create-memory` 维护。
+
+开发指令交接本次相关的债务证据和已确认取舍，由各阶段核对边界、持续修改成本与验证。独立存量分析使用 [my-analyze-debt](../assets/skills/my-analyze-debt/SKILL.md)，仅在请求包含该分析时安排；交付全局最优与 MVP 方案并取得用户选择后再交接，选择与实施授权分别记录。已验证的治理结果在授权内回到有效契约、架构约束和回归用例。
 
 ## 安装与同步
 
@@ -47,7 +50,7 @@ ChatGPT/Codex、Cursor 与 VS Code Copilot 共用 `.agents/skills`，Claude Code
 | Cursor IDE | `.agents/skills/<名称>/SKILL.md` | `/my-auto-feature`，也可用 `@` 附加 |
 | VS Code GitHub Copilot | `.agents/skills/<名称>/SKILL.md` | `/my-auto-feature` |
 
-另外两条指令使用对应名称，需求描述或方案路径放在同条消息。原生入口能力随客户端版本变化；安装后刷新或开启新会话，先检查项目是否为当前工作目录。ChatGPT 界面的具体选择符以当前客户端为准。上述映射依据 [OpenAI Skills](https://learn.chatgpt.com/docs/build-skills)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[Cursor Skills](https://cursor.com/help/customization/skills)、[VS Code Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。
+其余指令使用对应名称，需求描述或方案路径放在同条消息。原生入口能力随客户端版本变化；安装后刷新或开启新会话，先检查项目是否为当前工作目录。ChatGPT 界面的具体选择符以当前客户端为准。上述映射依据 [OpenAI Skills](https://learn.chatgpt.com/docs/build-skills)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[Cursor Skills](https://cursor.com/help/customization/skills)、[VS Code Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。
 
 Prompt 入口以显式调用为用途；生成 Skill 设置 `disable-model-invocation: true`，Codex 配套设置 `allow_implicit_invocation: false`。当前会话内容传递给原流程，不替换成其他项目或全局的同名正文。全局 setup 使用 `~/.agents` 的同一结构；项目 init 无需依赖全局 setup 或旧 Codex custom prompts。
 
@@ -84,3 +87,11 @@ mai setup --tools codex,claudecode,cursor
 ```
 
 Web 的资产列表可编辑个人 Prompt 正文；内置 Prompt 只读，初始化与同步直接读取当前包。定制内置 Prompt 并复用到其他项目时，先另存为新文件名再导入。同步遇到项目定制按 merge / replace / abort 处理；默认保留本地内容并保存候选。不要把各工具入口替换为独立副本。已有清单式个人 Prompt 保持兼容，同名新文件不会覆盖它；同一目录中的新旧同名资产会报冲突，需保留一个源。
+
+## 阶段、模板与 Feature 档位
+
+完整流程默认用 my-auto-feature；需求充分从设计开始用 my-auto-design；轻量场景用 my-simple-feature。功能级 Demo 按输入生成独立设计或 PRD + 设计，微小明确改动可直接开发。显式完整流程/单阶段授权优先，必要验收证据缺失不结项。
+
+档位唯一源为 [FEATURE_PROFILES.json](../assets/skills/my-create-feature/references/FEATURE_PROFILES.json)，默认 standard。新建脚本接受 `--profile`；BRIEF 是默认值真源，ROADMAP 为展示。目录保持 NNN-slug，两种档位共用编号池。新索引五列；旧四列保留，目标行说明前记规格前缀。单产物模板覆盖不改变 Feature 默认值；改默认值按[阶段契约](../assets/skills/my-create-feature/references/stage-contracts.md)定点同步、保护外部编辑，中断后按 BRIEF 恢复。
+
+简版模板随 PRD/设计 Skill 安装；项目 `_templates/simple/` 可覆盖。已有文档增量维护，坏覆盖模板不会静默回退。simple 和 standard 共用产物路径，旧模板固定 PRD 字段可填写实际有效需求来源及 AC，不要求生成占位 PRD。

@@ -4,7 +4,7 @@
 
 [feature/](feature/) 是初始化结构的可编辑真源，由 [初始化脚本](../scripts/init-feature.mjs) 替换占位符。旧 Skill 副本的模板残留 .gitkeep 会被初始化脚本跳过并原样保留。初始 Feature 只包含 [BRIEF.md](feature/BRIEF.md) 和 [context/_INDEX.md](feature/context/_INDEX.md)，不提前创建 spec、design、test、review 或图表目录，不使用目录占位文件。
 
-[FEATURE_LAYOUT.json](FEATURE_LAYOUT.json) 集中登记初始文件和后续产物路径。初始化脚本核对模板与 initialFiles 一致；更改最小结构需同时修改此契约和模板并运行回归。项目安装器将契约首次写入 mai-specs/FEATURE_LAYOUT.json，已有副本归项目维护，后续安装保留其修改。[ROADMAP.md](ROADMAP.md) 服务项目级索引，安装器与初始化脚本使用同一真源。
+[FEATURE_LAYOUT.json](FEATURE_LAYOUT.json) 集中登记初始文件和后续产物路径。初始化脚本核对模板与 initialFiles 一致；更改最小结构需同时修改此契约和模板并运行回归。项目可按需复制契约到 mai-specs/FEATURE_LAYOUT.json，已有副本归项目维护，后续安装保留其修改；缺少项目副本时使用随包默认。[ROADMAP.md](ROADMAP.md) 服务项目级索引，安装器与初始化脚本使用同一真源。
 
 后续 Skill 读取项目路径契约，在实际写入产物时创建父目录；缺少后续目录不表示错误，目录或文档存在也不代表阶段完成。辅助图表、原型和附录仅在本次确有产出时建立。项目契约与既有产物或适用规则冲突时保留现场，让用户选择。
 
@@ -19,7 +19,7 @@ node <本Skill目录>/scripts/validate-feature.mjs --feature /path/to/mai-specs/
 
 context 中的原始素材可以与产物同名；未登记的辅助文件允许保留。已有空目录与 .gitkeep 仅提示，不自动删除，也不判作缺少阶段。软链不跟随并记为路径问题，项目刻意使用软链时需按实际规则确认，不能据此认定功能未完成。
 
-占位符：FEATURE_ID、TITLE、PRIORITY、OWNER、TARGET_DATE、MODULES、SUMMARY、BACKGROUND、MATERIAL_ROWS、FINDINGS、QUESTIONS，使用 {{KEY}} 语法。未知占位符令初始化失败，用户参数中的占位符文字保留原样。目标项目已有 _templates/ 服务后续规格、设计和测试文档，旧版 BRIEF 模板保留为用户文件。
+占位符：FEATURE_ID、TITLE、PROFILE、PRIORITY、OWNER、TARGET_DATE、MODULES、SUMMARY、BACKGROUND、MATERIAL_ROWS、FINDINGS、QUESTIONS，使用 {{KEY}} 语法。未知占位符令初始化失败，用户参数中的占位符文字保留原样。目标项目已有 _templates/ 服务后续规格、设计和测试文档，旧版 BRIEF 模板保留为用户文件。
 
 ## 初始化前预检
 
@@ -57,3 +57,9 @@ context 中的原始素材可以与产物同名；未登记的辅助文件允许
 - 脚本按原名、原扩展名和原始字节复制到 `context/`，统一写入素材索引及发现、问题。解析和含义判断在执行前完成。
 - 重名（忽略大小写）、初始文件名冲突、软链或缺失文件会阻止执行。先解决输入冲突，脚本不自动改名或覆盖。
 - 写入或校验失败时，撤回仍属于本次操作的文件，保留外部修改；ROADMAP 在校验完成后登记。
+
+## 规格档位与索引
+
+`--profile` 从 [FEATURE_PROFILES.json](../references/FEATURE_PROFILES.json) 读取合法值和默认值；预检/创建结果返回 profile。缺失/损坏资源、空/未知值均失败；旧 standard BRIEF 模板可无字段，simple 必须能记录所选 Profile。有效字段位于包含 Phase 的两列元数据表；注释、围栏代码或缩进示例不算元数据。渲染后也核对该字段，错误不留下新 Feature 或索引。
+
+BRIEF 保存 Feature 默认 Profile；目录始终 NNN-slug，两档位共用编号池。新 ROADMAP 五列（需求、标题、规格、优先级、说明）；旧四列表保持，新增行在说明前记 `规格：simple；` 或 `规格：standard；`。缺规划分区新增五列，允许混合分区；未知表头/歧义无损失败。既有 Feature 档位调整、单产物覆盖与中断恢复遵循[阶段契约](../references/stage-contracts.md)。

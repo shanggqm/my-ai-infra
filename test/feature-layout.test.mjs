@@ -145,3 +145,17 @@ test('later artifacts accidentally added to the initialization template are reje
   assert.deepEqual(await snapshot(project), before);
   assert.deepEqual((await fs.readdir(specsRoot)).sort(), ['999-minimal', 'ROADMAP.md']);
 });
+
+test('simple design without PRD uses the same custom layout while an explicit PRD check still requires a real file', async t => {
+  const { project, specsRoot } = await fixture(t);
+  const layout = JSON.parse(await fs.readFile(defaultLayout, 'utf8'));
+  layout.artifacts.find(a => a.id === 'design').path = 'notes/architecture.md';
+  await fs.writeFile(path.join(specsRoot, 'FEATURE_LAYOUT.json'), JSON.stringify(layout));
+  const created = await initializeFeature({ project, slug: 'simple-design', title: '直接设计', profile: 'simple' });
+  await fs.mkdir(path.join(created.path, 'notes'));
+  await fs.writeFile(path.join(created.path, 'notes/architecture.md'), '# 技术方案\nProfile: simple\n需求依据：BRIEF\nAC-01：本地样例可查询。\n');
+  assert.equal((await validateFeature(created.path)).valid, true);
+  assert.equal((await validateFeature(created.path, { artifact: 'design' })).valid, true);
+  assert.equal((await validateFeature(created.path, { artifact: 'prd' })).valid, false);
+  await assert.rejects(fs.stat(path.join(created.path, 'spec')), { code: 'ENOENT' });
+});

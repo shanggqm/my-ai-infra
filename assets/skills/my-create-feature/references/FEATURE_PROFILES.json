@@ -1,0 +1,7 @@
+{
+  "default": "standard",
+  "profiles": {
+    "simple": { "label": "轻量" },
+    "standard": { "label": "标准" }
+  }
+}

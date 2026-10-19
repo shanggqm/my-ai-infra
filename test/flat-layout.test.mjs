@@ -10,6 +10,7 @@ import { promisify } from 'node:util';
 const exec = promisify(execFile);
 const cli = path.join(PACKAGE,'bin/my-ai-infra.mjs');
 import { hash, json, readJSON, write } from '../src/fs.mjs';
+import { BUILTINS } from '../src/names.mjs';
 
 const chosen = {version:1,tools:['codex','claudecode','cursor','copilot'],skills:['my-review-code']};
 const source = '.agents/skills/my-review-code/SKILL.md';
@@ -157,7 +158,8 @@ for (const explicit of [false,true]) test(`CLI init discovers all entry files in
   const cwd = explicit ? caller : project, args = ['--home',home,...(explicit ? ['--project',project] : [])];
   await exec(process.execPath,[cli,'init',...args,'--tools','codex,cursor','--yes'],{cwd});
   const config = await readJSON(project,'.my-ai-infra.json');
-  assert.equal(config.skills.length,10);
+  assert.deepEqual(new Set(config.skills),new Set(BUILTINS.map(skill => skill.name)));
+  assert.ok(config.skills.includes('my-analyze-debt'));
   for (const name of config.skills) {
     const directory = path.join(project,'.agents/skills',name);
     assert.ok((await fs.lstat(directory)).isDirectory());

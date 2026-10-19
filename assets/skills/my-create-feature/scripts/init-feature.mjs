@@ -7,8 +7,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadLayout, validateFeature } from './validate-feature.mjs';
 
 const templateRoot = fileURLToPath(new URL('../template/', import.meta.url));
+const profilesFile = fileURLToPath(new URL('../references/FEATURE_PROFILES.json', import.meta.url));
 const exec = promisify(execFile);
-const fields = new Set(['project', 'slug', 'title', 'summary', 'background', 'modules', 'priority', 'owner', 'target-date', 'context']);
+const fields = new Set(['project', 'slug', 'title', 'summary', 'background', 'modules', 'priority', 'owner', 'target-date', 'context', 'profile']);
 const conflict = message => Object.assign(Error(message), { exitCode: 2 });
 const table = value => value.replaceAll('\\', '\\\\').replaceAll('|', '\\|').replace(/\r?\n/g, '<br>');
 async function defaultOwner(project) {
@@ -47,26 +48,92 @@ function render(source, values) {
     return values[key];
   });
 }
-function roadmapWithRow(source, row) {
+async function featureProfile(io, requested) {
+  const source = await text(io, profilesFile);
+  if (source === null) throw Error(`Missing Profile registry: ${profilesFile}`);
+  let registry;
+  try { registry = JSON.parse(source); } catch { throw Error(`Invalid Profile registry JSON: ${profilesFile}`); }
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (!object(registry) || Object.keys(registry).sort().join(',') !== 'default,profiles'
+    || !object(registry.profiles) || !Object.keys(registry.profiles).length
+    || Object.entries(registry.profiles).some(([key, value]) => !/^[a-z][a-z0-9-]*$/.test(key)
+      || !object(value) || Object.keys(value).join(',') !== 'label'
+      || typeof value.label !== 'string' || !value.label.trim())
+    || typeof registry.default !== 'string' || !Object.hasOwn(registry.profiles, registry.default)) {
+    throw Error(`Invalid Profile registry structure: ${profilesFile}`);
+  }
+  const profile = requested ?? registry.default;
+  if (!Object.hasOwn(registry.profiles, profile)) throw Error(`Unknown profile: ${profile}; expected ${Object.keys(registry.profiles).join(', ')}`);
+  return { profile, defaultProfile: registry.default };
+}
+function metadataText(source) {
+  let comment = false, fence = null;
+  return source.split(/\r?\n/).map(line => {
+    if (fence) {
+      const closing = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
+      if (closing && closing[1][0] === fence[0] && closing[1].length >= fence.length) fence = null;
+      return '';
+    }
+    // Code samples may contain comment delimiters; do not let them hide real metadata.
+    if (!comment && (/^(?: {4}|\t)/.test(line) || /^ {0,3}(`{3,}|~{3,})/.test(line))) {
+      fence = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1] ?? null;
+      return '';
+    }
+    let visible = '', rest = line;
+    while (rest) {
+      const marker = rest.indexOf(comment ? '-->' : '<!--');
+      const code = !comment && rest.match(/(`+)(?!`)(.*?)\1(?!`)/);
+      if (code && (marker < 0 || code.index < marker)) {
+        visible += rest.slice(0, code.index + code[0].length);
+        rest = rest.slice(code.index + code[0].length);
+        continue;
+      }
+      if (marker < 0) { if (!comment) visible += rest; break; }
+      if (!comment) visible += rest.slice(0, marker);
+      rest = rest.slice(marker + (comment ? 3 : 4));
+      comment = !comment;
+    }
+    fence = visible.match(/^ {0,3}(`{3,}|~{3,})/)?.[1] ?? null;
+    return fence ? '' : visible;
+  }).join('\n');
+}
+function checkProfileTemplate(source, profile, defaultProfile, allowLegacy = true) {
+  const visible = metadataText(source);
+  const rows = [...visible.matchAll(/^ {0,3}\|[ \t]*Profile[ \t]*\|([^\r\n]*)$/gm)];
+  if (allowLegacy && !rows.length && profile === 'standard' && profile === defaultProfile && !visible.includes('{{PROFILE}}')) return false; // Legacy standard template.
+  const tables = [...visible.matchAll(/(?:^ {0,3}\|[^\n]*(?:\n|$))+/gm)].map(match => match[0].replace(/\n$/, '').split('\n'));
+  const metadata = tables.filter(lines => /^ {0,3}\|(?:[ \t]*:?-+:?[ \t]*\|){2}[ \t]*$/.test(lines[1] || '')
+    && lines.slice(2).some(line => /^ {0,3}\|[ \t]*Phase[ \t]*\|/.test(line)));
+  if (rows.length !== 1 || !/^\s*(?:\{\{PROFILE\}\}|[a-z][a-z0-9-]*)\s*\|\s*$/.test(rows[0][1])
+    || metadata.length !== 1 || !metadata[0].slice(2).includes(rows[0][0])
+    || rows[0][1].trim().replace(/\s*\|$/, '').replace('{{PROFILE}}', profile) !== profile) {
+    throw Error('BRIEF template must record the selected Profile; update the installed Skill template');
+  }
+  return true;
+}
+function roadmapWithRow(source, fields) {
+  const row = count => `| ${fields.id} | [${table(fields.title).replaceAll('[', '\\[').replaceAll(']', '\\]')}](${fields.name}/BRIEF.md) | ${count === 5 ? fields.profile + ' | ' : ''}${fields.priority} | ${count === 4 ? '规格：' + fields.profile + '；' : ''}${table(fields.summary)} |`;
   const cr = source.includes('\r\n') ? '\r' : '';
   const lines = source.split('\n');
   const headings = lines.flatMap((line, i) => /^##\s+规划中\s*$/.test(line) ? [i] : []);
   if (headings.length > 1) throw conflict('ROADMAP contains multiple 规划中 sections; choose the intended index layout first');
   if (!headings.length) {
     const separator = source.endsWith('\n') ? '' : cr + '\n';
-    return source + separator + cr + '\n## 规划中' + cr + '\n' + cr + '\n| 需求 | 标题 | 优先级 | 说明 |' + cr + '\n|---|---|---|---|' + cr + '\n' + row + cr + '\n';
+    return source + separator + cr + '\n## 规划中' + cr + '\n' + cr + '\n| 需求 | 标题 | 规格 | 优先级 | 说明 |' + cr + '\n|---|---|---|---|---|' + cr + '\n' + row(5) + cr + '\n';
   }
   const start = headings[0] + 1;
   let end = lines.findIndex((line, i) => i >= start && /^##\s/.test(line));
   if (end < 0) end = lines.length;
   const header = lines.findIndex((line, i) => i >= start && i < end && /^\s*\|/.test(line));
   const columns = header < 0 ? [] : lines[header].trim().split('|').slice(1, -1).map(s => s.trim());
-  if (columns.join(',') !== '需求,标题,优先级,说明' || !/^\s*\|(?:\s*:?-+:?\s*\|){4}\s*$/.test(lines[header + 1] || '')) {
-    throw conflict('ROADMAP 规划中 table must have columns 需求、标题、优先级、说明; preserve the file and ask the user how to adapt it');
+  if (!['需求,标题,优先级,说明', '需求,标题,规格,优先级,说明'].includes(columns.join(','))
+    || !new RegExp(`^\\s*\\|(?:\\s*:?-+:?\\s*\\|){${columns.length}}\\s*$`).test(lines[header + 1] || '')) {
+    throw conflict('ROADMAP 规划中 table must have columns 需求、标题、[规格、]优先级、说明; preserve the file and ask the user how to adapt it');
   }
   let insertion = header + 2;
   while (insertion < end && /^\s*\|/.test(lines[insertion])) insertion++;
-  lines.splice(insertion, 0, row + cr);
+  if (lines.slice(insertion, end).some(line => /^\s*\|/.test(line))) throw conflict('ROADMAP 规划中 contains ambiguous tables; preserve the file before adapting it');
+  lines.splice(insertion, 0, row(columns.length) + cr);
   return lines.join('\n');
 }
 
@@ -109,6 +176,7 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
   if (!title || /[\r\n]/.test(title)) throw Error('A one-line title is required');
   const priority = input.priority || 'P1';
   if (!/^P[0-3]$/.test(priority)) throw Error('Priority must be P0, P1, P2 or P3');
+  const { profile, defaultProfile } = await featureProfile(io, input.profile);
   const project = await io.realpath(path.resolve(input.project || process.cwd()));
   if (!(await io.stat(project)).isDirectory()) throw Error('Project must be an existing directory');
   const owner = input.owner || await defaultOwner(project);
@@ -118,6 +186,7 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
   for (const required of ['BRIEF.md', path.join('context', '_INDEX.md')]) {
     if (!entries.some(([relative]) => relative === required)) throw Error(`Missing required template: ${required}`);
   }
+  const recordsProfile = checkProfileTemplate(entries.find(([relative]) => relative === 'BRIEF.md')[1], profile, defaultProfile);
   const projectLayout = path.join(specsRoot, 'FEATURE_LAYOUT.json');
   const hasProjectLayout = Boolean(await stat(io, projectLayout));
   const layout = await loadLayout(hasProjectLayout ? projectLayout : undefined);
@@ -138,6 +207,11 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
   const lock = path.join(specsRoot, '.feature-init.lock');
   const roadmapTemp = path.join(lock, 'ROADMAP.md');
   const roadmapPath = path.join(specsRoot, 'ROADMAP.md');
+  // Validate the index before starting writes, then read it again under the lock.
+  const specsInfo = await stat(io, specsRoot);
+  if (specsInfo && (!specsInfo.isDirectory() || specsInfo.isSymbolicLink())) throw conflict('mai-specs must be an ordinary directory');
+  if (await stat(io, lock)) throw conflict(`Another initializer holds ${lock}; resolve the active or interrupted run first`);
+  roadmapWithRow((await text(io, roadmapPath)) ?? defaultRoadmap, { id: '000', name: `000-${slug}`, title, priority, profile, summary: input.summary || '待补充' });
   try {
     if (checkOnly) {
       const info = await stat(io, specsRoot);
@@ -193,20 +267,20 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
     target = path.join(specsRoot, name);
     if (await stat(io, target)) throw conflict(`Target already exists: ${target}`);
     const values = {
-      FEATURE_ID: id, TITLE: title, PRIORITY: priority,
+      FEATURE_ID: id, TITLE: title, PRIORITY: priority, PROFILE: profile,
       OWNER: table(owner), TARGET_DATE: table(input['target-date'] || '待填'),
       MODULES: table(input.modules || '待补充'), SUMMARY: input.summary || '待补充。', BACKGROUND: input.background || '待补充。',
       MATERIAL_ROWS: context.rows, FINDINGS: context.findings, QUESTIONS: context.questions,
     };
     // Replacement is one pass: user values containing {{...}} remain literal.
     const output = [...entries.map(([relative, source]) => [relative, render(source, values)]), ...context.files];
+    if (recordsProfile) checkProfileTemplate(output.find(([relative]) => relative === 'BRIEF.md')[1], profile, defaultProfile, false);
     if (context.files.length || context.findings || context.questions) {
       const index = entries.find(([relative]) => relative === path.join('context', '_INDEX.md'))[1];
       if (!['MATERIAL_ROWS', 'FINDINGS', 'QUESTIONS'].every(key => index.includes(`{{${key}}}`))) throw Error('Context template lacks material placeholders; update the installed Skill template before importing materials');
     }
-    const row = `| ${id} | [${table(title).replaceAll('[', '\\[').replaceAll(']', '\\]')}](${name}/BRIEF.md) | ${priority} | ${table(input.summary || '待补充')} |`;
-    const newRoadmap = roadmapWithRow(oldRoadmap ?? defaultRoadmap, row);
-    if (checkOnly) return { ready: true, created: false, project, slug, files: output.map(([relative]) => relative) };
+    const newRoadmap = roadmapWithRow(oldRoadmap ?? defaultRoadmap, { id, name, title, priority, profile, summary: input.summary || '待补充' });
+    if (checkOnly) return { ready: true, created: false, project, slug, profile, files: output.map(([relative]) => relative) };
     const oldMode = (await stat(io, roadmapPath))?.mode;
     await io.writeFile(roadmapTemp, newRoadmap, { flag: 'wx', mode: oldMode === undefined ? 0o644 : oldMode & 0o777 });
     try { await io.mkdir(target); directories.push(target); }
@@ -234,7 +308,7 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
       try { await io.link(roadmapTemp, roadmapPath); }
       catch (error) { if (error.code === 'EEXIST') throw conflict('ROADMAP was created concurrently; preserve it and review before retrying'); throw error; }
     } else await io.rename(roadmapTemp, roadmapPath);
-    return { created: true, id, slug, name, path: target, brief: path.join(target, 'BRIEF.md'), roadmap: roadmapPath, phase: 'draft', priority, files: output.map(([relative]) => relative), createdAt: new Date().toISOString() };
+    return { created: true, id, slug, name, path: target, brief: path.join(target, 'BRIEF.md'), roadmap: roadmapPath, phase: 'draft', priority, profile, files: output.map(([relative]) => relative), createdAt: new Date().toISOString() };
   } catch (error) {
     // Roll back only content still matching this operation; preserve outside edits.
     for (const [file, body] of written.reverse()) {
@@ -255,7 +329,7 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
 
 export async function main(args = process.argv.slice(2)) {
   if (args.includes('--help')) {
-    console.log('node init-feature.mjs --project PATH --slug record-search --title "资料检索" [--priority P1] [--summary TEXT] [--background TEXT] [--modules TEXT] [--owner TEXT] [--target-date TEXT] [--context JSON_FILE] [--check]\n--owner: defaults to git config user.name in the target project, or 待填 when unavailable.\n--check: read-only preflight, reserves no number. Exit 2: conflict; ask the user to choose. Git configuration is read only; no dependency installation.');
+    console.log('node init-feature.mjs --project PATH --slug record-search --title "资料检索" [--priority P1] [--profile PROFILE] [--summary TEXT] [--background TEXT] [--modules TEXT] [--owner TEXT] [--target-date TEXT] [--context JSON_FILE] [--check]\n--profile: values and default from references/FEATURE_PROFILES.json beside this Skill; included in check/create results.\n--owner: defaults to git config user.name in the target project, or 待填 when unavailable.\n--check: read-only preflight, reserves no number. Exit 2: conflict; ask the user to choose. Git configuration is read only; no dependency installation.');
     return;
   }
   const options = {};
