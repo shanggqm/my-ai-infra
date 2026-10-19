@@ -328,7 +328,8 @@ test('removed built-ins and aliases are absent from fresh catalogs, defaults and
   const { home, project } = await fixture(t);
   const removed = ['my-create-skill', 'my-archive-feature', 'my-explore-codebase'];
   const aliases = ['create-skill', 'archive-feature', 'explore-oss-project'];
-  assert.equal(BUILTINS.length, 10);
+  assert.equal(BUILTINS.find(skill => skill.name === 'my-analyze-debt')?.category, 'support');
+  assert.equal(BUILTINS.find(skill => skill.name === 'my-analyze-debt')?.default, false);
   assert.equal(defaultConfig().skills.length, BUILTINS.length);
   assert.ok(!(await catalog(home)).some(s => [...removed, ...aliases].includes(s.name)));
   for (const name of [...removed, ...aliases]) {

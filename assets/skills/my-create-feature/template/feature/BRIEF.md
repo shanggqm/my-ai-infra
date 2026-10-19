@@ -3,6 +3,7 @@
 | 项 | 值 |
 |---|---|
 | Phase | draft |
+| Profile | {{PROFILE}} |
 | 优先级 | {{PRIORITY}} |
 | 负责人 | {{OWNER}} |
 | 目标日期 | {{TARGET_DATE}} |

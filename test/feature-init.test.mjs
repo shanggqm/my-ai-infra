@@ -72,7 +72,7 @@ test('preflight is read-only and execution recalculates IDs after another Featur
   const { project, specsRoot } = await fixture(t);
   const checked = await cli(project, ['--slug', 'record-search', '--title', '资料检索', '--check']);
   assert.equal(checked.code, 0, checked.stderr);
-  assert.deepEqual(JSON.parse(checked.stdout), { ready: true, created: false, project, slug: 'record-search', files: ['BRIEF.md', path.join('context', '_INDEX.md')] });
+  assert.deepEqual(JSON.parse(checked.stdout), { ready: true, created: false, project, slug: 'record-search', profile: 'standard', files: ['BRIEF.md', path.join('context', '_INDEX.md')] });
   await missing(specsRoot);
   const other = await initializeFeature({ ...defaultOptions, project, slug: 'other' });
   const before = await fs.readFile(other.roadmap);
@@ -516,5 +516,201 @@ test('invalid or conflicting new numbers in directories and index links fail bef
     await assert.rejects(initializeFeature({ ...defaultOptions, project }), e => e.exitCode === 2);
     assert.equal(await fs.readFile(roadmap, 'utf8'), original);
     assert.deepEqual(await featureNames(specsRoot), []);
+  }
+});
+
+test('profiles share the ID pool, render the same value in BRIEF and five-column index, and preflight never writes', async t => {
+  const { project, specsRoot } = await fixture(t);
+  for (const [profile, id] of [['simple', '999'], ['standard', '998']]) {
+    const options = { project, profile, slug: `${profile}-demo`, title: 'Demo', summary: 'keep | {{PROFILE}}' };
+    const checked = await initializeFeature(options, { checkOnly: true });
+    assert.equal(checked.profile, profile);
+    if (id === '999') await missing(specsRoot);
+    const result = await initializeFeature(options);
+    assert.equal(result.profile, profile);
+    assert.equal(result.id, id);
+    assert.equal(result.name, `${id}-${profile}-demo`);
+    assert.match(await fs.readFile(result.brief, 'utf8'), new RegExp(`\\| Profile \\| ${profile} \\|`));
+    assert.ok((await fs.readFile(result.roadmap, 'utf8')).includes(`| ${id} | [Demo](${result.name}/BRIEF.md) | ${profile} | P1 | keep \\| {{PROFILE}} |`));
+    assert.deepEqual((await fs.readdir(result.path)).sort(), ['BRIEF.md', 'context']);
+  }
+  assert.deepEqual(await featureNames(specsRoot), ['998-standard-demo', '999-simple-demo']);
+});
+
+test('legacy four-column and mixed-section indexes preserve every old byte while recording profile', async t => {
+  const { project, specsRoot } = await fixture(t);
+  await fs.mkdir(specsRoot);
+  const roadmap = path.join(specsRoot, 'ROADMAP.md');
+  for (const [n, header] of [
+    [4, '| 需求 | 标题 | 优先级 | 说明 |\r\n|---|---|---|---|'],
+    [5, '| 需求 | 标题 | 规格 | 优先级 | 说明 |\r\n|---|---|---|---|---|'],
+  ]) {
+    const before = `# Notes\r\n\r\n## 规划中\r\n${header}\r\n\r\n人工批注\r\n## 进行中\r\n| 需求 | 标题 | 优先级 | 说明 |\r\n|---|---|---|---|\r\n| 900 | 旧项 | P0 | 勿动 |\r\n`;
+    await fs.writeFile(roadmap, before);
+    const result = await initializeFeature({ ...defaultOptions, project, slug: `mixed-${n}`, profile: 'simple' });
+    const after = await fs.readFile(roadmap, 'utf8');
+    const row = after.split('\r\n').find(line => line.startsWith(`| ${result.id} |`));
+    assert.equal(after.replace(row + '\r\n', ''), before);
+    assert.ok(row.includes(n === 4 ? '| P1 | 规格：simple；待补充 |' : '| simple | P1 | 待补充 |'));
+  }
+  const before = '# Notes\r\n## 已完成\r\n| 需求 | 标题 | 优先级 | 说明 |\r\n|---|---|---|---|\r\n';
+  await fs.writeFile(roadmap, before);
+  await initializeFeature({ ...defaultOptions, project, slug: 'missing-section', profile: 'simple' });
+  const after = await fs.readFile(roadmap, 'utf8');
+  assert.ok(after.startsWith(before));
+  assert.ok(after.includes('| 需求 | 标题 | 规格 | 优先级 | 说明 |\r\n'));
+});
+
+test('unknown profiles and corrupt registries fail without any write, using the installed relative resource', async t => {
+  const { root, project, specsRoot } = await fixture(t);
+  const copy = path.join(root, 'moved-skill'); await fs.cp(skill, copy, { recursive: true });
+  const entry = path.join(copy, 'scripts/init-feature.mjs');
+  const registry = path.join(copy, 'references/FEATURE_PROFILES.json');
+  const source = await fs.readFile(registry, 'utf8');
+  const base = ['--slug', 'demo', '--title', 'Demo'];
+  for (const profile of ['unknown', 'Simple', '', ' ']) {
+    for (const checkOnly of [true, false]) {
+      const result = await cli(project, [...base, '--profile', profile, ...(checkOnly ? ['--check'] : [])], entry);
+      assert.equal(result.code, 1);
+      await missing(specsRoot);
+    }
+  }
+  const invalid = [null, '{', '[]', '{}', '{"default":"standard","profiles":{}}',
+    JSON.stringify({ default: 'absent', profiles: { simple: { label: '轻量' } } }),
+    JSON.stringify({ default: 'simple', profiles: { simple: { label: '' } } }),
+    JSON.stringify({ default: 'simple', profiles: { Simple: { label: '轻量' } } }),
+    JSON.stringify({ default: 'simple', profiles: { simple: { label: '轻量', extra: 1 } } }),
+    JSON.stringify({ ...JSON.parse(source), extra: 1 })];
+  for (const body of invalid) {
+    if (body === null) await fs.rm(registry); else await fs.writeFile(registry, body);
+    for (const checkOnly of [true, false]) {
+      const result = await cli(project, [...base, ...(checkOnly ? ['--check'] : [])], entry);
+      assert.equal(result.code, 1, body);
+      assert.match(result.stderr, /Profile registry/);
+      await missing(specsRoot);
+    }
+  }
+  await fs.writeFile(registry, JSON.stringify({ ...JSON.parse(source), default: 'simple' }));
+  const checked = await cli(project, [...base, '--check'], entry, { cwd: root });
+  assert.equal(checked.code, 0, checked.stderr);
+  assert.equal(JSON.parse(checked.stdout).profile, 'simple');
+  await missing(specsRoot);
+  const created = await cli(project, base, entry, { cwd: root });
+  assert.equal(JSON.parse(created.stdout).profile, 'simple');
+});
+
+test('legacy BRIEF templates allow standard only and contradictory Profile metadata fails prewrite', async t => {
+  const { root, project, specsRoot } = await fixture(t);
+  const copy = path.join(root, 'old-template-skill'); await fs.cp(skill, copy, { recursive: true });
+  const entry = path.join(copy, 'scripts/init-feature.mjs'), brief = path.join(copy, 'template/feature/BRIEF.md');
+  const source = await fs.readFile(brief, 'utf8');
+  const args = ['--slug', 'demo', '--title', 'Demo'];
+  await fs.writeFile(brief, source.replace('| Profile | {{PROFILE}} |\n', ''));
+  assert.equal((await cli(project, [...args, '--check'], entry)).code, 0);
+  for (const check of [[], ['--check']]) {
+    assert.equal((await cli(project, [...args, '--profile', 'simple', ...check], entry)).code, 1);
+    await missing(specsRoot);
+  }
+  for (const body of [source.replace('{{PROFILE}}', 'standard'), source + '\n| Profile | simple |\n']) {
+    await fs.writeFile(brief, body);
+    assert.equal((await cli(project, [...args, '--profile', 'simple'], entry)).code, 1);
+    await missing(specsRoot);
+  }
+  await fs.writeFile(brief, source.replace('| Profile | {{PROFILE}} |\n', ''));
+  const result = await cli(project, args, entry);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).profile, 'standard');
+});
+
+test('ambiguous index tables fail before the first write', async t => {
+  const { project, specsRoot } = await fixture(t);
+  await fs.mkdir(specsRoot);
+  const roadmap = path.join(specsRoot, 'ROADMAP.md');
+  const original = (await indexTemplate()).replace('## 进行中', '| 第二张表 |\n|---|\n\n## 进行中');
+  await fs.writeFile(roadmap, original);
+  const io = { ...fs };
+  for (const method of ['mkdir', 'writeFile', 'rename', 'link']) io[method] = async () => { throw Error(`Unexpected write: ${method}`); };
+  await assert.rejects(initializeFeature({ ...defaultOptions, project }, { io }), e => e.exitCode === 2 && /ambiguous/.test(e.message));
+  assert.equal(await fs.readFile(roadmap, 'utf8'), original);
+});
+
+test('legacy missing Profile cannot disagree with a changed registry default', async t => {
+  const { root, project, specsRoot } = await fixture(t);
+  const copy = path.join(root, 'legacy-default'); await fs.cp(skill, copy, { recursive: true });
+  const registry = path.join(copy, 'references/FEATURE_PROFILES.json');
+  const definition = JSON.parse(await fs.readFile(registry, 'utf8'));
+  definition.default = 'simple'; await fs.writeFile(registry, JSON.stringify(definition));
+  const brief = path.join(copy, 'template/feature/BRIEF.md');
+  await fs.writeFile(brief, (await fs.readFile(brief, 'utf8')).replace('| Profile | {{PROFILE}} |\n', ''));
+  for (const extra of [[], ['--check']]) {
+    const result = await cli(project, ['--slug', 'demo', '--title', 'Demo', '--profile', 'standard', ...extra], path.join(copy, 'scripts/init-feature.mjs'));
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /BRIEF template/);
+    await missing(specsRoot);
+  }
+});
+
+test('Profile examples outside the metadata table cannot authorize simple initialization', async t => {
+  const { root, project, specsRoot } = await fixture(t);
+  const copy = path.join(root, 'profile-examples'); await fs.cp(skill, copy, { recursive: true });
+  const entry = path.join(copy, 'scripts/init-feature.mjs'), brief = path.join(copy, 'template/feature/BRIEF.md');
+  const source = (await fs.readFile(brief, 'utf8')).replace('| Profile | {{PROFILE}} |\n', '');
+  const row = '| Profile | {{PROFILE}} |';
+  const examples = [
+    `<!-- Retired metadata\n${row}\n-->`,
+    `\x60\x60\x60markdown\n${row}\n\x60\x60\x60`,
+    `~~~markdown\n${row}\n~~~`,
+    `\x60\x60\x60\x60markdown\n\x60\x60\x60\n${row}\n\x60\x60\x60\x60`,
+    `    ${row}`,
+    `| 示例 | 值 |\n|---|---|\n${row}`,
+  ];
+  const before = await fs.readdir(project);
+  for (const example of examples) {
+    await fs.writeFile(brief, source + '\n' + example + '\n');
+    for (const check of [[], ['--check']]) {
+      const result = await cli(project, ['--slug', 'example', '--title', '示例', '--profile', 'simple', ...check], entry);
+      assert.equal(result.code, 1, example);
+      assert.match(result.stderr, /BRIEF template/);
+      await missing(specsRoot);
+      assert.deepEqual(await fs.readdir(project), before);
+    }
+  }
+});
+
+test('real Profile metadata coexists with hidden examples and legacy default remains supported', async t => {
+  const { root, project, specsRoot } = await fixture(t);
+  const copy = path.join(root, 'visible-profile'); await fs.cp(skill, copy, { recursive: true });
+  const entry = path.join(copy, 'scripts/init-feature.mjs'), brief = path.join(copy, 'template/feature/BRIEF.md');
+  const source = await fs.readFile(brief, 'utf8');
+  const examples = '\n<!--\n| Profile | invalid |\n-->\n\x60\x60\x60markdown\n<!-- unclosed sample comment\n| Profile | invalid |\n\x60\x60\x60\n~~~\n| Profile | invalid |\n~~~\n    | Profile | invalid |\n';
+  // Samples before metadata must not hide the actual table; CRLF is also supported.
+  await fs.writeFile(brief, (examples + source).replaceAll('\n', '\r\n'));
+  for (const profile of ['simple', 'standard']) {
+    const args = ['--slug', profile, '--title', '有效元数据：`<!--` 与 ``a`<!--``', '--profile', profile];
+    const checked = await cli(project, [...args, '--check'], entry);
+    assert.equal(checked.code, 0, checked.stderr);
+    const result = await cli(project, args, entry);
+    assert.equal(result.code, 0, result.stderr);
+    const created = JSON.parse(result.stdout);
+    assert.equal(created.profile, profile);
+    assert.ok((await fs.readFile(created.brief, 'utf8')).includes(`| Profile | ${profile} |\r\n`));
+    assert.ok((await fs.readFile(created.roadmap, 'utf8')).includes(`| ${profile} | P1 |`));
+  }
+  await fs.writeFile(brief, source.replace('| Profile | {{PROFILE}} |\n', '') + '\n<!--\n| Profile | {{PROFILE}} |\n-->\n');
+  const legacy = await cli(project, ['--slug', 'legacy', '--title', '旧模板', '--summary', '保留字面 {{PROFILE}}'], entry);
+  assert.equal(legacy.code, 0, legacy.stderr);
+  assert.equal(JSON.parse(legacy.stdout).profile, 'standard');
+  assert.ok((await fs.readFile(JSON.parse(legacy.stdout).brief, 'utf8')).includes('保留字面 {{PROFILE}}'));
+  assert.equal((await featureNames(specsRoot)).length, 3);
+});
+
+test('rendered input cannot hide a modern Profile field and leave an inconsistent index', async t => {
+  const { project, specsRoot } = await fixture(t);
+  for (const profile of ['simple', 'standard']) {
+    for (const checkOnly of [true, false]) {
+      await assert.rejects(initializeFeature({ project, slug: 'hidden', title: '<!--', profile }, { checkOnly }), /BRIEF template/);
+      await missing(specsRoot);
+      assert.deepEqual(await fs.readdir(project), ['go.mod']);
+    }
   }
 });

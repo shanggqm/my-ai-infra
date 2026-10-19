@@ -31,9 +31,11 @@ mai init --project /path/to/new-project
 
 Skill 的 `references/` 保存按需读取的决策规范，`assets/templates/` 保存生成产物时使用的模板，`evals/` 保存行为评测。安装与同步按完整 Skill 目录处理。例如 [my-create-test-plan](skills/my-create-test-plan/SKILL.md) 聚焦业务验收用例与开发测试缺口，复用项目测试计划模板，执行时按需读取最小依赖说明。
 
+[my-analyze-debt](skills/my-analyze-debt/SKILL.md) 自带债务分类、报告约定和模板，可单独安装并分析项目或模块，比较全局最优与 MVP 方案后让用户选择下一步。原则与流程保留在入口，具体线索、反例及输出细则按需读取；已有阶段只检查与当前变更相关的债务，不依赖该 Skill。报告默认写入项目 `docs/technical-debt/`，明确关联 Feature 时遵守其报告路径；项目模板可覆盖默认模板，方案比较和用户选择信息仍须保留。
+
 ## Prompt
 
-内置 [三个 Prompt](prompts/README.md)：`my-auto-feature` 与 `my-auto-design` 用一句话编排已有 Skill；`my-init-repo-memory` 依据仓库事实生成或精简优化根目录 `AGENTS.md`。每个资产只需单个 Markdown，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具原生入口通过 共享 Skill 入口读取同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
+内置 [四个 Prompt](prompts/README.md)：`my-auto-feature`、`my-auto-design`、`my-simple-feature` 组合原子 Skill 适配场景；`my-init-repo-memory` 依据仓库事实生成或精简优化根目录 `AGENTS.md`。每个资产只需单个 Markdown，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具原生入口通过 共享 Skill 入口读取同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
 
 ```bash
 my-ai-infra asset import /path/to/my-shortcut.md --type prompts
@@ -82,3 +84,5 @@ CLI 与 Web 的资产清单、编辑界面包含所有类型。Web 新建按钮�
 - 各工具的旧 Agent 文件迁成链接。未修改的受管文件可直接转换；修改内容遵循 merge / replace / abort 策略，并保留恢复材料。
 - 运行规则原文迁移到 `.agents/rules/`，AGENTS.md 与 CLAUDE.md 的共享关系保持。
 - `plan` 和 `doctor` 只读；迁移在显式安装、同步或升级时执行。
+
+阶段共用协议及类型定义位于 [my-create-feature/references](skills/my-create-feature/references/stage-contracts.md)。简版 PRD/设计模板随所属 Skill 分发，只有一份源；项目 `_templates/simple/` 可覆盖，已存在产物增量维护。

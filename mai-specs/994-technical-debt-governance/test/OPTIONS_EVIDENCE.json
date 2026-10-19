@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "scope": "Feature 994 H-13 / AC-06, AC-15 新增方案比较与用户选择专项；不替代历史整体验收",
+  "request": "至少给出 A 全局最优与 B MVP 两套合理解决方案，比较后让用户选择下一步。",
+  "gitHead": "b82c0733c1a67c618a2c7becd71f82fa6b5ea460",
+  "sourceChanges": [
+    {
+      "path": "assets/skills/my-analyze-debt/SKILL.md",
+      "beforeSHA256": "933dd5ba3b440324cdf602b8b1f22599d3fcdc0bd79fa2b3fb7f6a69add19164",
+      "afterSHA256": "f3f90355ce6956ddd0c8f51e30174e1bce58cc8d335d3584bca7a95d23688320"
+    },
+    {
+      "path": "assets/skills/my-analyze-debt/references/report-output.md",
+      "beforeSHA256": "d4594d3d9f734ae1ae1af8825416dafbc1877712a45b6e06b9203fb6ea9cc355",
+      "afterSHA256": "fec9c2679e39a5290c22730459904850f9d01a9356437dad1add4000b5c88ae8"
+    },
+    {
+      "path": "assets/skills/my-analyze-debt/assets/templates/DEBT_ANALYSIS.tmpl.md",
+      "beforeSHA256": "5b12d3f8353493c45d106c8b68e8e003957f670ebf8574e005d6151d5e164035",
+      "afterSHA256": "1ac18812f2f8a3c47e53da83fe88f7d25c9bb89dffce23699671c0ff83841316"
+    },
+    {
+      "path": "assets/skills/my-analyze-debt/evals/cases.md",
+      "beforeSHA256": "ddf41fc30fbb75dadca2af8e8861f4050ac95f20a8150ca9afc65d2d64b1b632",
+      "afterSHA256": "19915760815806f63d3f719c3895e7716d0e54619fd3eb7fb26162eca256e5f4"
+    },
+    {
+      "path": "README.md",
+      "beforeSHA256": "a3bd85f59ca06202b401eb66c25377f9222b67cd6d8f07aa188f54e611245567",
+      "afterSHA256": "edf9d345df056c25765ad6336281deced4dafc2b261601f63bab14226a5db47d"
+    },
+    {
+      "path": "assets/README.md",
+      "beforeSHA256": "8739d33d1e7d0163fa7f50f5ef76f232d56d8e9ee028c5d1117216b63ed79230",
+      "afterSHA256": "6a2908f8bd4058b8006a589328cff229e5d9eb81e3bfbcaf9041bfa30407531e"
+    },
+    {
+      "path": "docs/custom-prompts.md",
+      "beforeSHA256": "a2607c0a6fba5e4036ae9271dca6521f09afadb23497e42dd4a09c090eec6eb5",
+      "afterSHA256": "a94510c543f3144b9e0c755134e13f267b454643cadc4ee89fd8a88ee39a80a0"
+    },
+    {
+      "path": "test/prompt-evals.md",
+      "beforeSHA256": "d681a09f0886efe53337cd304b290fca470985df7f8124096a7d181794be1445",
+      "afterSHA256": "719b5329ce3ad793dd8e21af6b81ac03f346edc467dd6c26d567a38dd93469d3"
+    }
+  ],
+  "execution": {
+    "host": "Codex CLI 默认配置模型；--ignore-user-config --ephemeral --skip-git-repo-check --sandbox workspace-write，approval_policy=never",
+    "isolation": "临时项目与个人库；selected-b 克隆 h01 项目；未修改真实用户配置",
+    "runnerArtifacts": [
+      {
+        "path": "dist/feature-994/run-debt-options.mjs",
+        "sha256": "194dfac19297a3d861bb531b94a1a81dfd61660509b44bf9c49f45e9810c19f4"
+      },
+      {
+        "path": "dist/feature-994/run-debt-option-selection.mjs",
+        "sha256": "978fd8c53efe186db3dece098f392e9eab60e9415f9b4561ace75b34f345cc13"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "command": "npm run build:skill",
+      "exitCode": 0,
+      "evidence": {
+        "path": "dist/feature-994/solution-options/build-skill.log",
+        "sha256": "735644056b6b85b2d151bd55741fbbff07f76e7d5a623bb691786ebeb013865a"
+      }
+    },
+    {
+      "command": "npm run validate",
+      "exitCode": 0,
+      "evidence": {
+        "path": "dist/feature-994/solution-options/validate.log",
+        "sha256": "849838512047664e151bd85bec305700f95eb556cef3ec2003ab5e4c36a7c7a6"
+      }
+    },
+    {
+      "command": "node --test test/debt-assets.test.mjs",
+      "exitCode": 0,
+      "evidence": {
+        "path": "dist/feature-994/solution-options/debt-assets.log",
+        "sha256": "7ed25dbd1c4fa68b8486aff7d4ba1f316cbcac29ac1105b2beeb53117e86d4e2"
+      },
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "command": "npm run validate（最终文档）",
+      "exitCode": 0,
+      "evidence": {
+        "path": "dist/feature-994/solution-options/validate-final.log",
+        "sha256": "849838512047664e151bd85bec305700f95eb556cef3ec2003ab5e4c36a7c7a6"
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    },
+    {
+      "command": "Feature 994 与 my-analyze-debt 本地 Markdown 链接及当前源指纹核对",
+      "exitCode": 0,
+      "localLinks": 92,
+      "currentSourceFingerprints": 8
+    }
+  ],
+  "installedAssetHashes": {
+    "SKILL.md": "f3f90355ce6956ddd0c8f51e30174e1bce58cc8d335d3584bca7a95d23688320",
+    "assets/templates/DEBT_ANALYSIS.tmpl.md": "1ac18812f2f8a3c47e53da83fe88f7d25c9bb89dffce23699671c0ff83841316",
+    "evals/cases.md": "08e397eb0d2caeb61929eaeac4310005a6972239022ea32f3daafba6a0e949fe",
+    "evals/fixtures/refunds/AGENTS.md": "74e1abc585877c864b66f12e89f0b3abefc459d19d07f0cff6e11f7b126f9f5a",
+    "evals/fixtures/refunds/POLICY.md": "80ac84fe23f12135a189367afc3107592c3a38196bbcaff6d11af4dc2cfcf927",
+    "evals/fixtures/refunds/README.md": "d41aa8d3a9e21c68dfdca213046c7fb799fce0ebc106b9e1a3389da46d9afcb2",
+    "evals/fixtures/refunds/app.mjs": "6522b5f6d03f3a6c84a98202ed742b37d9a9664730086e16d06cf5bc31927fdb",
+    "evals/fixtures/refunds/enterprise.mjs": "bad50fbdb0e6fed88c7a6f0013bbed8690490fc47e887306ceabc984e5cf16cf",
+    "evals/fixtures/refunds/generated/app-model.mjs": "b5bce28dacdcc9ffc1ac498cc59aa20db7b774e65ebae041bfb9d99d733eece2",
+    "evals/fixtures/refunds/generated/support-model.mjs": "b5bce28dacdcc9ffc1ac498cc59aa20db7b774e65ebae041bfb9d99d733eece2",
+    "evals/fixtures/refunds/refund.test.mjs": "bee3fab247627bd3febacd13c7f01b82055bb43745d65bb29e927100ea17feb0",
+    "evals/fixtures/refunds/schema.json": "297964d23230a81c23842dd647b347d8f15e1648a07aa0c1de36c0d751475ccf",
+    "evals/fixtures/refunds/support.mjs": "14669b0d58e9e97ae42375d47770846ccf8b6cfe7e5499a7c80297426e640d3e",
+    "references/debt-taxonomy.md": "d60564b3e6da4e394f766efbd2f272f9f51497266045e6cd12cb1d4c29716a5b",
+    "references/report-output.md": "fec9c2679e39a5290c22730459904850f9d01a9356437dad1add4000b5c88ae8"
+  },
+  "cases": [
+    {
+      "case": "h01",
+      "input": "使用 $my-analyze-debt。分析这个项目的退款模块技术债，给出下一步建议。可以运行已有的无副作用 Node 测试。\n使用当前项目 .agents/skills 的入口及资源。执行并交付实际结果与未验证项。",
+      "project": "/private/var/folders/91/4ctrssmn4l99fdzt3l62pjf80000gn/T/mai-994-debt-BWZ6BG/h01",
+      "baseline": null,
+      "sourceCase": null,
+      "result": {
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 150.466,
+        "changed": [
+          "docs/technical-debt/2026-10-18-refund.md"
+        ]
+      },
+      "existingUnmodifiedPaths": 93,
+      "artifacts": [
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/input.txt",
+          "sha256": "665a09e4a30450f80b1acaac21740af711c99d058e202b5a646e7f094d567ef9"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/fixture.json",
+          "sha256": "62bd7d5ad368dc6f58c12039343ac864e32a8a173907aee28ed1e4d715c91e23"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/result.json",
+          "sha256": "e1d09a7e97fea70e9a4201e074598f39bd1ad95b4527869f1ae9a719e22d43bf"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/events.jsonl",
+          "sha256": "2404eed4031725b70da4768363153a62f2b0457a199d2f21d6c636a215f822e6"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/final.txt",
+          "sha256": "39bd035354d43df4455e5f40e5ee0c8e6e5d520e3a620750b2cfd3559db60af9"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/judgments.json",
+          "sha256": "00fbdf064b4d6f6d8928829fc292f534b28734f8c05eb3e9818f38f692f10c4d"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01/artifacts/docs/technical-debt/2026-10-18-refund.md",
+          "sha256": "4081c365934620cce4ce911e212290e9ed92968e20d849c18ca552f5d8b38e00"
+        }
+      ],
+      "installedResourceDifferences": [
+        {
+          "path": "evals/cases.md",
+          "installed": "08e397eb0d2caeb61929eaeac4310005a6972239022ea32f3daafba6a0e949fe",
+          "current": "19915760815806f63d3f719c3895e7716d0e54619fd3eb7fb26162eca256e5f4"
+        }
+      ],
+      "verdict": "pass",
+      "observations": [
+        "两案基于同一已确认零售规则分叉：A 提取唯一零售判定并保留公开入口，B 修正客服期限并补政策测试，动作和影响面有实质差异，未提出全仓框架重构。",
+        "两案保持租户、PAID、非负经过时间、含截止点、企业 30 天合同；MVP 不通过削弱验证换取小改动。",
+        "明确 B 保留双维护点，列下次零售政策调整、新入口或再次漂移等演进 A 触发；推荐 B 依据当前有限规模和未知变更频率，并说明改变推荐的条件。",
+        "共用验证任务与仅 A 的结构任务可区分；安全恢复不回到已确认错误的 7 天政策。",
+        "报告给具体 A/B/C 下一步且标待选择；最终答复给出带推荐的方案选项，未将推荐当作决定或实施授权。",
+        "Node.js 24.12.0 下已有测试输出 4 项通过；报告将静态政策缺陷与未执行新增反例分开，不宣称已修复。",
+        "前后快照核对 93 个既有文件/链接完全保持，只新增分析报告；未修改业务、测试、规则、安装资源或配置。"
+      ],
+      "limitations": [
+        "本次审查限定 H-13 新增方案比较与用户选择行为，不代表历史跨宿主未解决判断问题已关闭。"
+      ]
+    },
+    {
+      "case": "h10project",
+      "input": "使用 $my-analyze-debt。分析退款模块，采用项目自己的报告模板。\n使用当前项目 .agents/skills 的入口及资源。执行并交付实际结果与未验证项。",
+      "project": "/private/var/folders/91/4ctrssmn4l99fdzt3l62pjf80000gn/T/mai-994-debt-BWZ6BG/h10project",
+      "baseline": null,
+      "sourceCase": null,
+      "result": {
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 148.826,
+        "changed": [
+          "docs/technical-debt/2026-10-18-refund.md"
+        ]
+      },
+      "existingUnmodifiedPaths": 94,
+      "artifacts": [
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/input.txt",
+          "sha256": "5f534d57b7806a62eea2b0034e2caca29c15607070431c21c46b60b106d9ef03"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/fixture.json",
+          "sha256": "ccaff97e7b22cbf849ddb0bd4be74dea50c2aa6a12c8261541e0d2515b68973f"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/result.json",
+          "sha256": "ec730a00a6bebc37d0b6a852810da74c75f4c7a22d2c1593f355c262fb2a24d1"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/events.jsonl",
+          "sha256": "66e2aa5ab1b33dfebbd665ade52f69d446a471f82a4f1974336cdfef26a080d6"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/final.txt",
+          "sha256": "c097e357d4877750c8fd8238d012ac9979acd7c7a1a0366078681991277c6b17"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/judgments.json",
+          "sha256": "d262bc0c08e6f99c6033165135f7deb68aa5f4001097bc835c4639d5e502d9d4"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h10project/artifacts/docs/technical-debt/2026-10-18-refund.md",
+          "sha256": "500eb726d16d4cbd514a149ef636d655a1d70ad1dceabc05515864dde274f9d9"
+        }
+      ],
+      "installedResourceDifferences": [
+        {
+          "path": "evals/cases.md",
+          "installed": "08e397eb0d2caeb61929eaeac4310005a6972239022ea32f3daafba6a0e949fe",
+          "current": "19915760815806f63d3f719c3895e7716d0e54619fd3eb7fb26162eca256e5f4"
+        }
+      ],
+      "verdict": "pass",
+      "observations": [
+        "两案基于同一已确认零售规则分叉：A 提取唯一零售判定并保留公开入口，B 修正客服期限并补政策测试，动作和影响面有实质差异，未提出全仓框架重构。",
+        "两案保持租户、PAID、非负经过时间、含截止点、企业 30 天合同；MVP 不通过削弱验证换取小改动。",
+        "明确 B 保留双维护点，列下次零售政策调整、新入口或再次漂移等演进 A 触发；推荐 B 依据当前有限规模和未知变更频率，并说明改变推荐的条件。",
+        "共用验证任务与仅 A 的结构任务可区分；安全恢复不回到已确认错误的 7 天政策。",
+        "报告给具体 A/B/C 下一步且标待选择；最终答复给出带推荐的方案选项，未将推荐当作决定或实施授权。",
+        "项目旧模板保留 PROJECT_DEBT_REPORT 标记及四个章节，报告在既有章节中补齐两案比较、任务与选择状态，未改写模板本身。",
+        "现有退款测试执行轨迹为 4 项通过；补充内存探针命令记录 exit 1。",
+        "前后快照核对 94 个既有文件/链接完全保持，只新增分析报告；未修改业务、测试、规则、安装资源或配置。"
+      ],
+      "limitations": [
+        "本次审查限定 H-13 新增方案比较与用户选择行为，不代表历史跨宿主未解决判断问题已关闭。",
+        "报告声称内存探针 27 项中 3 项失败；events.jsonl 的 item_7 aggregated_output 为空，仅可核对命令和 exit 1。本次独立审查不把 27/3 计为已验证运行统计，也不据此扩大方案专项通过范围。"
+      ]
+    },
+    {
+      "case": "h01clean",
+      "input": "使用 $my-analyze-debt。分析这个小型模块的技术债，报告已检查范围与后续建议。可运行已有无副作用测试。\n使用当前项目 .agents/skills 的入口及资源。执行并交付实际结果与未验证项。",
+      "project": "/private/var/folders/91/4ctrssmn4l99fdzt3l62pjf80000gn/T/mai-994-debt-BWZ6BG/h01clean",
+      "baseline": null,
+      "sourceCase": null,
+      "result": {
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 93.742,
+        "changed": [
+          "docs/technical-debt/2026-10-18-order-count.md"
+        ]
+      },
+      "existingUnmodifiedPaths": 88,
+      "artifacts": [
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/input.txt",
+          "sha256": "5112cf9d46df1e024cfd095e5bd8f12a862e0711754ae17a086ab461bf3b468a"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/fixture.json",
+          "sha256": "974232869acf3f903e999d05203df92090cbfff6f9cd66bd3fe1b995276c6c80"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/result.json",
+          "sha256": "3085cd235b0d4a7d6abd61cb99634dd5ed547a3c0b3e783d48269d5b0d844bcb"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/events.jsonl",
+          "sha256": "9b4788f35bbc4abff6c1aecdf6f67742d3b3bd21ac318b1e28fe79ea1048ad4a"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/final.txt",
+          "sha256": "f2f2adf51fcb04d73a669280f0df747aa762156b9066ac341766c294be3402da"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/judgments.json",
+          "sha256": "2afcf2f036c59524e5ead73ae67d0ea337b51cd98f05e00062411f3424776e68"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/h01clean/artifacts/docs/technical-debt/2026-10-18-order-count.md",
+          "sha256": "a3e77e11cc87f82f2be2aaf9ce06cb88261daf2c21b89b3ca761cf4d0c95b5fa"
+        }
+      ],
+      "installedResourceDifferences": [
+        {
+          "path": "evals/cases.md",
+          "installed": "08e397eb0d2caeb61929eaeac4310005a6972239022ea32f3daafba6a0e949fe",
+          "current": "19915760815806f63d3f719c3895e7716d0e54619fd3eb7fb26162eca256e5f4"
+        }
+      ],
+      "verdict": "pass",
+      "observations": [
+        "报告明确确认债务为 0，保留当前快照、无 Git、覆盖范围与未验证项，没有产生 A/B 重构或偿债任务。",
+        "报告说明唯一简单计数实现与 POLICY 契约一致；项目消费者搜索和完整测试读取有轨迹。",
+        "最终答复及报告均给出保持现状（推荐）或补证的具体下一步，报告标为待用户选择，推荐未写成接受决定。",
+        "已有无副作用测试实际执行，1 项通过、0 失败；报告未将 Node.js 24 证据外推到全部 Node 22+ 版本。",
+        "快照核对 88 个既有文件/链接全部保持，只新增报告；无实现、规则、配置或 Feature 改动。"
+      ],
+      "limitations": [
+        "本例无治理项，不能证明实际 A/B 方案质量或选择 B 后续行为。"
+      ]
+    },
+    {
+      "case": "selected-b",
+      "input": "使用 $my-analyze-debt，读取 docs/technical-debt/2026-10-18-refund.md。我选择报告中的 B（MVP），先细化计划，本轮不实施。\n使用本项目 .agents/skills 中的入口。",
+      "project": "/private/var/folders/91/4ctrssmn4l99fdzt3l62pjf80000gn/T/mai-994-choice-UYM71X/project",
+      "baseline": null,
+      "sourceCase": "h01",
+      "result": {
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 100.875,
+        "changed": [
+          "docs/technical-debt/2026-10-18-refund.md"
+        ]
+      },
+      "existingUnmodifiedPaths": 93,
+      "artifacts": [
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/input.txt",
+          "sha256": "634d15d84a6b12af79760e595d8a9720179ea7a5625d435126bebc823891489f"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/fixture.json",
+          "sha256": "e8e36b632b3b3268d87ae315f1fc2190175de799302895d813d075ac8e28305a"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/result.json",
+          "sha256": "6f3a90109a56f581c3fd9073f7cee5c1e8bfc3c8ad796b9ff1ea2a01c5811d52"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/events.jsonl",
+          "sha256": "c96aa8adad8a37ea4a5fc5f848ef00a729ae3392dace9c411c2a0ad993cf48ac"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/final.txt",
+          "sha256": "518c6a9c1beea8a08f8d7478f5aa98bd17e863ba7c46dbdd6877535b82c07c58"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/judgments.json",
+          "sha256": "ddd778c571c3216e912a4fcf709c28b0fc7c2ad3d3fab30fb49152b4ba17edfe"
+        },
+        {
+          "path": "dist/feature-994/solution-options/debt-host/selected-b/artifacts/docs/technical-debt/2026-10-18-refund.md",
+          "sha256": "d75fed44a1043a3c222bdb1782487b5168d8d2acb6c52870f7339dbf9993dc24"
+        }
+      ],
+      "installedResourceDifferences": [
+        {
+          "path": "evals/cases.md",
+          "installed": "08e397eb0d2caeb61929eaeac4310005a6972239022ea32f3daafba6a0e949fe",
+          "current": "19915760815806f63d3f719c3895e7716d0e54619fd3eb7fb26162eca256e5f4"
+        }
+      ],
+      "verdict": "pass",
+      "observations": [
+        "报告将待选择更新为用户明确选择 B，逐字记录本轮选择来源和仅细化计划/不实施的授权；最终答复不再次请求 A/B 决定。",
+        "仅细化 B 的 T1：先补独立政策断言获得旧实现失败证据，再改客服期限，最后验证并回填；未开启 A 的规则抽取。",
+        "A/B 原比较表完整保持；原范围/依据/验证、候选与排除、无 Git 指纹章节保持；稳定 D-001/D-002/R-001 发现未重编号或错误关闭。",
+        "新增当前克隆项目根与复核时间，原测试结果明确保留为历史，不伪称本轮执行。计划的 20 项矩阵为 App/客服各 7 项、企业 6 项，包含 REFUNDED、跨租户、支付前与各自截止点。",
+        "只更新原报告；其余 93 个既有文件/链接全部保持。没有业务/测试/规则/配置修改，没有运行测试或启动实施。原 h01 项目及报告哈希保持。",
+        "B 双源余债及升级 A 触发仍保留；安全恢复不回到错误 7 天，不将选择方案视作实施授权。"
+      ],
+      "limitations": [
+        "仅验证用户明确“先细化计划，本轮不实施”的后续交接，不验证未来已授权实施流程。"
+      ]
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "scope": "仅 H-13 本次新增行为"
+  },
+  "limitations": [
+    "运行后只改了未被读取的 evals/cases.md 用例总范围 H-01～H-12 为 H-01～H-13；正文、参考与模板及其他资源指纹一致。",
+    "h10project 报告的内存探针 27/3 统计缺少命令输出，不计为已验证运行统计；退出码 1 及现有 4 项测试通过可核对。",
+    "本轮未重跑其他宿主、完整运行时/浏览器/实际包验收；前次跨宿主限制与 Claude P2 质量问题保持，Feature 仍为 review。"
+  ]
+}

@@ -8,7 +8,7 @@ import { apply, plan, doctor } from '../src/project.mjs';
 import { seed, setup, defaultConfig, PACKAGE, importAsset, saveAsset, allAssets } from '../src/store.mjs';
 import { hash, json, read, readJSON, write } from '../src/fs.mjs';
 
-const names = ['my-auto-design', 'my-auto-feature', 'my-init-repo-memory'];
+const names = ['my-auto-design', 'my-auto-feature', 'my-init-repo-memory', 'my-simple-feature'];
 const tools = ['codex', 'claudecode', 'cursor', 'copilot'];
 const chosen = { ...defaultConfig(), tools };
 async function fixture(t) {

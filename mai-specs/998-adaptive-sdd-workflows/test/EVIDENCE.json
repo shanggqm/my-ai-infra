@@ -1,0 +1,1358 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-17T16:28:36.621307+00:00",
+  "scope": "Feature 998 implementation acceptance; per-AC conclusions and limitations in ACCEPTANCE.md. A case exitCode 0 alone does not mean pass.",
+  "source": {
+    "baseCommit": "b82c0733c1a67c618a2c7becd71f82fa6b5ea460",
+    "branch": "feature/998-adaptive-sdd-workflows",
+    "fingerprint": "460ef4cafa1bb5ebeb33842c91e17f8a135960937e6306ebc27988012c1bc7db",
+    "files": [
+      {
+        "path": "README.md",
+        "sha256": "a01003a1cd1e7d2deb0717a28d6fb0e1e4499119f3585144f094c6afa031640f"
+      },
+      {
+        "path": "assets/README.md",
+        "sha256": "2b09299558ab860b16ebcb51eda1eb5553a079898d4f67f35b6e91ec4bc60774"
+      },
+      {
+        "path": "assets/prompts/README.md",
+        "sha256": "270f2a94e82bb9a0aee4ff31eb390d479a29b12a655463b9a04f68c2da302de6"
+      },
+      {
+        "path": "assets/prompts/my-auto-design.md",
+        "sha256": "12dc3dc1094d91f263fdbaf8586beb70483f32592aae08eed9e92933ea546bab"
+      },
+      {
+        "path": "assets/prompts/my-auto-feature.md",
+        "sha256": "fea543f03c0bbc7fcff3b055196a706ef6e145e6866c5b17de40979b4ee1f875"
+      },
+      {
+        "path": "assets/prompts/my-simple-feature.md",
+        "sha256": "9e87dd66140c29b0bd4eb585c0592f8c16caa3e1ed776c1526948a7ff209e961"
+      },
+      {
+        "path": "assets/skills/my-create-design/SKILL.md",
+        "sha256": "a41085f173c536af05f70bc928194bcd15692b43dfd1db1992cb00b6960f5a2a"
+      },
+      {
+        "path": "assets/skills/my-create-design/assets/templates/TECH_DESIGN.simple.tmpl.md",
+        "sha256": "b8dda17b42c08e891218011b6c02832ddac5e77f0b05968731bc47cbb57a0362"
+      },
+      {
+        "path": "assets/skills/my-create-feature/SKILL.md",
+        "sha256": "686d37c4efbd2562037c0b204a0061995a77c63fa1d8f6454ad160f971534acd"
+      },
+      {
+        "path": "assets/skills/my-create-feature/references/FEATURE_PROFILES.json",
+        "sha256": "46846b8930e5f93ab014fe3937ac3e71edaf730c740ed0470e78f11a2c37e020"
+      },
+      {
+        "path": "assets/skills/my-create-feature/references/stage-contracts.md",
+        "sha256": "ddc0b34d1f61c23a066e4a781448955bec9867d20db23088e304b9b96afe8b4c"
+      },
+      {
+        "path": "assets/skills/my-create-feature/scripts/init-feature.mjs",
+        "sha256": "4479a15727ed110bbc8a18a868e7e74ab7bb45743a05e4c21c75208d5ba9c0cb"
+      },
+      {
+        "path": "assets/skills/my-create-feature/template/README.md",
+        "sha256": "bfa381aae33030b196e8dcae600de91063927e5bd2d5ea87e25aa29f63180766"
+      },
+      {
+        "path": "assets/skills/my-create-feature/template/ROADMAP.md",
+        "sha256": "0a6942decebf04c22e1a7cd79c5e474185804a5f2ca8220d9fcc1ead4cf14b1d"
+      },
+      {
+        "path": "assets/skills/my-create-feature/template/feature/BRIEF.md",
+        "sha256": "d06be3e515550bf946acff74fa0db5121a0a4315879281ba4b0d308096d99e62"
+      },
+      {
+        "path": "assets/skills/my-create-prd/SKILL.md",
+        "sha256": "81359f0bd40e6acb7287062cc03589024c3cd5c3633c1bf69e48c4f90531cea5"
+      },
+      {
+        "path": "assets/skills/my-create-prd/assets/templates/PRD.simple.tmpl.md",
+        "sha256": "4e26d05f3651d99c508a45f314dada25e46f7b8bf39094132e5c1dc79dfe5e4b"
+      },
+      {
+        "path": "assets/skills/my-create-test-plan/SKILL.md",
+        "sha256": "88e90d9e14b910e2252459870283f023f97018ea618068fca0b521693e5366d8"
+      },
+      {
+        "path": "assets/skills/my-create-test-plan/references/acceptance-cases.md",
+        "sha256": "362107997824275bbd68424b17d6fe82239f27b745a2cea278c1ed7e533199e0"
+      },
+      {
+        "path": "assets/skills/my-create-test-plan/references/delegation.md",
+        "sha256": "763c765dada211ce0c324dca40cb7196da8d0bbcdbbeab5fccbcbbb04f8bbec5"
+      },
+      {
+        "path": "assets/skills/my-implement-code/SKILL.md",
+        "sha256": "ccfb3d17d3f5860df77830e68d8800d824a163857ec990a826ce5eff5b4962fd"
+      },
+      {
+        "path": "assets/skills/my-review-code/SKILL.md",
+        "sha256": "8cbfa4a0a8e1bd7fcecd9be845b7513ae1cc1765e3e119dcefff63250d929baf"
+      },
+      {
+        "path": "assets/skills/my-review-design/SKILL.md",
+        "sha256": "67594c6117902173cd0df0d7524b9d746660326219f46773e957391dcdd1beda"
+      },
+      {
+        "path": "docs/custom-prompts.md",
+        "sha256": "fb3f9f00a316259e076a1c442907395e1dec21f6e6ed436cfa348fc494ada32f"
+      },
+      {
+        "path": "manifest.yml",
+        "sha256": "aba0ed147cae017f6da1d43ad1d97e2fa16d1bf2db135d16cd564cd5bcff6cbf"
+      },
+      {
+        "path": "scripts/release-check.mjs",
+        "sha256": "2281763728459cc7f367bf011c4ac3941b819042bc551e9c4aba694f3052b801"
+      },
+      {
+        "path": "scripts/validate.mjs",
+        "sha256": "ccd9f3698a43c8278c86a6767fea4aa9e0239f08cae769e731930d70d78ed23e"
+      },
+      {
+        "path": "templates/mai-specs/README.md",
+        "sha256": "b6f58a55ab49e01350447df2556af713306867899c701b02aaf38e1824e63612"
+      },
+      {
+        "path": "templates/mai-specs/_templates/TECH_DESIGN.tmpl.md",
+        "sha256": "737d6f3afd900ea482c92a71fe28c66e95b8b9d24d6462bd674496e003032abe"
+      },
+      {
+        "path": "templates/mai-specs/_templates/TEST_PLAN.tmpl.md",
+        "sha256": "28feb85c9aeb5251459aa8983ee48b2eecd9849d10f8126500ddb220cb4cf344"
+      },
+      {
+        "path": "test/discovery.test.mjs",
+        "sha256": "eb6d3c71fc982305757904069ea55f881dea92874985e70d1643a212b3d255b1"
+      },
+      {
+        "path": "test/feature-init.test.mjs",
+        "sha256": "7ffb99a7b5a124d183bc3ae12f257f1837d075459577ef3760decb14762490c7"
+      },
+      {
+        "path": "test/feature-layout.test.mjs",
+        "sha256": "2ddbf75cf4eb32117e10315ec3d6533b5f8c922c881d3811f8773250c30f6a21"
+      },
+      {
+        "path": "test/prompt-evals.md",
+        "sha256": "8dbd5490d3e7a3206ba81d13621455c21c4e4a0b2a5a2145fe5ca3305a7e2be3"
+      },
+      {
+        "path": "test/prompts.test.mjs",
+        "sha256": "de18c1c70d5d2286b31f00e4c7b6962c8456fd5fa878757438f92d03807f1861"
+      },
+      {
+        "path": "test/release-quality.test.mjs",
+        "sha256": "d1abf7a8c6707429cf64bb3cf58dc8d3569f05426864868d4a41a0e81c2fc423"
+      },
+      {
+        "path": "test/single-source.test.mjs",
+        "sha256": "1fe0edeae4eac62fb1540ffc366eeb8f9a6aea4f8b84914190c151369d3a3339"
+      }
+    ]
+  },
+  "automation": {
+    "command": "MAI_CODEX_BIN=codex MAI_CLAUDE_BIN=claude npm run release:check",
+    "tests": 242,
+    "passed": 242,
+    "failed": 0,
+    "skipped": 0,
+    "node": "v24.12.0",
+    "log": "dist/feature-998/release-final.log",
+    "logSha256": "de97a624afb5446134c238a3d662df897da5333d391a9a991b1e5ebd68dc3b72"
+  },
+  "release": {
+    "checkedAt": "2026-10-17T16:19:41.078Z",
+    "filename": "easyuseai-my-ai-infra-0.0.12.tgz",
+    "sha256": "d933edb57edd51ccd0b330710e84a2163bb23ac82799bce9517f71b39163ffd2",
+    "entryCount": 90,
+    "checks": [
+      "Distribution whitelist, resources, executable entry and tarball integrity",
+      "Offline npx bin, read-only version/catalog, packaged documentation and Skill resources",
+      "Installed CLI init replaces a recorded legacy Prompt with the current package without a separate upgrade",
+      "Global mai and my-ai-infra commands, current-directory init and doctor",
+      "All 14 selected Skills have discoverable regular SKILL.md files",
+      "Codex app-server skills/list discovers every selected Skill after global mai init",
+      "Claude SDK initialization discovers all project Skills, Prompts and review roles without duplicate commands",
+      "Packaged role assets and four native Agent formats resolve their installed Skill",
+      "New AGENTS/CLAUDE share one empty source and relative native entry links",
+      "Four adapters, installed Feature initializer/templates, repeat sync and doctor",
+      "Codex Skill discovery remains complete after repeat sync",
+      "Conflict refusal preserves modified project files and config",
+      "Global mai web selects current directory; packaged resources and API authentication",
+      "Packaged Markdown memory, stable identity, repeat sync, scene recall and Web management",
+      "Personal Skill import, upgrade isolation, npm global uninstall/reinstall persistence and new-project reuse"
+    ],
+    "publication": "not-published"
+  },
+  "codex": {
+    "version": "0.154.0-alpha.6.2",
+    "model": "gpt-6-astra",
+    "modelEvidence": "dist/feature-998/host-probes/codex-metadata.txt",
+    "configuration": "--ignore-user-config --ephemeral --sandbox workspace-write -c approval_policy=\"never\"",
+    "assetSets": {
+      "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85": {
+        ".agents/skills/my-implement-code/SKILL.md": "ccfb3d17d3f5860df77830e68d8800d824a163857ec990a826ce5eff5b4962fd",
+        ".agents/skills/my-review-design/SKILL.md": "67594c6117902173cd0df0d7524b9d746660326219f46773e957391dcdd1beda",
+        ".agents/skills/my-create-feature/SKILL.md": "686d37c4efbd2562037c0b204a0061995a77c63fa1d8f6454ad160f971534acd",
+        ".agents/skills/my-create-design/SKILL.md": "a41085f173c536af05f70bc928194bcd15692b43dfd1db1992cb00b6960f5a2a",
+        ".agents/skills/my-create-test-plan/SKILL.md": "88e90d9e14b910e2252459870283f023f97018ea618068fca0b521693e5366d8",
+        ".agents/skills/my-create-prd/SKILL.md": "81359f0bd40e6acb7287062cc03589024c3cd5c3633c1bf69e48c4f90531cea5",
+        ".agents/skills/my-simple-feature/SKILL.md": "e2665acc107f8246bc8282e32e5ef7047b44da3c2f54fd53aafe365a85e8c213",
+        ".agents/skills/my-init-repo-memory/SKILL.md": "a13167ab9349a3a55191fd765bb16ab61a149c31028965c06f875f469b6fe3ee",
+        ".agents/skills/my-auto-feature/SKILL.md": "c521674917b397e14f24bdd55c000ea149694084085a430f16b11a70f88d9cb5",
+        ".agents/skills/my-auto-design/SKILL.md": "1d9bc4d9e5867fc7becbd0d1aed95237986304f299059a3284c1521b52faf225",
+        ".agents/skills/my-review-code/SKILL.md": "8cbfa4a0a8e1bd7fcecd9be845b7513ae1cc1765e3e119dcefff63250d929baf",
+        ".agents/skills/my-create-feature/references/stage-contracts.md": "ddc0b34d1f61c23a066e4a781448955bec9867d20db23088e304b9b96afe8b4c",
+        ".agents/skills/my-create-feature/references/FEATURE_PROFILES.json": "46846b8930e5f93ab014fe3937ac3e71edaf730c740ed0470e78f11a2c37e020",
+        ".agents/skills/my-create-feature/scripts/init-feature.mjs": "4479a15727ed110bbc8a18a868e7e74ab7bb45743a05e4c21c75208d5ba9c0cb"
+      },
+      "780d0be1c8dfb52af9aee44e055747c41e9c96a5f2f1add1d0d8efc69573d46d": {
+        ".agents/skills/my-implement-code/SKILL.md": "ccfb3d17d3f5860df77830e68d8800d824a163857ec990a826ce5eff5b4962fd",
+        ".agents/skills/my-review-design/SKILL.md": "67594c6117902173cd0df0d7524b9d746660326219f46773e957391dcdd1beda",
+        ".agents/skills/my-create-feature/SKILL.md": "686d37c4efbd2562037c0b204a0061995a77c63fa1d8f6454ad160f971534acd",
+        ".agents/skills/my-create-design/SKILL.md": "a41085f173c536af05f70bc928194bcd15692b43dfd1db1992cb00b6960f5a2a",
+        ".agents/skills/my-create-test-plan/SKILL.md": "88e90d9e14b910e2252459870283f023f97018ea618068fca0b521693e5366d8",
+        ".agents/skills/my-create-prd/SKILL.md": "81359f0bd40e6acb7287062cc03589024c3cd5c3633c1bf69e48c4f90531cea5",
+        ".agents/skills/my-simple-feature/SKILL.md": "e2665acc107f8246bc8282e32e5ef7047b44da3c2f54fd53aafe365a85e8c213",
+        ".agents/skills/my-init-repo-memory/SKILL.md": "a13167ab9349a3a55191fd765bb16ab61a149c31028965c06f875f469b6fe3ee",
+        ".agents/skills/my-auto-feature/SKILL.md": "c521674917b397e14f24bdd55c000ea149694084085a430f16b11a70f88d9cb5",
+        ".agents/skills/my-auto-design/SKILL.md": "1d9bc4d9e5867fc7becbd0d1aed95237986304f299059a3284c1521b52faf225",
+        ".agents/skills/my-review-code/SKILL.md": "8cbfa4a0a8e1bd7fcecd9be845b7513ae1cc1765e3e119dcefff63250d929baf",
+        ".agents/skills/my-create-feature/references/stage-contracts.md": "ddc0b34d1f61c23a066e4a781448955bec9867d20db23088e304b9b96afe8b4c",
+        ".agents/skills/my-create-feature/references/FEATURE_PROFILES.json": "46846b8930e5f93ab014fe3937ac3e71edaf730c740ed0470e78f11a2c37e020",
+        ".agents/skills/my-create-feature/scripts/init-feature.mjs": "a12ab56c11ab53e6fd0ac0b745d0a77856cf07d25ddb36438ea7a73c49ff90f4"
+      },
+      "a93ab46738c2363328cb15d2062e2688da171630825ffa9b0c6e1567026ef9c7": {
+        ".agents/skills/my-implement-code/SKILL.md": "ccfb3d17d3f5860df77830e68d8800d824a163857ec990a826ce5eff5b4962fd",
+        ".agents/skills/my-review-design/SKILL.md": "67594c6117902173cd0df0d7524b9d746660326219f46773e957391dcdd1beda",
+        ".agents/skills/my-create-feature/SKILL.md": "686d37c4efbd2562037c0b204a0061995a77c63fa1d8f6454ad160f971534acd",
+        ".agents/skills/my-create-design/SKILL.md": "a41085f173c536af05f70bc928194bcd15692b43dfd1db1992cb00b6960f5a2a",
+        ".agents/skills/my-create-test-plan/SKILL.md": "88e90d9e14b910e2252459870283f023f97018ea618068fca0b521693e5366d8",
+        ".agents/skills/my-create-prd/SKILL.md": "81359f0bd40e6acb7287062cc03589024c3cd5c3633c1bf69e48c4f90531cea5",
+        ".agents/skills/my-simple-feature/SKILL.md": "e2665acc107f8246bc8282e32e5ef7047b44da3c2f54fd53aafe365a85e8c213",
+        ".agents/skills/my-init-repo-memory/SKILL.md": "a13167ab9349a3a55191fd765bb16ab61a149c31028965c06f875f469b6fe3ee",
+        ".agents/skills/my-auto-feature/SKILL.md": "c521674917b397e14f24bdd55c000ea149694084085a430f16b11a70f88d9cb5",
+        ".agents/skills/my-auto-design/SKILL.md": "1d9bc4d9e5867fc7becbd0d1aed95237986304f299059a3284c1521b52faf225",
+        ".agents/skills/my-create-feature/references/stage-contracts.md": "ddc0b34d1f61c23a066e4a781448955bec9867d20db23088e304b9b96afe8b4c",
+        ".agents/skills/my-create-feature/references/FEATURE_PROFILES.json": "46846b8930e5f93ab014fe3937ac3e71edaf730c740ed0470e78f11a2c37e020",
+        ".agents/skills/my-create-feature/scripts/init-feature.mjs": "4479a15727ed110bbc8a18a868e7e74ab7bb45743a05e4c21c75208d5ba9c0cb"
+      },
+      "88013463e23e341b323ce50095d7a974074a4dea5c222b66ed46e74e6b80a725": {
+        ".agents/skills/my-implement-code/SKILL.md": "ccfb3d17d3f5860df77830e68d8800d824a163857ec990a826ce5eff5b4962fd",
+        ".agents/skills/my-review-design/SKILL.md": "67594c6117902173cd0df0d7524b9d746660326219f46773e957391dcdd1beda",
+        ".agents/skills/my-create-feature/SKILL.md": "686d37c4efbd2562037c0b204a0061995a77c63fa1d8f6454ad160f971534acd",
+        ".agents/skills/my-create-design/SKILL.md": "a41085f173c536af05f70bc928194bcd15692b43dfd1db1992cb00b6960f5a2a",
+        ".agents/skills/my-create-test-plan/SKILL.md": "88e90d9e14b910e2252459870283f023f97018ea618068fca0b521693e5366d8",
+        ".agents/skills/my-create-prd/SKILL.md": "81359f0bd40e6acb7287062cc03589024c3cd5c3633c1bf69e48c4f90531cea5",
+        ".agents/skills/my-simple-feature/SKILL.md": "e2665acc107f8246bc8282e32e5ef7047b44da3c2f54fd53aafe365a85e8c213",
+        ".agents/skills/my-init-repo-memory/SKILL.md": "a13167ab9349a3a55191fd765bb16ab61a149c31028965c06f875f469b6fe3ee",
+        ".agents/skills/my-auto-feature/SKILL.md": "c521674917b397e14f24bdd55c000ea149694084085a430f16b11a70f88d9cb5",
+        ".agents/skills/my-auto-design/SKILL.md": "1d9bc4d9e5867fc7becbd0d1aed95237986304f299059a3284c1521b52faf225",
+        ".agents/skills/my-review-code/SKILL.md": "8cbfa4a0a8e1bd7fcecd9be845b7513ae1cc1765e3e119dcefff63250d929baf",
+        ".agents/skills/my-create-feature/references/stage-contracts.md": "ddc0b34d1f61c23a066e4a781448955bec9867d20db23088e304b9b96afe8b4c",
+        ".agents/skills/my-create-feature/scripts/init-feature.mjs": "4479a15727ed110bbc8a18a868e7e74ab7bb45743a05e4c21c75208d5ba9c0cb"
+      }
+    },
+    "cases": [
+      {
+        "case": "auto_design",
+        "baseline": "1a451d4f19244ffe9156594185f5d0b9ce390284",
+        "input": "使用 $my-auto-design 接续已有 999-fixture 的有效方案，完成评审、实现和验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 101.98,
+        "eventsSha256": "efec76978baba6dcf52857fd86f718d5debfb6490ae47b495b55f03bf7382670",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "6f7bfdc9758a50b74a7691b1535e8e31f6354b3a630415adff8e5746530b6a65"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "a49a6f50ee359eef77255a3f937f460b67f9c103763a092500a072bb3690e633"
+          },
+          {
+            "path": "mai-specs/999-fixture/review/code_review.md",
+            "sha256": "449bf2a2428684736327ff7bd1c06b03f865fb2c7454a088020596b4570f0d3b"
+          },
+          {
+            "path": "mai-specs/999-fixture/review/design_review.md",
+            "sha256": "33f4d8a94294643b1bc374fac84f30a078959c258d610ae00b6af387f9638f7b"
+          },
+          {
+            "path": "src/count.mjs",
+            "sha256": "f28f4313af9fc1325957311a314dfbddf54615951425ef21477dd6df83742e0b"
+          },
+          {
+            "path": "test/count.test.mjs",
+            "sha256": "d53f56570139e2e9ee01e56318745cb3a81a7846333fa54b583028f1293079c7"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/auto_design/"
+      },
+      {
+        "case": "auto_feature",
+        "baseline": "39ebea81debe900d62c9bbee4ac1a2172c68d8c8",
+        "input": "使用 $my-auto-feature，完整实现一个纯函数 orderCount(items)，输入数组返回长度，空数组返回 0，无网络或依赖。完成需求、方案、评审、实现和验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 156.787,
+        "eventsSha256": "67cc82524dd2657595f57db5d007c641d8bf043e49b88355881e3862c2aed707",
+        "changedFiles": [
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "3c85baed611accd3607595f0d4ead0c1aa0c174098d049c1856d97925e86d4a1"
+          },
+          {
+            "path": "src/orders.mjs",
+            "sha256": "8af59170d4995a5c6abc52b95b8d782b3627a69af20015019be3dfa27fdea23f"
+          },
+          {
+            "path": "mai-specs/999-order-count/BRIEF.md",
+            "sha256": "b9626e92c5c7200fdf2932528ea18c79dbd51d5b5d7bb9a86b2d1e781403b1f0"
+          },
+          {
+            "path": "mai-specs/999-order-count/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          },
+          {
+            "path": "mai-specs/999-order-count/design/TECH_DESIGN.md",
+            "sha256": "ea23048976c1f77fc708b19e9e5af3b32d047ea0e7de3b647df5eaeaa227e39f"
+          },
+          {
+            "path": "mai-specs/999-order-count/review/code_review.md",
+            "sha256": "03188158f5c037920e1916f6d283e32c2d84b9577afc81ac98a7e8014a6e5c1e"
+          },
+          {
+            "path": "mai-specs/999-order-count/review/design_review.md",
+            "sha256": "59ad5b6137a39236b99ac78b168f518f54215727ad233628aa6e9e6c741e6da5"
+          },
+          {
+            "path": "mai-specs/999-order-count/spec/PRD.md",
+            "sha256": "9b65659d78414563db5c37928dc37f783ec159d6461773dc77d97372a5f5da94"
+          },
+          {
+            "path": "mai-specs/999-order-count/test/TEST_PLAN.md",
+            "sha256": "509ab2d9360c97b143e0240cea6c97a0c7556c5b2b46b35ed42514167d4cdc6d"
+          },
+          {
+            "path": "test/order-count.test.mjs",
+            "sha256": "fa3004261d8dee73b72f333784970412e84d445b9db6ab9f4c480ea4f6a795a8"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": false,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/auto_feature/"
+      },
+      {
+        "case": "badtemplate",
+        "baseline": "651c60d5b30c54b3a6fcaa9b3a003c70d9514d0e",
+        "input": "对已有 999-fixture 使用 $my-create-design 编写技术方案。必须使用 mai-specs/_templates/simple/TECH_DESIGN.tmpl.md 这个项目模板；功能为 orderCount 返回数组长度。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 30.109,
+        "eventsSha256": "fffc40d597fd913d76c073491d87c1089155149f27ae6db1d6585be54f37c515",
+        "changedFiles": [],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/badtemplate/"
+      },
+      {
+        "case": "create_only",
+        "baseline": "5f84e8172e5991b6e2fe653d934bff3c34d112c6",
+        "input": "使用 $my-create-feature 新建“订单计数”需求，slug=count-only，摘要为查询本地订单数量，背景是内部演示，规格档位 simple；只创建需求上下文包。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 32.917,
+        "eventsSha256": "5bdc9aec53afd2e23fd0ad6f19c3b2b1e74842e5555600b9d8eff44498a3af64",
+        "changedFiles": [
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "a93825a5461fafcb8a24cd5349942836ce2c2af7ad2c1f8e1e6364878b67b9b1"
+          },
+          {
+            "path": "mai-specs/999-count-only/BRIEF.md",
+            "sha256": "c12ba615cc2d319360d8340e3c014591ecd2af90bc7ab3c9ab5b36e5f25c07b7"
+          },
+          {
+            "path": "mai-specs/999-count-only/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/create_only/"
+      },
+      {
+        "case": "demo",
+        "baseline": "8df591508a8a22193c98d9eb223ce73f7c7ac63b",
+        "input": "使用 $my-simple-feature 完成一个纯本地模拟问数 Demo。用 src/orders.mjs 的两条订单，新增解析、查询、文本展示三个模块与一个可直接 node 运行的 demo.mjs，不用外部服务或依赖。输入“销售总额”输出 30，输入“订单数”输出 2，未知问题输出“暂不支持此问题”；展示以“结果：”开头。不访问生产数据。请完成实现、评审和验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 134.193,
+        "eventsSha256": "e252317f2e55f56b5ad2368af4975df9e8e487a165f5395839200aecd5fcecff",
+        "changedFiles": [
+          {
+            "path": "README.md",
+            "sha256": "98e1553d542914fe8248c33fa1167ba0a41351125950eca487f7b0f989dd5878"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "ad418d1c5e24291c4b8407c547bc7cb4228a3d75eb4e9cd2413e1d4d8c8ee752"
+          },
+          {
+            "path": "demo.mjs",
+            "sha256": "39c792362d8b649a8010d6e429aa6e0cfa2b499e4422e48017b82f49d3be2abf"
+          },
+          {
+            "path": "mai-specs/999-local-query-demo/BRIEF.md",
+            "sha256": "7616af386b49935ba82f08ace495e195244c85f334ccd2ab88615589dc430aeb"
+          },
+          {
+            "path": "mai-specs/999-local-query-demo/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          },
+          {
+            "path": "mai-specs/999-local-query-demo/design/TECH_DESIGN.md",
+            "sha256": "38daea79cc8e10e5eb68a8855c59fdeca3355d221e381c399013e05d8d4d9340"
+          },
+          {
+            "path": "mai-specs/999-local-query-demo/review/code_review.md",
+            "sha256": "f5b7c12c488eb9609c2e883a79d25bf644c45938c6348639a32a5c021a45c8bd"
+          },
+          {
+            "path": "mai-specs/999-local-query-demo/test/ACCEPTANCE.md",
+            "sha256": "243b202fbb0cac353127a5a4cc587797c30e33b4ada7c7ecf3f81619ba5bdc37"
+          },
+          {
+            "path": "src/format-result.mjs",
+            "sha256": "a58369e8b04f2c2c63b1ffbf2a5401cd9ad5c64f397696f192825ef2f6a743a4"
+          },
+          {
+            "path": "src/parse-question.mjs",
+            "sha256": "24a294d10ad4a0abc8d6de587f0abeea08bcb37c61fd06d45ad3faa95e1ac92e"
+          },
+          {
+            "path": "src/query-orders.mjs",
+            "sha256": "72f8a9ba0274bfc65743f8f5ebcc4e9a46d5429f5e4ddfeebd55fde0bdb69b77"
+          },
+          {
+            "path": "test/demo.test.mjs",
+            "sha256": "32b224280e77b35be7fa1de2b97fb301488858d1dbc14a87c84a262fcc4952fb"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "780d0be1c8dfb52af9aee44e055747c41e9c96a5f2f1add1d0d8efc69573d46d",
+        "rawEvidence": "dist/feature-998/codex/demo/"
+      },
+      {
+        "case": "explicit",
+        "baseline": "b410c29d77d28cf96d17a8c01198e4c4d5ae1c22",
+        "input": "对已有 999-fixture 使用 $my-create-design，只生成技术方案，本次明确使用 mai-specs/_templates/TECH_DESIGN.tmpl.md 标准模板；Feature 默认档位保持。orderCount 返回数组长度，空数组返回 0。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 70.927,
+        "eventsSha256": "4b0ed9650aa6adccf9b9fec3a3b25ab0746c651e33f10456499942a35325f7cf",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "5a26a9b52e8e665fbb922aabc1e73ab3325aa90afe7da7413f7d10e5d5fd0104"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "18b6a106aeec9156df1a5fa20e8ddf0a8fa084cef6d89e9c2c193c4d02f6db31"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/explicit/"
+      },
+      {
+        "case": "explore",
+        "baseline": "431e0a5adbc38285386585fab7ccd99cec3de164",
+        "input": "使用 $my-simple-feature 仅探索大量订单导出的可行性。目标未来可能五百万行，权限和线上资源限制目前未知。本次只用本地模拟数据做一个小实验、记录观察和后续分阶段推进建议，不接生产、不实现导出业务。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 127.402,
+        "eventsSha256": "fbbd3463b94e36adfb3696274e5dc324ad3bcf5edd374bc0f805b67e8cc08a05",
+        "changedFiles": [
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "eaafc5d40ba272a905fd9087bb78505e99608312ad61167213f8e41e4689a81c"
+          },
+          {
+            "path": "mai-specs/999-order-export-exploration/BRIEF.md",
+            "sha256": "6da89eee80357285aad453d3f15efcad7d6bf39d451c9d1057cfacc24b88acf6"
+          },
+          {
+            "path": "mai-specs/999-order-export-exploration/context/EXPLORATION.md",
+            "sha256": "e3357b896bf8907e903654bfb977235bccfbe77d7b474d50546cbe6b20a290e6"
+          },
+          {
+            "path": "mai-specs/999-order-export-exploration/context/_INDEX.md",
+            "sha256": "707b39ed3c66ac786dea03a117fccee4a323d45ef07eb42010243ba3bf566760"
+          },
+          {
+            "path": "mai-specs/999-order-export-exploration/context/experiment.mjs",
+            "sha256": "7df492a9b6a2f35e39de9658011f2e3677dba085a06edad61b5fae0546ecf698"
+          },
+          {
+            "path": "mai-specs/999-order-export-exploration/context/results.json",
+            "sha256": "d65027a5b7098737ead364a646068bf55936ee6e18bab3e69e194f7f1b2d6bcf"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/explore/"
+      },
+      {
+        "case": "fail",
+        "baseline": "2450c5075f29b16fdb7d6067384f70d070e87e35",
+        "input": "使用 $my-simple-feature 检查已有 999-fixture 的交付情况并完成本次验收。测试命令见 README；此轮只允许验证和报告，保留实现、规格与现有验收标准。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 43.473,
+        "eventsSha256": "6ac7f2b6c3fe28af144fd128d4ceb534eb08c89beb1d8dd0d6dc0f9c7c2bd76b",
+        "changedFiles": [],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/fail/"
+      },
+      {
+        "case": "full",
+        "baseline": "8b0df5bfd1f9b414c98e6074476c88d72e6be126",
+        "input": "使用 $my-simple-feature，但本次明确要求完整 SDD：做一个纯函数 orderCount(items) 返回数组长度，空数组返回 0，无外部依赖；完成全部阶段及实际验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 162.676,
+        "eventsSha256": "1fe0eaf1ab2175330f188eb3b2cbb6701ee3b6521761e0e346df56a157139e46",
+        "changedFiles": [
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "77a839dbfcf0a6b348fe67d80b26c59202aa3955eda05c2c8fa7a2e2f4c63609"
+          },
+          {
+            "path": "src/orders.mjs",
+            "sha256": "56fb6656c86456deeed9d2007cf81831412b857035bc8ee8407ebfe9e54ba036"
+          },
+          {
+            "path": "mai-specs/999-order-count/BRIEF.md",
+            "sha256": "7bfff2aaeee4f34b6e4be65dbfcc4e7dcf5437fe63e3f5a4d4a86aaae45098ac"
+          },
+          {
+            "path": "mai-specs/999-order-count/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          },
+          {
+            "path": "mai-specs/999-order-count/design/TECH_DESIGN.md",
+            "sha256": "ceaf794fd34560d4451dd420d6fae41da7dc0d1cbf01a25a40b9a867c6e7d13e"
+          },
+          {
+            "path": "mai-specs/999-order-count/review/code_review.md",
+            "sha256": "fae1e3e1b59276942efcc3bc4ea917c44e8a2483f15070044a1f4d53d4577a97"
+          },
+          {
+            "path": "mai-specs/999-order-count/review/design_review.md",
+            "sha256": "0475747b6f8274856cd24bdb2ed006e8d5f7f03861cc7447ca9811ad12aee47c"
+          },
+          {
+            "path": "mai-specs/999-order-count/spec/PRD.md",
+            "sha256": "f83999118fb62b3bdb7a7400c0052b44898a0308a193df41a7d0494e481cfa47"
+          },
+          {
+            "path": "mai-specs/999-order-count/test/TEST_PLAN.md",
+            "sha256": "7e23bf5c440274f3e709c5e01c51706d0fa55c2bc542b7a9a581ff0534604751"
+          },
+          {
+            "path": "test/order-count.test.mjs",
+            "sha256": "d3b48398e38b7e9b115ea330093d6c002944567bf3aec205cfdc2426fb2f2585"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": false,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/full/"
+      },
+      {
+        "case": "fuzzy",
+        "baseline": "561937efb7b2df520ac98257258bd6521d5aab93",
+        "input": "使用 $my-simple-feature 给这个本地 mock 订单示例做一个命令行演示，方便同事看订单和总额。第一次打开要知道能看什么，输错了能重试，退出不丢任何数据；数据保持内存模拟，不加外部依赖。先把用户体验和本次范围理清，再完成实现、评审和验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 201.995,
+        "eventsSha256": "110abe280b5949e76c3304a56c38d0df705ff0bf387aef79eba2e96e9e9f8617",
+        "changedFiles": [
+          {
+            "path": "README.md",
+            "sha256": "aec77862e357948d0be848b9ae5d5f0b4cc6dae803a23ced1519ce1158f6a76e"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "d868f88da03e91691cf4f033fc1e4184e42f08b33ccf95cae480ce20d254c7ae"
+          },
+          {
+            "path": "mai-specs/999-orders-cli/BRIEF.md",
+            "sha256": "8ebc59bf2362802ace5de1e8b151e4f65486ffcd6d6da87a9ad819dc9edfaae7"
+          },
+          {
+            "path": "mai-specs/999-orders-cli/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          },
+          {
+            "path": "mai-specs/999-orders-cli/design/TECH_DESIGN.md",
+            "sha256": "f86aca4423f891a3e0e99e52fe768bdb3f2ed63a487171c3dc7abc73efc6a094"
+          },
+          {
+            "path": "mai-specs/999-orders-cli/review/code_review.md",
+            "sha256": "e34fbbba619d86cb8c359671e4088fc428721c8a055b036c5ab0e6522ef0c40f"
+          },
+          {
+            "path": "mai-specs/999-orders-cli/spec/PRD.md",
+            "sha256": "f20dc0a533d5f20fad6426e7302d7459d7d7f38c9a1e58f347f7a360173de577"
+          },
+          {
+            "path": "src/cli.mjs",
+            "sha256": "e99bf8038b6c0bcf4e00ae04d5419c6148303e769c16a701d1da5dd7437b8e1d"
+          },
+          {
+            "path": "test/cli.test.mjs",
+            "sha256": "6d67d91d87c800b4eb2d7cee1c0e9d8b8bd25076d2f774c5d70dd08c3fc28aa0"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/fuzzy/"
+      },
+      {
+        "case": "insufficient",
+        "baseline": "62c6ca0d2ddba2ebec6893c1b3095cfde3adf7e4",
+        "input": "对已有 999-fixture 使用 $my-create-design，只编写技术方案。订单可见性需要按团队新权限规则控制，但规则尚未定，不能从现有宽松查询推断授权。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 88.526,
+        "eventsSha256": "9595df995b1ffcaf5fb6559e068a6117d09814514012ca62ee4e1c389af757ff",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "5dbe43958b0b49d2f208d6b920c448b5f2e9615d5fecc2bdbc52fc90aa50421c"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "3c610ae50965f047c9e2ca3d74262b91eae02bfdc1a7d34baebd986eba663a17"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/insufficient/"
+      },
+      {
+        "case": "isolation",
+        "baseline": "2c9ffce8d2864c5f01ee419b8953487954efdefe",
+        "input": "使用 $my-simple-feature 修复 src/orders.mjs 的 listOrders 查询店铺隔离。第一参数是服务端已授权店铺 ID 列表，第二参数是可选查询 shopId。只返回同时属于授权列表与所选店铺的订单；未选则返回授权店铺全部订单；空授权返回空；请求指定越权店铺必须返回空。修复并完成评审验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 110.294,
+        "eventsSha256": "b0020700f9ef0782eee485e8e55095d096f19573df27d54bd20b5576f6f8ee21",
+        "changedFiles": [
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "f2702647f2b358602c8dd6b7adda5a9f6c8a2de158fe6cea6a131b0c87310b66"
+          },
+          {
+            "path": "src/orders.mjs",
+            "sha256": "8d2a1286402a38e1f802185ad747456de2d1edbe6a62445e3af1ea69e1d4eea9"
+          },
+          {
+            "path": "mai-specs/999-orders-shop-isolation/BRIEF.md",
+            "sha256": "1312c88afa64a4e672ca7df868b42bf48b9a9d8ecc8c8b57b1370e5f51afcb2a"
+          },
+          {
+            "path": "mai-specs/999-orders-shop-isolation/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          },
+          {
+            "path": "mai-specs/999-orders-shop-isolation/design/TECH_DESIGN.md",
+            "sha256": "d7c537d5aab04e33ccf0582906225a82af6d47c170b7b16f1bffcd99cb7e5dcb"
+          },
+          {
+            "path": "mai-specs/999-orders-shop-isolation/review/code_review.md",
+            "sha256": "96323cbc125f4ec25c981128f47d006d29d830ced877e7778afabfdad41911d1"
+          },
+          {
+            "path": "mai-specs/999-orders-shop-isolation/review/design_review.md",
+            "sha256": "d097e45db2f9a6dd7f95375b08ae281861dc204d6646bdbac898261daf419dac"
+          },
+          {
+            "path": "test/orders.test.mjs",
+            "sha256": "85685a767b4acd56cb4d5d4efdb63c36a054130b70b47598dbd8b4b2025c9932"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": false,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/isolation/"
+      },
+      {
+        "case": "legacy_prd",
+        "baseline": "ea52b78ccdd1b52b652d23fdef35e09dbd997fc5",
+        "input": "对已有 999-fixture 使用 $my-create-design，只维护既有技术方案：保持当前 PRD 的 AC-01/02，补清非空和空数组验证，保留既有人工批注和 Phase。不要开始实施。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 62.398,
+        "eventsSha256": "16f72812ca18539036e0141b17e8b82c24ec5132a2b64b756ff3e3a750f1ff6e",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "48c50864452e92696deb2019b765943fbdd7b1544d9962dd362e06cda51b6baa"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/legacy_prd/"
+      },
+      {
+        "case": "migrate",
+        "baseline": "77cf5fb68d394f594a178f65a3c0587de5a130fd",
+        "input": "使用 $my-simple-feature 接续已有 999-fixture：现在需要补一份 PRD，把现有设计内的需求整理到产品规格中，并同步技术设计、需求索引和受影响验证的状态。本次只维护规格，不实施新功能。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 120.508,
+        "eventsSha256": "019ec6fdd3fddbcd850f75117277254a12c1eb21ac087cec1265272cda5ab601",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "756cc11a85470e1bf56abf525091ca63174f241d4ce8fc9fda0cf8316fc4feca"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "20598c4fb1193458c42cd604e09e4c237de7503121c4c8fc8be0224d21ebaae7"
+          },
+          {
+            "path": "mai-specs/999-fixture/test/TEST_PLAN.md",
+            "sha256": "173d21ae2560474a4213363a879ae90d8ee5ba8f1c8b3dc58f2f5462ccfb0172"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "75599d154460f325134afd365cf70f76b79dfd2dbc75d20616111da3ccb9ec13"
+          },
+          {
+            "path": "mai-specs/999-fixture/spec/PRD.md",
+            "sha256": "175aa302491349bd551c6f7e5d0f6279be95c0270053bb2b8c4710769ffdc63a"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/migrate/"
+      },
+      {
+        "case": "migrate_resume",
+        "baseline": "99ac7023e319ca2f12511f9157a263cf9ab26617",
+        "input": "用 $my-simple-feature 恢复已有 999-fixture 的规格迁移。上次补 PRD 后在更新设计引用、BRIEF 和测试结果前中断，请检查现场完成同步，保留 AC 编号、技术内容和批注。只维护规格和受影响证据的状态，不实现业务功能。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 96.509,
+        "eventsSha256": "98682344dbf6d2aba8725b57c455b47e2378bc34ed82db699ea10bf5565c849a",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "49bbe5276f9c4074a0e4dbcc9a2c38502315311840f5eb9596ebfe9b2a600f9d"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "4f8f6eff608800327ef1cdce3a67881f597125dc11aba786f334a2d18ac7c9ee"
+          },
+          {
+            "path": "mai-specs/999-fixture/test/TEST_PLAN.md",
+            "sha256": "9d4dd4bfd4038c6952385145af774ed49239d33e5a063b6297393c4b802b7f25"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "7483405f77ddf43e9144a072af893fa7c2e86f908e49037d6bd66e3e70f007df"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/migrate_resume/"
+      },
+      {
+        "case": "multislice",
+        "baseline": "0f6da1f18d3616a3018786216740590ca8708b9d",
+        "input": "使用 $my-simple-feature 完成纯本地 mock 订单统计 CLI。分三段依赖交付：第一段解析“订单数”并查询/展示 2；第二段增加“销售总额”返回 30 及未知问题提示；第三段增加“店铺图表”，按 a=10、b=20 输出文本柱状图。每一段实现后验证再进入后段，最后联调全部命令。使用已有 src/orders.mjs，无外部服务和依赖，完成代码审查与验收。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 165.979,
+        "eventsSha256": "732f105db1ca89d9c4aadb3ea99a260fe72bef8dc9f9046ada73b88909675e8a",
+        "changedFiles": [
+          {
+            "path": "README.md",
+            "sha256": "5a106cbf3439ebd8e0aeb6e6ee71a75dde42f64e9a1c163448b7f91b8191144d"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "61e2179948337108c2936fde110803f470ecbbeed124f51be075af3219a4e8f4"
+          },
+          {
+            "path": "mai-specs/999-mock-orders-cli/BRIEF.md",
+            "sha256": "8ee08bff5185dd852143284d75f0816b226ffb532cb4bbce20ef94fab715d373"
+          },
+          {
+            "path": "mai-specs/999-mock-orders-cli/context/_INDEX.md",
+            "sha256": "f0d21bf1996225b5b72d1a53c67672e16140fcc482ace7821b2a0dad8f9e069c"
+          },
+          {
+            "path": "mai-specs/999-mock-orders-cli/design/TECH_DESIGN.md",
+            "sha256": "0e28c421663210332d23a37d6184f5ee4d2efa5f6f13b35c43da2751e37a0a30"
+          },
+          {
+            "path": "mai-specs/999-mock-orders-cli/review/code_review.md",
+            "sha256": "b0f69116ea5af39053e1f948aa2c00dec92bfab65427029662cf3775f0aefb04"
+          },
+          {
+            "path": "mai-specs/999-mock-orders-cli/test/ACCEPTANCE.md",
+            "sha256": "a29211d71c254104e5a50d9464fe379385cb04a1be1b98f738605709b8dd8e4e"
+          },
+          {
+            "path": "src/cli.mjs",
+            "sha256": "21dcd75d8ee0698f28bbff5e903f7d5f993d5f34915dc9faf07aff419bc69e34"
+          },
+          {
+            "path": "src/statistics.mjs",
+            "sha256": "cb65697c53189dbf5c670ba2bf8a095a00b16284504d0550850aa2a0c52c2dd8"
+          },
+          {
+            "path": "test/cli.test.mjs",
+            "sha256": "bb37509bb9330b51700a9be11a48595e9c3111d4bfdcb674bff4835c6ada25aa"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/multislice/"
+      },
+      {
+        "case": "override",
+        "baseline": "a086b1c7dcccaaed9baeb98be3a6ab91c07326ac",
+        "input": "对已有 999-fixture 使用 $my-create-design，只生成技术方案。采用项目自己的 simple 技术方案模板；本次功能：函数 orderCount() 返回内存订单数组长度，空数组返回 0，无外部访问。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 72.616,
+        "eventsSha256": "9e0ffaecd728aa154ed497c3593e764619c0e3ed4ad2a1c2c95facd9ea091204",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "8b4e382aa2fb021545db8d6fc1a4f4f7560ca136fad1e2c18b86ff0a79cd8e2e"
+          },
+          {
+            "path": "mai-specs/999-fixture/notes/architecture.md",
+            "sha256": "93c79131170c1b0fcd4803066cd653def0ae891e535243627110a34415095795"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/override/"
+      },
+      {
+        "case": "partial",
+        "baseline": "c6f58fcf141ee6dc17cb218fa8c8df3e0b23a87c",
+        "input": "对已有 999-fixture 使用 $my-create-design 生成 simple 方案，需求为 orderCount() 返回订单数组长度，空数组为 0。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 78.601,
+        "eventsSha256": "ea2e2e9104c7fc981f47d44ee6f8afabd17e15cca6404c84b278f681ee4e9cbd",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "1bab541904cdafa981d485c91e443a222b717683c3b783169d2d208c90866d65"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "f8b4c9d288870f7e3a95d1f296365db2dea4696c3877f8b189752fbbaab21bff"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "a93ab46738c2363328cb15d2062e2688da171630825ffa9b0c6e1567026ef9c7",
+        "rawEvidence": "dist/feature-998/codex/partial/"
+      },
+      {
+        "case": "prd_only",
+        "baseline": "2d74da668e9b29138429bcd8ca23b4593f7e47c7",
+        "input": "对已有 999-fixture 使用 $my-create-prd，只编写产品需求规格。用户要查看本地模拟订单数和总金额，提供一个菜单选择，错误输入提示重试，退出不写数据。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 91.222,
+        "eventsSha256": "008ccbd629d8a9ee26ccca0f985538fe7b99f50758895d165a372cf9913fdba6",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "673affb3d03396072e251fa62f63b4d33f9618ea455b21258e0d4a41b5672990"
+          },
+          {
+            "path": "mai-specs/999-fixture/spec/PRD.md",
+            "sha256": "bdf1afb8fc85b091fc46b6911d7a97e989a18caecb62e29c2003aee00f1d0692"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/prd_only/"
+      },
+      {
+        "case": "profile",
+        "baseline": "59966c22f3199416ee928fe255385bb1be2af2de",
+        "input": "接续已有 999-fixture，之前把 Feature 默认规格改成 standard 后在索引更新前中断了。请按项目阶段契约恢复这次同步；保留用户备注与其他需求记录，本次只修文档状态。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 50.583,
+        "eventsSha256": "1ffa0c84fbb963cb1c597b5e75cd8c60d4bd153b6597b70d94e5a38f24bd018f",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "cfdd3d6e96eb447dfc61f39b18a3de2b8d57090fc020c92cdabd8dbcedb49470"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "c597657e18393d14e48f1e7e87f3e78b082e19f4f525a8b889caeed6abc8eeb1"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/profile/"
+      },
+      {
+        "case": "profile_move",
+        "baseline": "b56c7e5b89fd8c2afeec198695f1cc19b87477d4",
+        "input": "接续已有 999-fixture，当前 BRIEF 为 standard/dev，ROADMAP 仍在旧四列规划中且写 simple。请仅恢复状态同步，把同 ID 移入进行中分区，按其五列表头写 standard，保留用户备注与其他需求记录，不实现业务。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 48.707,
+        "eventsSha256": "c2c7634a6aa569ecd1c8796a207c9b6872db41dc45ea3bc55d17fd0a3ef7ff10",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "4b2bf96cf74e354153d7105e1aa749aa0246623f81b2b27eea175302a0f96fd3"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "7adc520519a0b022d99ba10ed8615be17d9ac2deb68bd8fdce1a226bfab384ef"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/profile_move/"
+      },
+      {
+        "case": "profile_readonly",
+        "baseline": "12f32133f623f2abd7e1d4c88c098ce02b251fc8",
+        "input": "只读核对已有 999-fixture 的 Profile 和 ROADMAP 一致性，报告真实来源和同步状态；本次不要修改任何文件。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 43.562,
+        "eventsSha256": "16a9441cb4d631fa082cc58b7259d36696259fcf0243398c72da2a83d4c06fb1",
+        "changedFiles": [],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/profile_readonly/"
+      },
+      {
+        "case": "prototype",
+        "baseline": "8c92866f8d0f4b7e23207695739569ee26986f05",
+        "input": "使用 $my-simple-feature，仅比较两个本地问数入口原型：自由文本输入和预设问题按钮。用静态 HTML 展示两种方案，记录比较问题、判定标准和可观察差异；不需要实现查询业务，不将整体 Feature 标完成。本次没有真实用户测试条件，请如实区分静态观察与尚未验证的用户判断。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 175.947,
+        "eventsSha256": "47668717a1985ca018c6a218130db9220a30fdb29c32ecfe1f0b2bfb8ab8f283",
+        "changedFiles": [
+          {
+            "path": "index.html",
+            "sha256": "6ae25d8b61bca1c302a48256559587552e9f7cefb82d069c3a6b616b9f8a3b22"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "12f8be97c412c878243a86f8e8db0e7605397ac0943d2b30c182884bb56696b4"
+          },
+          {
+            "path": "mai-specs/999-question-entry-comparison/BRIEF.md",
+            "sha256": "31ce9ad38d183b319dd70dc560a5df8e273e24cea3eb46fc403e0f9c82563d99"
+          },
+          {
+            "path": "mai-specs/999-question-entry-comparison/context/COMPARISON.md",
+            "sha256": "4833aa49707033472dfc1da04bb05bace2ba6f8c57429537a8ed77b9ced8f263"
+          },
+          {
+            "path": "mai-specs/999-question-entry-comparison/context/_INDEX.md",
+            "sha256": "088f1abe4fdd50ff99fea98ae5d25e256c19d49b305d5f22d02f3a45c128af7c"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/prototype/"
+      },
+      {
+        "case": "registry_missing",
+        "baseline": "4a13b71eb4213579640bab462fd47dfa57bd84a9",
+        "input": "使用 $my-create-feature 创建订单数量需求，slug=count-check、标题订单计数、摘要查看内存订单数、背景内部演示。请按默认规格创建。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 34.891,
+        "eventsSha256": "f1eae5edb4d6566f2085d21eeaa99e26ff704743cb52905cc93f550df28998c7",
+        "changedFiles": [],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "88013463e23e341b323ce50095d7a974074a4dea5c222b66ed46e74e6b80a725",
+        "rawEvidence": "dist/feature-998/codex/registry_missing/"
+      },
+      {
+        "case": "review_only",
+        "baseline": "08a95e3c6974f7e9fc8273cbc644da6c37f224f3",
+        "input": "对已有 999-fixture 使用 $my-review-design，仅审查技术方案，核对需求与可验证性，报告需要补充的测试；本次不要实现或规划其他阶段。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 75.117,
+        "eventsSha256": "b790c1ed24df2c1e7c001d06ed2244ff85ba55c890d7be41cf3a97a5f68e0e74",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/review/design_review.md",
+            "sha256": "9e6ab341b911078b8e97b75dff749b3a4ae1f2ebbce69f779f68ecaf91b95382"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/review_only/"
+      },
+      {
+        "case": "risk",
+        "baseline": "916a023702d32da5fa39b2d02db9fb211616d1b0",
+        "input": "使用 $my-simple-feature 接续已有 999-fixture。原计划 mock 演示，现在要改接公司的生产订单并供多店铺团队共享。尚未提供数据源、授权映射和查询限额；请处理这一变更并继续可以独立完成的工作，不允许访问任何真实生产系统。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 117.266,
+        "eventsSha256": "0aa3f1999249ca3d4c33f3ab882c4fde743164cc164e48d65c5724fdfa802451",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "720cbfe71cff5e39a3674b9aa552593f85c06f1985afc7b71ae013c2ffce04e5"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "c03d62d674358aa5def5367a69b02ac32d27bf04ff941c43d881b366fd53421d"
+          },
+          {
+            "path": "mai-specs/ROADMAP.md",
+            "sha256": "4295a08d766880dda93fc36aad98570453133ca3fc882dcf170136244d90023f"
+          },
+          {
+            "path": "mai-specs/999-fixture/review/design_review.md",
+            "sha256": "86c03822710710f41849a747a85776b0dedc92d6287c8c1edab3c6d22d368c64"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": false,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/risk/"
+      },
+      {
+        "case": "standard",
+        "baseline": "1928342df2476f6d1d2cd08e299fac72e08f934d",
+        "input": "对已有 999-fixture 使用 $my-create-design，只更新技术方案：输入“订单数”返回 2；未知问题返回“暂不支持此问题”；保留既有有效内容和人工批注。本次只要方案。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 70.011,
+        "eventsSha256": "c9b463980c8e899f438e6372063738a38ecba28d30fa1eb3132a67ab0c5dfe49",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "dbc2c21259429fac634c2441bb33919715f8e145d7305e58b86038d74869054f"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/standard/"
+      },
+      {
+        "case": "standard_new",
+        "baseline": "b76845f3852797755cb2806a06cfc909dde93979",
+        "input": "对已有 999-fixture 使用 $my-create-design，只生成技术方案。需求：orderCount(orders) 返回数组长度，空数组返回 0；使用项目标准模板，保留所有用户模板和 BRIEF 批注。本次不进入实施。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 63.73,
+        "eventsSha256": "eb6e95d2605625e90ec3f3df595c38f6259c452aa91de23637dbf6ce72703108",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/BRIEF.md",
+            "sha256": "c1c543dfa4fcb89523b1d36cf3b8cebe3ff64f5bc016e4e4bc1c2ffea228cca8"
+          },
+          {
+            "path": "mai-specs/999-fixture/design/TECH_DESIGN.md",
+            "sha256": "31a916d372bfc577766ca53c5c8d3c5f630c4c11714108da36bc0c7418825cbf"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": false
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/standard_new/"
+      },
+      {
+        "case": "tiny",
+        "baseline": "b9c7f6575d0e2c3b073eb78914849b2964dab73a",
+        "input": "使用 $my-simple-feature。只把 index.html 中输入框圆角改为 8px、placeholder 改为“例如：上周销售额是多少？”，保持查询行为。请完成修改和必要检查。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 40.075,
+        "eventsSha256": "b54236bc9d6b70f8987d845357ceea091022e44ddc37f84ec729e1dbb4f8466e",
+        "changedFiles": [
+          {
+            "path": "index.html",
+            "sha256": "36b7c2a21212a71134901005104c1bc6d498d1f8626ac138fd9387c7158569ad"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true
+        },
+        "assetSet": "780d0be1c8dfb52af9aee44e055747c41e9c96a5f2f1add1d0d8efc69573d46d",
+        "rawEvidence": "dist/feature-998/codex/tiny/"
+      },
+      {
+        "case": "w01",
+        "baseline": "53e6f2cb355b1ab61f1f2d500c6e41fc55325e43",
+        "input": "对已有 999-fixture 使用 $my-create-test-plan，只编写测试计划，由你亲自完成这一规划。采用项目现有测试模板，保留人工批注；本次不执行业务测试、不改实现。\n本次在隔离测试项目工作。请使用当前项目 .agents/ 中的相应入口，输出实际结果与未验证项，简洁执行。",
+        "exitCode": 0,
+        "timedOut": false,
+        "seconds": 58.802,
+        "eventsSha256": "0d993e7bb842b86b3ff3ce86db7c328bf59f6c88c620ed4b39cb9286c4cf0e52",
+        "changedFiles": [
+          {
+            "path": "mai-specs/999-fixture/test/TEST_PLAN.md",
+            "sha256": "e4f3bd02c18bad2e5515ce1630429fbd53262ffb69714f8e6407551950ff4077"
+          }
+        ],
+        "unchanged": {
+          "mai-specs/ROADMAP.md": true,
+          "mai-specs/_templates/TEST_PLAN.tmpl.md": true,
+          "mai-specs/_templates/TECH_DESIGN.tmpl.md": true,
+          "src/orders.mjs": true,
+          "test/basic.test.mjs": true,
+          "mai-specs/999-fixture/BRIEF.md": true
+        },
+        "assetSet": "8defd3432c7fed9c5a8ff7751ac16981fd79caece48e733b4c836bcbaa461b85",
+        "rawEvidence": "dist/feature-998/codex/w01/"
+      }
+    ]
+  },
+  "remainingHosts": {
+    "claude": {
+      "exitCode": 1,
+      "reason": "Not logged in · Please run /login",
+      "evidenceSha256": "4185cc3b614abac71fd3ec337bc755109d51b044a2dcacb3922d6033e200faa6"
+    },
+    "cursor": {
+      "exitCode": 1,
+      "reason": "Authentication required. Please run cursor agent login",
+      "evidenceSha256": "11a8131e3eec524b996eafd156926ec2124932bb62e9d2fa65f2dc54a85265e9"
+    },
+    "copilot": {
+      "reason": "No Copilot CLI found; available VS Code extension list only included Copilot Labs. Requires a usable host."
+    }
+  },
+  "finalChecks": {
+    "resourceValidation": "passed",
+    "featureTestPlanLayout": "passed",
+    "featureCodeReviewLayout": "passed",
+    "localLinksChecked": 89,
+    "missingLocalLinks": 0,
+    "diffWhitespace": "passed",
+    "sourceAndPackageHashes": "matched",
+    "recordedCases": 30
+  }
+}

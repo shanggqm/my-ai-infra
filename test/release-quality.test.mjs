@@ -72,3 +72,26 @@ test('Feature CLIs run through a directory alias instead of silently skipping ma
   const verified = JSON.parse((await run(process.execPath, [path.join(alias, 'validate-feature.mjs'), '--feature', initialized.path])).stdout);
   assert.equal(verified.valid, true);
 });
+
+test('validation rejects resource entries placed after the manifest deliverables section', async t => {
+  const { root } = await fixture(t);
+  const copy = path.join(root, 'package'); await fs.mkdir(copy);
+  const pkg = await readJSON(PACKAGE, 'package.json');
+  const entries = new Set([...pkg.files, 'scripts', 'package.json', 'manifest.yml', 'skill-inventory.md']);
+  for (const relative of entries) {
+    const target = path.join(copy, relative);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.cp(path.join(PACKAGE, relative), target, { recursive: true });
+  }
+  const validator = path.join(copy, 'scripts/validate.mjs');
+  await run(process.execPath, [validator]);
+  const manifest = path.join(copy, 'manifest.yml');
+  const original = await fs.readFile(manifest, 'utf8');
+  const resource = '- assets/prompts/my-simple-feature.md\n';
+  await fs.writeFile(manifest, original.replace(resource, '') + resource);
+  await assert.rejects(run(process.execPath, [validator]), error => {
+    assert.match(error.stderr, /Top-level resource list outside deliverables/);
+    assert.match(error.stderr, /Missing extension deliverable: prompts\/my-simple-feature.md/);
+    return error.code === 1;
+  });
+});

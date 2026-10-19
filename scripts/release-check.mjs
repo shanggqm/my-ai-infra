@@ -10,6 +10,7 @@ import { checkCodexDiscovery } from './check-codex-discovery.mjs';
 import { checkClaudeDiscovery } from './check-claude-discovery.mjs';
 import { parseAgent, AGENT_TOOLS, agentFilename } from '../src/agents.mjs';
 import { RULES, ruleTarget } from '../src/rules.mjs';
+import { files } from '../src/fs.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const exec = promisify(execFile);
@@ -66,6 +67,18 @@ try {
   const info = JSON.parse(packed.stdout.slice(packed.stdout.lastIndexOf('\n[') + 1))[0];
   const artifact = path.join(output, info.filename), bytes = await fs.readFile(artifact);
   const names = info.files.map(file => file.path);
+  const debtRoot = 'assets/skills/my-analyze-debt';
+  const debtResources = await files(path.join(root, debtRoot));
+  for (const resource of ['SKILL.md', 'references/debt-taxonomy.md', 'references/report-output.md', 'assets/templates/DEBT_ANALYSIS.tmpl.md', 'evals/cases.md']) ensure(debtResources.includes(resource), `Missing debt analysis resource: ${resource}`);
+  for (const resource of debtResources) ensure(names.filter(name => name === `${debtRoot}/${resource}`).length === 1, `Missing or duplicate packaged debt resource: ${resource}`);
+  for (const resource of [
+    'assets/prompts/my-simple-feature.md',
+    'assets/skills/my-create-feature/references/FEATURE_PROFILES.json',
+    'assets/skills/my-create-feature/references/stage-contracts.md',
+    'assets/skills/my-create-prd/assets/templates/PRD.simple.tmpl.md',
+    'assets/skills/my-create-design/assets/templates/TECH_DESIGN.simple.tmpl.md',
+  ]) ensure(names.filter(name => name === resource).length === 1, `Missing or duplicate adaptive SDD resource: ${resource}`);
+  ensure(!names.some(name => name.startsWith('templates/mai-specs/_templates/simple/')), 'Simple templates must have one source in their owning Skill');
   ensure(!names.some(file => file.startsWith('assets/skills/my-verify-feature/')), 'Retired verification Skill was packaged');
   for (const file of names) {
     ensure(!path.posix.isAbsolute(file) && !file.split('/').includes('..'), `Invalid packed path: ${file}`);
@@ -85,6 +98,8 @@ try {
   await fs.access(home).then(() => { throw Error('Version command unexpectedly created a personal store'); }, e => { if (e.code !== 'ENOENT') throw e; });
   const assets = JSON.parse((await npmRun([...prefix,'catalog','--home',home])).stdout);
   ensure(!assets.some(asset => asset.name === 'my-verify-feature'), 'Retired verification Skill is selectable');
+  const debtAsset = assets.find(asset => asset.name === 'my-analyze-debt');
+  ensure(debtAsset?.category === 'support' && !debtAsset.default && !debtAsset.core, 'Debt analysis must be an auxiliary Skill outside the core shortcut');
   installedRoot = path.dirname(path.dirname(assets[0].sourceRoot));
   const cli = path.join(installedRoot,'bin/my-ai-infra.mjs');
   ensure((await run(process.execPath,[cli,'--help'])).stdout.includes('upgrade'), 'Packaged help is stale');
@@ -108,7 +123,7 @@ try {
   pass('Installed CLI init replaces a recorded legacy Prompt with the current package without a separate upgrade');
   ensure(JSON.parse((await run('mai', ['doctor'], globalOptions)).stdout).healthy, 'Global mai init did not initialize the current directory');
   pass('Global mai and my-ai-infra commands, current-directory init and doctor');
-  const selectedSkills = [...JSON.parse(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8')).skills, 'my-auto-design', 'my-auto-feature', 'my-init-repo-memory'];
+  const selectedSkills = [...JSON.parse(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8')).skills, 'my-auto-design', 'my-auto-feature', 'my-init-repo-memory', 'my-simple-feature'];
   for (const name of selectedSkills) {
     const directory = path.join(project,'.agents/skills',name);
     ensure((await fs.readdir(directory,{withFileTypes:true})).some(entry => entry.name === 'SKILL.md' && entry.isFile()), `Skill manifest must be a regular file: ${name}`);
@@ -159,11 +174,41 @@ try {
   pass('New AGENTS/CLAUDE share one empty source and relative native entry links');
   const initializer = path.join(project,'.agents/skills/my-create-feature/scripts/init-feature.mjs');
   const feature = JSON.parse((await run(process.execPath,[initializer,'--project',project,'--slug','release-smoke','--title','发布包验证'])).stdout);
+  ensure(feature.profile === 'standard', 'Installed initializer did not return the default Profile');
+  const simple = JSON.parse((await run(process.execPath,[initializer,'--project',project,'--slug','simple-smoke','--title','简版验证','--profile','simple'])).stdout);
+  ensure(simple.profile === 'simple' && Number(simple.id) === Number(feature.id) - 1, 'Profiles must share the Feature numbering pool');
+  ensure((await fs.readFile(simple.brief, 'utf8')).includes('| Profile | simple |'), 'Installed simple BRIEF has the wrong Profile');
+  ensure((await fs.readFile(simple.roadmap, 'utf8')).includes(`| ${simple.id} | [简版验证](${simple.name}/BRIEF.md) | simple |`), 'Installed index did not record the Profile');
+  for (const [owner, resource] of [['my-create-prd','PRD.simple.tmpl.md'], ['my-create-design','TECH_DESIGN.simple.tmpl.md']]) {
+    const relative = `skills/${owner}/assets/templates/${resource}`;
+    for (const adapter of ['.agents','.claude','.cursor','.github']) {
+      ensure(await fs.realpath(path.join(project,adapter,relative)) === await fs.realpath(path.join(project,'.agents',relative)), `Simple template does not resolve to its single source: ${adapter}/${resource}`);
+    }
+  }
   for (const file of ['BRIEF.md','context/_INDEX.md']) await fs.access(path.join(feature.path,file));
   for (const directory of ['design','spec','test','review']) await fs.access(path.join(feature.path,directory)).then(() => { throw Error(`Unexpected premature Feature directory: ${directory}`); }, error => { if (error.code !== 'ENOENT') throw error; });
   await run(process.execPath,[cli,'sync','--home',home,'--project',project]);
   ensure(JSON.parse((await run(process.execPath,[cli,'doctor','--home',home,'--project',project])).stdout).healthy, 'Packaged install drift');
   pass('Four adapters, installed Feature initializer/templates, repeat sync and doctor');
+  const debtProject = path.join(temp, 'debt only 中文'); await fs.mkdir(debtProject);
+  await run(process.execPath, [cli, 'init', '--home', home, '--project', debtProject, '--tools', 'codex,claudecode,cursor,copilot', '--skills', 'my-analyze-debt', '--yes']);
+  const debtSelection = JSON.parse(await fs.readFile(path.join(debtProject, '.my-ai-infra.json'), 'utf8'));
+  ensure(JSON.stringify(debtSelection.skills) === JSON.stringify(['my-analyze-debt']), 'Standalone debt installation added other Skills');
+  const movedDebtProject = path.join(temp, 'moved debt only'); await fs.rename(debtProject, movedDebtProject);
+  for (const resource of debtResources) {
+    const canonical = path.join(movedDebtProject, '.agents/skills/my-analyze-debt', resource);
+    ensure((await fs.lstat(canonical)).isFile(), `Debt resource is not a regular source file: ${resource}`);
+    ensure((await fs.readFile(canonical)).equals(await fs.readFile(path.join(installedRoot, debtRoot, resource))), `Installed debt resource differs from the tarball: ${resource}`);
+    for (const adapter of ['.agents', '.claude', '.cursor', '.github']) {
+      ensure(await fs.realpath(path.join(movedDebtProject, adapter, 'skills/my-analyze-debt', resource)) === await fs.realpath(canonical), `Moved debt resource is not reachable: ${adapter}/${resource}`);
+    }
+  }
+  for (const name of ['my-create-feature', 'my-create-memory', 'my-review-code']) {
+    await fs.lstat(path.join(movedDebtProject, '.agents/skills', name)).then(() => { throw Error(`Unexpected debt analysis dependency: ${name}`); }, error => { if (error.code !== 'ENOENT') throw error; });
+  }
+  await run(process.execPath, [cli, 'sync', '--home', home, '--project', movedDebtProject]);
+  ensure(JSON.parse((await run(process.execPath, [cli, 'doctor', '--home', home, '--project', movedDebtProject])).stdout).healthy, 'Standalone moved debt installation is unhealthy');
+  pass('Tarball debt Skill installs alone with every reference, template and eval resource through four movable adapters');
   if (process.env.MAI_CODEX_BIN) {
     await checkCodexDiscovery(process.env.MAI_CODEX_BIN,await fs.realpath(project),selectedSkills);
     pass('Codex Skill discovery remains complete after repeat sync');

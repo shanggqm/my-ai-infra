@@ -58,14 +58,15 @@ mai catalog
 | 指令 | 适用场景 |
 |---|---|
 | `my-auto-feature` | 从目标出发，自主细化需求，推进方案、评审、实现与验收 |
+| `my-simple-feature` | 小功能、Demo 或模拟链路，按输入选择简版 PRD / 技术方案，支持分阶段交付 |
 | `my-auto-design` | 需求已经明确，从技术方案开始，评审修复后实现与验收 |
 | `my-init-repo-memory` | 依据当前仓库事实，直接生成或精简优化根目录 `AGENTS.md` |
 
-规格与交付记录保存在项目的 `mai-specs/` 中。各阶段 Skill 也可独立使用，已有方案可以直接接续。
+规格与交付记录保存在项目的 `mai-specs/` 中。Skill 提供原子阶段能力，Prompt 负责组合；各阶段可独立使用，已有方案可以接续。`simple / standard` 是规格模板档位，风险决定评审和验证强度，复杂度决定拆分。类型由 [Profile 常量](assets/skills/my-create-feature/references/FEATURE_PROFILES.json) 定义，BRIEF 保存默认值，ROADMAP 展示；目录始终 `NNN-slug`。
 
 ## 面向中文开发者调优的 Skill
 
-内置 **7 个 SDD 核心 Skill + 3 个辅助 Skill**，围绕职责边界、输入输出、评审尺度与阶段衔接做了深度调优。中文指引和文档模板覆盖需求澄清、业务规则、交互文案与技术评审；既方便开发者阅读和决策，也为 Coding Agent 提供明确的执行上下文。
+内置 **7 个 SDD 核心 Skill + 4 个辅助 Skill**，围绕职责边界、输入输出、评审尺度与阶段衔接做了深度调优。中文指引和文档模板覆盖需求澄清、业务规则、交互文案与技术评审；既方便开发者阅读和决策，也为 Coding Agent 提供明确的执行上下文。
 
 | Skill | 用途 | 调优重点 |
 |---|---|---|
@@ -76,11 +77,14 @@ mai catalog
 | [my-create-test-plan](assets/skills/my-create-test-plan/SKILL.md) | 规划与执行业务验证 | 从真实用户旅程补齐验收缺口，区分测试计划与实际通过证据 |
 | [my-implement-code](assets/skills/my-implement-code/SKILL.md) | 按规格实现代码 | 遵循项目约定，逐步实现与验证，遇到设计冲突先对齐 |
 | [my-review-code](assets/skills/my-review-code/SKILL.md) | 评审代码与交付质量 | 对照需求审查真实路径，按影响分级，附证据与最小修复建议 |
+| [my-analyze-debt](assets/skills/my-analyze-debt/SKILL.md) | 分析技术债与偿债机会 | 沿证据识别持续成本，比较全局最优与 MVP 方案，让用户选择下一步 |
 | [my-create-worktree](assets/skills/my-create-worktree/SKILL.md) | 创建隔离工作区 | 隔离 Git 分支与工作目录，支持并行开发 |
 | [my-create-memory](assets/skills/my-create-memory/SKILL.md) | 沉淀长期偏好 | 审慎提炼、合并和修订偏好，按项目与场景复用 |
 | [my-ai-infra](assets/skills/my-ai-infra/SKILL.md) | 维护全局与项目 AI 资产 | 通过 mai 管理个人资产库、项目资产、装配配置与同步检查 |
 
 每个 Skill 都可以独立调用，也可以由 Prompt 连续编排。已有明确需求或方案时，从对应阶段接续即可。
+
+技术债治理贯穿各阶段：设计核对边界、复用与契约，代码评审关注本次新增或放大的持续成本，验收确认业务不变量与治理证据。需要盘点模块或系统存量时，单独调用 `my-analyze-debt`，例如“分析订单模块的技术债，给出证据和优先偿还建议”。它会分析债务、比较全局最优与 MVP 解决方案，并让用户选择下一步，无需先创建 Feature；后续偿债按选择及任务授权推进。
 
 ## 文档
 

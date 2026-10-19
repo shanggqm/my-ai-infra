@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { startWeb } from '../src/web.mjs';
+import { BUILTINS } from '../src/names.mjs';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'mai-web-check-'));
 const project = path.join(temp, 'project with spaces 中文');
@@ -79,11 +80,21 @@ try {
   await page.mouse.move(100, 20);
   await page.getByRole('button', { name: '配置当前项目', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#cog-hero').dataset.motion === 'idle');
+  const debtChoice = page.locator('#project-skills input[value="my-analyze-debt"]');
+  assert.equal(await debtChoice.isChecked(), true);
+  assert.equal(await page.locator('#project-skills .skill-group').filter({ has: page.locator('input[value="my-analyze-debt"]') }).locator('h3').textContent(), '编码辅助');
+  const selectedSkills = () => page.locator('#project-skills input:checked').evaluateAll(inputs => inputs.map(input => input.value).sort());
+  assert.deepEqual(await selectedSkills(), BUILTINS.map(skill => skill.name).sort());
+  await page.locator('#select-core').click();
+  assert.deepEqual(await selectedSkills(), BUILTINS.filter(skill => skill.default).map(skill => skill.name).sort());
+  assert.equal(await debtChoice.isChecked(), false);
+  for (const skill of BUILTINS) await page.locator(`#project-skills input[value="${skill.name}"]`).check();
+  pass('Debt analysis appears in the auxiliary group, is included by default and is excluded by the core workflow shortcut');
   const offscreen = await imageData();
   await page.waitForTimeout(120);
   assert.equal(await imageData(), offscreen);
   await page.locator('.nav[data-tab="assets"]').click();
-  for (const key of ['prompts/my-init-repo-memory', 'agents/code-review', 'skills/my-review-design']) {
+  for (const key of ['prompts/my-init-repo-memory', 'agents/code-review', 'skills/my-review-design', 'skills/my-analyze-debt']) {
     await page.locator(`[data-name="${key}"]`).click();
     assert.match(await page.locator(`[data-name="${key}"]`).textContent(), /内置/);
     assert.equal(await page.locator('#asset-content').evaluate(node => node.readOnly), true);
@@ -151,6 +162,9 @@ try {
   assert.ok(await page.locator('.initialization-hints[open]').isVisible());
   const config = JSON.parse(await fs.readFile(path.join(project, '.my-ai-infra.json')));
   assert.ok(config.tools.includes('cursor'));
+  assert.ok(config.skills.includes('my-analyze-debt'));
+  const debtTemplate = 'skills/my-analyze-debt/assets/templates/DEBT_ANALYSIS.tmpl.md';
+  assert.equal(await fs.realpath(path.join(project, '.cursor', debtTemplate)), await fs.realpath(path.join(project, '.agents', debtTemplate)));
   await page.locator('#cancel-preview').click();
   pass('Late-response rejection, policy invalidation, inline API error, real apply, saved config and completion hints');
 

@@ -1,0 +1,4 @@
+{
+  "version": "refund-v1",
+  "orderStatus": ["PAID", "REFUNDED"]
+}

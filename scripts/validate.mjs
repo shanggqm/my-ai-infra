@@ -17,6 +17,11 @@ check(new Set(names).size === names.length, 'Duplicate canonical name or alias')
 const actual = (await fs.readdir(path.join(root, 'assets/skills'), { withFileTypes: true })).filter(s => s.isDirectory()).map(s => s.name).sort();
 check(JSON.stringify(actual) === JSON.stringify(BUILTINS.map(s => s.name).sort()), 'Skill set mismatch');
 const manifest = await fs.readFile(path.join(root, 'manifest.yml'), 'utf8');
+let section = '';
+for (const line of manifest.split('\n')) {
+  if (/^[a-z_]+:/.test(line)) section = line.split(':')[0];
+  if (/^- /.test(line)) check(section === 'deliverables', `Top-level resource list outside deliverables: ${line}`);
+}
 const canonicalBlock = manifest.split('canonical:\n')[1]?.split('\nconfiguration:')[0] || '';
 for (const [,relative] of canonicalBlock.matchAll(/^  [a-z_]+: (.+)$/gm)) {
   check(!path.isAbsolute(relative) && !relative.split('/').includes('..'), `Canonical path must stay inside this repository: ${relative}`);
@@ -35,7 +40,7 @@ for (const { name } of BUILTINS) {
       check(identity === name && /[\u4e00-\u9fff]/u.test(description) && /[\u4e00-\u9fff]/u.test(compatibility), `Invalid identity or Chinese metadata: ${name}`);
       check(author === 'andy' && source === `assets/skills/${name}/SKILL.md`, `Invalid author/source: ${name}`);
     }
-    check(manifest.split('\n').includes(`- assets/skills/${name}/SKILL.md`), `Missing deliverable: ${name}`);
+    check(deliverables.split('\n').includes(`- assets/skills/${name}/SKILL.md`), `Missing deliverable: ${name}`);
   } catch (e) { errors.push(`${name}: ${e.message}`); }
 }
 check(await exists('assets/skills/my-create-worktree/scripts/create-worktree.sh'), 'Missing worktree script');
@@ -45,14 +50,14 @@ errors.push(...await checkSkillResources(root, BUILTINS.map(s => s.name)));
 try {
   for (const agent of await agentCatalog(root)) {
     check(agent.skills.every(skill => BUILTINS.some(item => item.name === skill)), `Unknown bundled Agent Skill: ${agent.name}`);
-    check(manifest.split('\n').includes(`- assets/agents/${agent.name}.md`), `Missing Agent deliverable: ${agent.name}`);
+    check(deliverables.split('\n').includes(`- assets/agents/${agent.name}.md`), `Missing Agent deliverable: ${agent.name}`);
     for (const tool of Object.keys(AGENT_TOOLS)) renderAgent(agent, tool, skill => `../../.agents/skills/${skill}/SKILL.md`);
   }
 } catch (error) { errors.push(error.message); }
 try {
   const extensions = await extensionCatalog(root);
   for (const asset of extensions) {
-    for (const file of Object.keys(asset.contents)) check(manifest.split('\n').includes(`- assets/${assetRelative(asset,file)}`), `Missing extension deliverable: ${assetRelative(asset,file)}`);
+    for (const file of Object.keys(asset.contents)) check(deliverables.split('\n').includes(`- assets/${assetRelative(asset,file)}`), `Missing extension deliverable: ${assetRelative(asset,file)}`);
   }
   for (const global of [false, true]) addExtensions(new Map(), extensions, ['codex', 'claudecode', 'cursor', 'copilot'], global);
 } catch (error) { errors.push(error.message); }
