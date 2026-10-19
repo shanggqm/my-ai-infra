@@ -11,7 +11,7 @@
 
 `0.0.12` 已于 2026-10-17 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。233 项自动测试、6 组浏览器回归、15 项实际 tarball 检查通过，包含 Codex/Claude 发现与个人 Skill 保留；发布后固定版本安装、四工具装配、个人 Skill 导入/编辑/同步、包内 Skill 一致性和 Web 认证共 5 组检查通过。入口 Skill 完成 6 个只读决策演练，未执行宿主模型真实业务调用。源码标签 `v0.0.12` 指向 `f7482aabe1008207ee52537c30d3473f285096b5`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.12)。tarball SHA-256 为 `64a191831d763c7caee3a0b455fca60d22d171de05224a74ead99447ff848627`。
 
-`0.0.13` 正在按负责人 2026-10-19 的明确指令准备 GitHub 与 npm 发行。新增自适应 SDD 流程、技术债分析及本轮兼容修复；当前验收与尚未完成的宿主行为场景分别记录，不将版本发布等同 Feature 全部结项。原始复制资产的来源与许可登记继续如实保留，发布指令不替代上游许可事实。
+`0.0.13` 已于 2026-10-19 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。249 项自动化测试、7 组浏览器回归及 16 组实际 tarball 检查通过，包含 Codex/Claude 资产发现；包内 105 个文件与合入提交逐字节一致。发布后固定版本下载/安装、四工具 init/doctor、包内容一致性、simple 初始化、个人 Skill 导入/同步及 Web 鉴权共 5 组通过。源码标签 `v0.0.13` 指向 `9ecc1dd500608bc84364b5bb3c0f1f527f8f9663`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.13)。tarball SHA-256 为 `ad09c107ce58b923b290b924e81c3b8e525a91eb16ccc4ae61aa4d5df995e9a4`，GitHub 附件与 npm 下载包一致。新增自适应 SDD 流程、技术债分析及兼容修复；两个实际 Codex 附录定向场景通过，AC-21 全组、部分跨宿主行为与 994 R-05 继续待验，Feature 保持原状态。原始复制资产的来源与许可登记继续如实保留。
 
 ## 发布前的负责人事项
 
