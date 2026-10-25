@@ -3,8 +3,10 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { files, hash, json, read, readJSON, safe, stat, write, locked } from './fs.mjs';
-import { BUILTINS, NAMING_VERSION, REMOVED_SKILLS, canonicalName, definition, normalizeText } from './names.mjs';
-import { ASSET_ROOT, SKILL_SOURCE, BUNDLE, sourceRoots, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, parseExtension, parsePrompt, assetRelative, namePart, legacyAssetPath, pruneLegacyAssetDirectories, legacyPromptTargets } from './assets.mjs';
+import { BUILTINS, SHORTCUT_SKILLS, NAMING_VERSION, REMOVED_SKILLS, canonicalName, definition, normalizeText } from './names.mjs';
+import { ASSET_ROOT, SKILL_SOURCE, BUNDLE, sourceRoots, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, parseExtension, assetRelative, namePart, legacyAssetPath, pruneLegacyAssetDirectories } from './assets.mjs';
+import { hasRetiredPromptLibrary, retiredPrompts } from './retired-prompts.mjs';
+import { pathInspector, inspectEntry, backupEntry, installEntry, restoreEntry } from './conflicts.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { randomUUID } from 'node:crypto';
 import { parseAgent, agentCatalog, GLOBAL_AGENT_TOOLS, agentFilename, renderAgent } from './agents.mjs';
@@ -49,6 +51,7 @@ export async function defaults(home) {
   const { allSkills, ...input } = saved || defaultConfig();
   if (allSkills !== undefined && allSkills !== true) throw Error('Invalid default allSkills policy');
   if (!saved || allSkills) input.skills = (await catalog(home)).map(a => a.name);
+  else if (Array.isArray(input.skills) && await hasRetiredPromptLibrary(home)) input.skills = [...new Set([...input.skills, ...SHORTCUT_SKILLS])];
   return config(input, home, { allowEmpty: true, allowProjectId: false });
 }
 // Tool-only preferences retain automatic discovery; an explicit Skill selection pins the list.
@@ -176,6 +179,8 @@ export async function seed(home) {
       await write(home, 'defaults.json', json(normalizedDefaults));
     }
   }
+  for (const relative of ['assets/prompts', 'prompts']) await fs.rm(await safe(home, relative, { leafLink: true }), { recursive: true, force: true });
+  for (const key of Object.keys(nextBaseline.files)) if (/^(?:assets\/)?prompts\//.test(key)) delete nextBaseline.files[key];
   // Install a stable local runtime so the global Skill survives npx cache eviction.
   for (const dir of ['src', 'bin', 'web', 'templates', 'catalog']) {
     for (const relative of await files(path.join(PACKAGE, dir))) {
@@ -224,9 +229,14 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
   return locked(home, async () => {
     const seeded = await seed(home);
     const previous = await readJSON(home, 'global-state.json', {}), next = { ...previous };
+    const inspection = pathInspector(toolHome);
+    const records = Object.fromEntries(Object.keys(previous).map(target => [target, {}]));
+    const retired = await retiredPrompts(toolHome, records, inspection.inspect);
+    if (inspection.blockers.size) throw Error('Global asset path is blocked; resolve directory links before setup');
+    if (retired.found) skills = [...new Set([...skills, ...SHORTCUT_SKILLS])];
     const outputs = [], desired = new Map();
     const agents = (await agentCatalog(home)).filter(agent => agent.skills.every(skill => skills.includes(skill)));
-    const globalSkills = [...new Set(['my-ai-infra', ...(skills.includes('my-create-memory') ? ['my-create-memory'] : []), ...agents.flatMap(agent => agent.skills)])];
+    const globalSkills = [...new Set(['my-ai-infra', ...(skills.includes('my-create-memory') ? ['my-create-memory'] : []), ...agents.flatMap(agent => agent.skills), ...skills.filter(name => SHORTCUT_SKILLS.includes(name))])];
     const available = await catalog(home);
     for (const skill of globalSkills) {
       const {sourceRoot:root,sourceName} = available.find(a=>a.name===skill);
@@ -256,7 +266,7 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
       const before = await snapshot(toolHome,target), after = output.kind === 'file' ? {kind:'file',text:output.text} : {kind:'symlink',target:output.target};
       const digest = entry => entry?.kind === 'file' ? hash(entry.text) : entry?.kind === 'symlink' ? hash(entry.target) : null;
       const sameFile = before?.kind === 'file' && output.kind === 'symlink' && before.text === desired.get(output.source)?.text;
-      if (before && !equalEntry(before,after) && !sameFile && digest(before) !== previous[target]) throw Error(`Global ${target.includes('/agents/') ? 'Agent' : 'asset'} conflict: ${target}`);
+      if (before && !retired.reset.has(target) && !equalEntry(before,after) && !sameFile && digest(before) !== previous[target]) throw Error(`Global ${target.includes('/agents/') ? 'Agent' : 'asset'} conflict: ${target}`);
       outputs.push({target,before,after}); next[target] = digest(after);
       if (output.kind === 'file') {
         const legacy = legacyAssetPath(target);
@@ -268,19 +278,9 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
         }
       }
     }
-    // Retire only recorded Prompt aliases for tools being updated in this setup.
-    for (const asset of extensions.filter(asset => asset.type === 'prompts')) for (const tool of tools) {
-      for (const target of new Set([asset.globalTargets?.[tool],legacyPromptTargets(asset.name)[tool]].filter(Boolean))) {
-        if (desired.has(target) || !previous[target] || outputs.some(item => item.target === target)) continue;
-        const before = await snapshot(toolHome,target);
-        if (before && (before.kind !== 'symlink' || hash(before.target) !== previous[target])) throw Error(`Global asset conflict: ${target}`);
-        if (before) outputs.push({target,before,after:null});
-        delete next[target];
-      }
-    }
     // Keep unselected tools installed while flattening their remaining sources.
     for (const [legacy, digest] of Object.entries(previous)) {
-      if (!legacy.startsWith('.agents/assets/')) continue;
+      if (retired.contains(legacy) || !legacy.startsWith('.agents/assets/')) continue;
       const target = legacy.replace('.agents/assets/','.agents/');
       if (desired.has(target)) continue;
       const old = await snapshot(toolHome,legacy);
@@ -296,7 +296,7 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
     const relocated = new Set(migrated.map(item => item.target));
     const installed = new Set(outputs.map(item => item.target));
     for (const [target, digest] of Object.entries(previous)) {
-      if (installed.has(target) || relocated.has(target)) continue;
+      if (retired.contains(target) || installed.has(target) || relocated.has(target)) continue;
       const before = await snapshot(toolHome,target);
       if (before?.kind !== 'symlink') continue;
       const source = path.posix.normalize(path.posix.join(path.posix.dirname(target),before.target));
@@ -305,19 +305,22 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
       const after = {kind:'symlink',target:path.posix.relative(path.posix.dirname(target),source.replace('.agents/assets/','.agents/'))};
       outputs.push({target,before,after}); next[target] = hash(after.target);
     }
-    outputs.push(...migrated);
+    outputs.push(...migrated, ...retired.actions.map(action => ({ ...action, target: action.path })));
+    for (const target of Object.keys(next)) if (retired.contains(target)) delete next[target];
     const changed = outputs.filter(item => !equalEntry(item.before, item.after));
     const backup = `backups/global-${Date.now()}-${randomUUID()}`;
     if (changed.length) await write(home, `${backup}/journal.json`, json(changed));
+    const recovery = await safe(home, backup);
+    for (const item of changed) await backupEntry(toolHome, item.target, item.before, recovery);
     const touched = [];
     try {
       for (const item of changed) {
-        if (!equalEntry(await snapshot(toolHome, item.target), item.before)) throw Error(`Global Skill changed: ${item.target}`);
-        touched.push(item); await putEntry(toolHome, item.target, item.after);
+        if (!equalEntry(await inspectEntry(toolHome, item.target), item.before)) throw Error(`Global Skill changed: ${item.target}`);
+        item.path = item.target; touched.push(item); await installEntry(toolHome, item, recovery);
       }
       await write(home, 'global-state.json', json(next));
     } catch (error) {
-      for (const item of touched.reverse()) await putEntry(toolHome, item.target, item.before);
+      for (const item of touched.reverse()) await restoreEntry(toolHome, item, recovery);
       throw error;
     }
     await pruneLegacyAssetDirectories(toolHome, migrated.map(item => item.target));
@@ -374,14 +377,13 @@ export async function allAssets(home) {
   ];
 }
 async function saveTypedAsset(home,name,text,revision,type) {
-  if (!namePart(name) || !namePart(type)) throw Error('Invalid asset name/type');
+  if (!namePart(name) || !namePart(type) || type === 'prompts') throw Error('Invalid asset name/type');
   return locked(home,async()=>{
     const asset = (await allAssets(home)).find(a=>a.type===type && a.name===name);
     if (asset?.readOnly) throw Error(`Builtin asset is read-only: ${type}/${name}; use a new personal asset name`);
     await seed(home);
     if (!asset || asset.revision !== revision) throw Error('Asset changed since it was loaded; reload first');
     if (type==='agents') parseAgent(text,name);
-    if (type==='prompts' && asset.flat) parsePrompt(text,name);
     const relative = type==='agents' ? `assets/agents/${name}.md` : `assets/${assetRelative(asset)}`;
     await write(home,`backups/edit-${Date.now()}-${randomUUID()}/${relative}`,await read(home,relative));
     await write(home,relative,text);
@@ -389,15 +391,14 @@ async function saveTypedAsset(home,name,text,revision,type) {
   });
 }
 async function importTypedAsset(home,source,type) {
-  if (!namePart(type) || type==='rules') throw Error('Invalid asset type');
+  if (!namePart(type) || ['rules','prompts'].includes(type)) throw Error('Invalid asset type');
   source = await fs.realpath(source);
-  const isAgent = type==='agents', isPrompt = type==='prompts' && (await fs.stat(source)).isFile();
-  if ((isAgent || isPrompt) && !source.endsWith('.md')) throw Error('Asset file must use .md extension');
-  const name = path.basename(source,isAgent || isPrompt ? '.md' : undefined);
+  const isAgent = type==='agents';
+  if (isAgent && !source.endsWith('.md')) throw Error('Asset file must use .md extension');
+  const name = path.basename(source,isAgent ? '.md' : undefined);
   if (!namePart(name)) throw Error('Invalid asset name');
   const contents = new Map();
   if (isAgent) { const text=await read(path.dirname(source),path.basename(source)); parseAgent(text,name); contents.set(`${name}.md`,text); }
-  else if (isPrompt) { const text=await read(path.dirname(source),path.basename(source)); parsePrompt(text,name); contents.set(`${name}.md`,text); }
   else {
     const manifest = parseExtension(await read(source,'asset.json'),type,name);
     for (const file of await files(source)) contents.set(`${name}/${file}`,await read(source,file));

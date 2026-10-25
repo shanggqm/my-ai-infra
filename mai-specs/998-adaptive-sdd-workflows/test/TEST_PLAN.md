@@ -1,5 +1,7 @@
 # Feature 998 测试计划
 
+> 本记录保留当时的结论与证据范围；已重命名资产和评测的链接指向当前路径。
+
 > Profile：standard | 日期：2026-10-18 | 状态：已执行自动化与 Codex 场景，其他宿主待验证；结果见 [验收记录](ACCEPTANCE.md)
 > 依据：[PRD](../spec/PRD.md) AC-01～20、[技术方案](../design/TECH_DESIGN.md) T-01～08、[方案评审](../review/design_review.md) W-01。
 
@@ -72,4 +74,4 @@
 | AC-21：主方案自身名为 CODE_DESIGN.md，候选后缀又被无关文件占用 | 实际宿主选择另一个安全名称，主文批注和无关文件保留，附录与主文双向链接，design 路径校验通过 |
 | AC-21：其他阶段已登记 code_design.md，已有合法代码附录 | 实际宿主避开已登记 basename（忽略大小写），增量维护既有附录，原评审及附录批注保持，源码/Phase 不变 |
 
-自动回归入口为 `test/feature-init.test.mjs` 新增的三个用例；实际宿主输入、文件摘要、轨迹和产物保存于 `dist/feature-998/review-fixes-20261019/`。本轮执行结果与证据边界见代码评审报告的修复复核追加记录。AC-21 其余内联、无适用代码及评审正反例仍按 [prompt-evals.md](../../../test/prompt-evals.md#技术方案的代码设计评测feature-998ac-21) 补验。
+自动回归入口为 `test/feature-init.test.mjs` 新增的三个用例；实际宿主输入、文件摘要、轨迹和产物保存于 `dist/feature-998/review-fixes-20261019/`。本轮执行结果与证据边界见代码评审报告的修复复核追加记录。AC-21 其余内联、无适用代码及评审正反例仍按 [prompt-evals.md](../../../test/workflow-evals.md#技术方案的代码设计评测feature-998ac-21) 补验。

@@ -2,13 +2,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { catalog, config, defaults, PACKAGE, seed, TOOLS, skillName } from './store.mjs';
-import { normalizeText } from './names.mjs';
+import { SHORTCUT_SKILLS, normalizeText } from './names.mjs';
 import { files, hash, json, locked, read, readJSON, safe, stat, write } from './fs.mjs';
 import { snapshot, equalEntry, putEntry } from './entries.mjs';
 import { LEGACY_RULE_FILES } from './legacy-instructions.mjs';
 import { RULES, ruleTarget, ruleActions, ruleInitialization, SHARED_RULE_SOURCE } from './rules.mjs';
-import { ASSET_ROOT, legacyAssetPath, pruneAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, assetRelative, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog, promptTargets, legacyPromptTargets } from './assets.mjs';
+import { ASSET_ROOT, legacyAssetPath, pruneAssetDirectories, SKILL_SOURCE, sourceForEntry, assetSourcePath, assetRelative, validDestination, derivedAgent, addFile, addLink, addExtensions, extensionCatalog } from './assets.mjs';
+import { hasRetiredPromptLibrary, retiredPrompts } from './retired-prompts.mjs';
 import { discoveryEntries } from './discovery.mjs';
+import { detectFormatting } from '../assets/hooks/my-format/run.mjs';
+import { FORMAT_ASSET, formatHookActions, validFormatState } from './format-hook.mjs';
 import { parseAgent, agentCatalog, AGENT_TOOLS, agentFilename, renderAgent, isManagedAgentPath } from './agents.mjs';
 import { conflictPolicy, pathInspector, inspectEntry, resolveConflicts, recoveryDirectory, pruneBackups, backupEntry, installEntry, restoreEntry, saveCandidates } from './conflicts.mjs';
 
@@ -58,7 +61,9 @@ function validateManaged(relative, entry) {
   const agentPath = isManagedAgentPath(relative);
   const center = assetSourcePath(relative);
   const extension = Object.keys(TOOLS).some(tool=>validDestination(relative,tool));
-  if (!prefix && !agentPath && !center && !extension && ![...instructionAliases, INSTRUCTIONS, '.gitignore'].includes(relative)) throw Error(`Invalid managed path: ${relative}`);
+  const formatConfig = validFormatState(relative, entry);
+  if (entry?.formatHook !== undefined && !formatConfig) throw Error(`Invalid format Hook state: ${relative}`);
+  if (!prefix && !agentPath && !center && !extension && !formatConfig && ![...instructionAliases, INSTRUCTIONS, '.gitignore'].includes(relative)) throw Error(`Invalid managed path: ${relative}`);
   if (prefix) skillName(relative.slice(prefix.length + 1).split('/')[0]);
   if (!entry || !['file', 'block', 'reference', 'symlink'].includes(entry.kind) || !/^[a-f0-9]{64}$/.test(entry.hash)) throw Error(`Invalid managed state: ${relative}`);
   if (entry.preserve !== undefined && (entry.kind !== 'file' || entry.preserve !== true)) throw Error(`Invalid preserved state: ${relative}`);
@@ -108,6 +113,8 @@ export async function plan(home, project, override, options = {}) {
   // Fresh installations do not take ownership of unselected tool directories.
   const cleanupTools = rawState !== null && !stateProblem ? Object.keys(TOOLS).filter(tool => !selected.tools.includes(tool)) : [];
   const cleanupDirectories = cleanupTools.flatMap(tool => TOOL_DIRECTORIES[tool]);
+  const retired = await retiredPrompts(root, old.files, inspect, Object.keys(TOOLS).filter(tool => !selected.tools.includes(tool)).flatMap(tool => TOOL_DIRECTORIES[tool]));
+  if (retired.found || await hasRetiredPromptLibrary(home)) selected.skills = [...new Set([...selected.skills, ...SHORTCUT_SKILLS])];
   const desired = new Map();
   const assetList = await catalog(home);
   const availableAgents = await agentCatalog(home);
@@ -143,16 +150,14 @@ export async function plan(home, project, override, options = {}) {
       addFile(desired,generated,text); addLink(desired,target,generated); agentPaths.push(generated,target);
     }
   }
-  const extensions = await extensionCatalog(home);
+  const formatting = await detectFormatting(root);
+  const allExtensions = await extensionCatalog(home);
+  const extensions = allExtensions.filter(asset => asset.type !== 'hooks' || asset.name !== FORMAT_ASSET || formatting.configurations.length > 0);
   addExtensions(desired,extensions,selected.tools);
+  const formatHooks = await formatHookActions(root, selected.tools, formatting.configurations.length > 0, old.files, inspect);
+  // Tool-directory removal already archives its complete configuration.
+  formatHooks.actions = formatHooks.actions.filter(action => !cleanupDirectories.some(directory => within(action.path, directory)));
   const dormantSources = new Set(extensions.filter(asset => !selected.tools.some(tool => asset.targets[tool])).flatMap(asset => Object.keys(asset.contents).map(file => `${ASSET_ROOT}/${assetRelative(asset,file)}`)));
-  const promptMigrations = new Map();
-  for (const asset of extensions.filter(asset => asset.type === 'prompts')) for (const tool of selected.tools) {
-    if (!asset.targets[tool]) continue;
-    for (const target of [asset.targets[tool],legacyPromptTargets(asset.name)[tool]]) {
-      if (!desired.has(target)) promptMigrations.set(target,promptTargets(asset.name)[tool]);
-    }
-  }
   // Relocate only recorded legacy sources. Unknown files stay in their original location.
   const migrations = new Map();
   for (const [relative, output] of desired) {
@@ -161,12 +166,13 @@ export async function plan(home, project, override, options = {}) {
     if (previous?.kind !== 'file') continue;
     const before = await inspect(legacy);
     if (before?.kind !== 'file') continue;
-    const customized = previous.preserve || hash(before.text) !== previous.hash;
+    const customized = !retired.reset.has(relative) && (previous.preserve || hash(before.text) !== previous.hash);
     migrations.set(relative, { legacy, before, customized, incoming: output.text });
     if (customized && policy !== 'replace' && !relative.startsWith(ASSET_ROOT + '/.generated/')) output.text = before.text;
   }
   const ignored = ['/.agents/.generated/', '/.agents/rules/', '/.my-ai-infra/', '/.my-ai-infra-recovery-*/', ...selected.skills.map(name => `/${TOOLS.codex}/${name}/`), ...selected.tools.filter(tool => tool !== 'codex').flatMap(tool => selected.skills.map(name => `/${TOOLS[tool]}/${name}/`))];
   ignored.push(...[...desired.keys()].map(relative => '/' + relative), ...agentPaths.map(relative => '/' + relative), ...[...desired].filter(([,v])=>v.kind==='symlink').map(([p])=>'/'+p));
+  ignored.push(...formatHooks.actions.filter(action => action.before === null && action.after?.kind === 'file').map(action => '/' + action.path));
   desired.set('.gitignore', { text: `# ${START}\n${[...new Set(ignored)].join('\n')}\n# ${END}`, kind: 'block' });
   const actions = [], nextFiles = {};
   for (const [relative, output] of desired) {
@@ -197,9 +203,15 @@ export async function plan(home, project, override, options = {}) {
         if (migration.customized && policy !== 'replace' && output.text === migration.before.text) nextFiles[relative] = { kind: 'file', hash: hash(migration.incoming), preserve: true };
       }
     }
+    if (retired.reset.has(relative)) {
+      if (output.kind === 'file') { after = { kind: 'file', text: output.text }; nextFiles[relative] = { kind: 'file', hash: hash(output.text) }; }
+      action = before === null ? 'create' : equalEntry(before, after) ? 'noop' : 'update';
+    }
     const reason = action === 'conflict' ? detail || (before?.kind === 'symlink' ? `链接目标与预期不符，当前为 ${before.target}；不会跟随或覆盖该链接` : previous ? '受管内容与上次安装记录不一致，保留本地修改并等待核对' : '已有同名内容与待安装资产不同，且没有可信安装记录；请保留或对比现有资产') : undefined;
     actions.push({ path: relative, action, before, after, ...(output.requires ? {requires:output.requires, expectedText:output.text} : {}), ...(reason ? { reason } : {}), ...(output.note ? { note: output.note } : {}) });
   }
+  actions.push(...retired.actions);
+  actions.push(...formatHooks.actions); Object.assign(nextFiles, formatHooks.nextFiles);
   const rules = await ruleActions(root, selected.tools, old.files, inspect);
   for (const rule of RULES.filter(rule => rule.entry !== 'AGENTS.md' && rule.tools.every(tool => cleanupTools.includes(tool)))) {
     const entry = rules.actions.find(action => action.path === rule.entry);
@@ -217,7 +229,7 @@ export async function plan(home, project, override, options = {}) {
   const migratedPaths = new Set([...migrations.values()].map(item => item.legacy));
   for (const { legacy, before } of migrations.values()) actions.push({ path: legacy, action: 'remove', before, after: null, migrationTo: legacy.replace('.agents/assets/', '.agents/'), note: '旧资产迁移到 .agents/ 下，原内容保留备份' });
   for (const [relative, previous] of Object.entries(old.files)) {
-    if (desired.has(relative) || cleanupDirectories.some(directory => within(relative,directory)) || migratedPaths.has(relative) || rules.actions.some(action => action.path === relative) || LEGACY_RULE_FILES.includes(relative)) continue;
+    if (desired.has(relative) || retired.contains(relative) || cleanupDirectories.some(directory => within(relative,directory)) || migratedPaths.has(relative) || rules.actions.some(action => action.path === relative) || formatHooks.actions.some(action => action.path === relative) || LEGACY_RULE_FILES.includes(relative)) continue;
     const before = await inspect(relative);
     if (dormantSources.has(relative)) {
       if (before !== null) {
@@ -238,7 +250,7 @@ export async function plan(home, project, override, options = {}) {
         if (previous.kind === 'block') after = { kind: 'file', text: before.text.replace(owned || '', '') };
       }
     }
-    actions.push({ path: relative, action, before, after, ...(promptMigrations.has(relative) ? {migrationTo:promptMigrations.get(relative)} : {}), ...(action === 'conflict' ? { reason: '待移除入口已修改，保留现场；请核对内容或链接目标后重试' } : {}) });
+    actions.push({ path: relative, action, before, after, ...(action === 'conflict' ? { reason: '待移除入口已修改，保留现场；请核对内容或链接目标后重试' } : {}) });
   }
   // Project specification documents are seeded once and retain subsequent edits.
   const templates = [...await files(path.join(PACKAGE, 'templates/mai-specs'))].map(relative => [`mai-specs/${relative}`, `templates/mai-specs/${relative}`]);
@@ -266,7 +278,7 @@ export async function plan(home, project, override, options = {}) {
   const stateAction = actions.find(action => action.internalState);
   stateAction.after = { kind: 'file', text: json({ version: 4, files: Object.fromEntries(Object.entries(nextFiles).sort(([a],[b])=>a.localeCompare(b))) }) };
   if (stateAction.action !== 'conflict' && stateAction.resolution !== 'skip') stateAction.action = equalEntry(rawState,stateAction.after) ? 'noop' : rawState === null ? 'create' : 'update';
-  const revision = hash(json({ actions: actions.map(({ path, before, after, resolution }) => ({ path, before, after, resolution })), selected, desired: [...desired], state: old, policy }));
+  const revision = hash(json({ actions: actions.map(({ path, before, after, resolution }) => ({ path, before, after, resolution })), selected, desired: [...desired], state: old, policy, formatting }));
   const nextSteps = [], shared = actions.some(action => action.path === 'CLAUDE.md' && action.after?.kind === 'symlink' && action.after.target === SHARED_RULE_SOURCE && action.resolution !== 'skip');
   for (const rule of RULES) {
     const entry = actions.find(action => action.path === rule.entry);
@@ -278,9 +290,9 @@ export async function plan(home, project, override, options = {}) {
   }
   const summary = {};
   for (const a of actions) summary[a.action] = (summary[a.action] || 0) + 1;
-  return { root, assetMigrations: [...availableAgents,...extensions].flatMap(asset => asset.legacyCopies), skillMigrations: assetList.flatMap(asset => asset.legacyCopies), config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
+  return { root, formatting, formatRegistrations: formatHooks.registrations, assetMigrations: [...availableAgents,...allExtensions].flatMap(asset => asset.legacyCopies), skillMigrations: assetList.flatMap(asset => asset.legacyCopies), config: selected, agents: selectedAgents.map(a => a.name), extensions, actions, summary, revision, nextFiles, nextSteps, policy, conflicts: resolved.conflicts, review: resolved.review, skipped: resolved.skipped, complete: resolved.skipped.length === 0 && !actions.some(action=>action.action==='conflict') };
 }
-export const publicPlan = (p, phase = 'plan') => ({ root: p.root, assetMigrations: p.assetMigrations, skillMigrations: p.skillMigrations, config: p.config, agents: p.agents, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
+export const publicPlan = (p, phase = 'plan') => ({ root: p.root, assetMigrations: p.assetMigrations, skillMigrations: p.skillMigrations, config: p.config, agents: p.agents, formatting: p.formatting ? Object.fromEntries(Object.entries(p.formatting).filter(([key]) => key !== 'inputs')) : undefined, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
 
 export async function apply(home, project, override, expectedRevision, options = {}) {
   return locked(home, async () => {
@@ -288,7 +300,7 @@ export async function apply(home, project, override, expectedRevision, options =
     if (initial.actions.some(a => a.action === 'conflict')) throw conflictError(initial);
     if (expectedRevision !== undefined && initial.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
     const seeded = await seed(home);
-    const p = await plan(home, project, override, options);
+    const p = await plan(home, project, initial.config, options);
     if (expectedRevision !== undefined && p.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
     if (p.actions.some(a => a.action === 'conflict')) throw conflictError(p);
     const registryBefore = await snapshot(home, 'projects.json');

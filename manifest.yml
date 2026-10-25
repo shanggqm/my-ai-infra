@@ -1,8 +1,8 @@
 name: my-ai-infra
 package_name: "@easyuseai/my-ai-infra"
 license: MIT
-version: 0.0.13
-status: released
+version: 0.0.14
+status: release-candidate
 purpose: Lightweight SDD scaffolding for enterprise AI coding, with reusable assets and persistent development preferences
 repository:
   url: https://github.com/shanggqm/my-ai-infra
@@ -25,9 +25,10 @@ canonical:
   templates: templates/
   specifications: templates/mai-specs/
   bundled_skills: assets/skills/
+  workflow_usage: docs/workflow-skills.md
   agent_assets: assets/agents/
-  prompt_assets: assets/prompts/
-  prompt_usage: docs/custom-prompts.md
+  format_hook: assets/hooks/my-format/
+  format_hook_usage: docs/format-hooks.md
   feature_initializer: assets/skills/my-create-feature/scripts/init-feature.mjs
   feature_profiles: assets/skills/my-create-feature/references/FEATURE_PROFILES.json
   stage_contracts: assets/skills/my-create-feature/references/stage-contracts.md
@@ -66,12 +67,21 @@ configuration:
   - cursor
   - copilot
 deliverables:
-- assets/prompts/README.md
-- assets/prompts/my-auto-feature.md
-- assets/prompts/my-auto-design.md
-- assets/prompts/my-simple-feature.md
-- assets/prompts/my-init-repo-memory.md
-- docs/custom-prompts.md
+- docs/workflow-skills.md
+- src/retired-prompts.mjs
+- assets/skills/my-auto-feature/SKILL.md
+- assets/skills/my-auto-feature/agents/openai.yaml
+- assets/skills/my-auto-design/SKILL.md
+- assets/skills/my-auto-design/agents/openai.yaml
+- assets/skills/my-simple-feature/SKILL.md
+- assets/skills/my-simple-feature/agents/openai.yaml
+- assets/skills/my-init-repo-memory/SKILL.md
+- assets/skills/my-init-repo-memory/agents/openai.yaml
+- assets/hooks/my-format/asset.json
+- assets/hooks/my-format/run.mjs
+- assets/hooks/my-format/README.md
+- src/format-hook.mjs
+- docs/format-hooks.md
 - assets/skills/my-create-memory/SKILL.md
 - assets/skills/my-create-memory/scripts/my-ai-infra.mjs
 - docs/memory.md
@@ -127,12 +137,12 @@ validation:
   scope: Source-and-packed-CLI-Web-adapters-upgrades-conflicts-Feature-resources-and-documentation
   isolated: true
 publication:
-  npm: published
-  previous_version: 0.0.12
+  npm: pending
+  previous_version: 0.0.13
   dist_tag: latest
   url: https://www.npmjs.com/package/@easyuseai/my-ai-infra
-  published_at: "2026-10-19T14:00:19.125Z"
-  git_tag: v0.0.13
-  source_commit: 9ecc1dd500608bc84364b5bb3c0f1f527f8f9663
-  github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.13
-  github_published_at: "2026-10-19T14:01:37Z"
+  published_at: null
+  git_tag: v0.0.14
+  source_commit: null
+  github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.14
+  github_published_at: null

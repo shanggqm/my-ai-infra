@@ -96,6 +96,34 @@
       "category": "management",
       "default": false,
       "aliases": []
+    },
+    {
+      "name": "my-auto-feature",
+      "label": "完整需求到验收",
+      "category": "workflow",
+      "default": false,
+      "aliases": []
+    },
+    {
+      "name": "my-auto-design",
+      "label": "从方案到实现验收",
+      "category": "workflow",
+      "default": false,
+      "aliases": []
+    },
+    {
+      "name": "my-simple-feature",
+      "label": "简版规格与轻量交付",
+      "category": "workflow",
+      "default": false,
+      "aliases": []
+    },
+    {
+      "name": "my-init-repo-memory",
+      "label": "仓库知识初始化",
+      "category": "workflow",
+      "default": false,
+      "aliases": []
     }
   ],
   "removedSkills": [

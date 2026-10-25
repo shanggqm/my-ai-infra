@@ -62,6 +62,10 @@ export function terminalUI({ output = stdout, env = process.env } = {}) {
       line(); line(`  ${complete ? color.good('✓') : color.warn('!')} ${color.bold(complete ? '配置已完成' : '配置部分完成')}`);
       field('文件', `新增 ${summary.create || 0} · 更新 ${summary.update || 0} · 移除 ${summary.remove || 0} · 保留 ${(summary.preserve || 0) + (summary.noop || 0)} · 跳过 ${result.skipped.length}`);
       field('冲突策略', policy);
+      if (result.formatting) {
+        const formatting = result.formatting;
+        field('格式化', formatting.status === 'no-config' ? '未检测到根目录格式化配置，跳过 Hook' : `${formatting.configurations.map(item => item.file).join('、')} · ${formatting.command?.source || '未找到执行脚本，Hook 将跳过'}`);
+      }
       if (result.review.length) field('冲突处理', `${result.review.length} 处，原文件与候选已保存`);
       for (const item of result.skillMigrations || []) field('旧内置 Skill 备份', `${item.sourceName} → ${item.backup}；定制内容请改名导入。`);
       for (const item of result.assetMigrations || []) field('旧内置资产备份', `${item.type}/${item.sourceName} → ${item.backup}；定制内容请改名导入。`);

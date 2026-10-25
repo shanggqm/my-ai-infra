@@ -1,5 +1,7 @@
 # Feature 994 技术方案评审
 
+> 本记录保留当时的结论与证据范围；已重命名资产和评测的链接指向当前路径。
+
 > 日期：2026-10-18 · [方案](../design/TECH_DESIGN.md) · [供评审附录](../design/CODE_DESIGN.md) · [BRIEF](../BRIEF.md)
 > 执行方式：主 Agent 按 `assets/skills/my-review-design/SKILL.md` 单独进行方案复核，未委派独立评审者。
 
@@ -13,7 +15,7 @@
 
 - 输入：[用户原文](../context/pasted-text.txt)、[请求与附图解读](../context/需求说明与附图解读.md)、技术方案及附录；外部研究数字与网站未重新核验，未用作方案成立依据。
 - 基线：HEAD `b82c0733c1a67c618a2c7becd71f82fa6b5ea460`，分支 `feature/998-adaptive-sdd-workflows`，含既有未提交修改；只读核对当前分发源，未修改现有实现。
-- 对照：[设计 Skill](../../../assets/skills/my-create-design/SKILL.md)、[方案评审 Skill](../../../assets/skills/my-review-design/SKILL.md)、[代码评审 Skill](../../../assets/skills/my-review-code/SKILL.md)、[编排 Prompt](../../../assets/prompts/my-auto-design.md)、[共享契约](../../../assets/skills/my-create-feature/references/stage-contracts.md)。
+- 对照：[设计 Skill](../../../assets/skills/my-create-design/SKILL.md)、[方案评审 Skill](../../../assets/skills/my-review-design/SKILL.md)、[代码评审 Skill](../../../assets/skills/my-review-code/SKILL.md)、[编排 Prompt](../../../assets/skills/my-auto-design/SKILL.md)、[共享契约](../../../assets/skills/my-create-feature/references/stage-contracts.md)。
 - 装配事实：[catalog 说明](../../../catalog/README.md)、[默认配置与 CORE 选择](../../../src/store.mjs)、[名称读取](../../../src/names.mjs)、[资源检查](../../../scripts/check-skill-resources.mjs)、[manifest](../../../manifest.yml)。新 Skill 可复用这些机制，拟新增文件尚不存在符合本轮授权边界。
 - 未覆盖：实际新 Skill 判断效果、安装包和浏览器新条目行为、团队生产环境、外部研究有效性；相关验证安排在主方案 §4。
 

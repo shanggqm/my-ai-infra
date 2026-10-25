@@ -60,7 +60,7 @@ my-ai-infra web --project "/path/to/my repo" --home "/path/to/personal assets" -
 
 ## 维护个人资产
 
-所有资产（Skill、Agent、Prompt、Hook、MCP 和扩展类型）统一分为 `builtin`（内置）和 `personal`（个人），独立于 SDD、辅助等 category。来源由工具依据内置清单与存储位置判定，SKILL.md 自报 origin 不改变分类。
+所有资产（Skill、Agent、Hook、MCP 和扩展类型）统一分为 `builtin`（内置）和 `personal`（个人），独立于 SDD、辅助等 category。来源由工具依据内置清单与存储位置判定，SKILL.md 自报 origin 不改变分类。
 
 | 来源 | 位置 | 维护方式 |
 |---|---|---|
@@ -123,7 +123,7 @@ my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，�
 
 ## 单一内容源与已有项目兼容
 
-项目使用 `.agents/<类型>/` 保存资产，`skills/`、`agents/`、`prompts/`、`hooks/` 等目录并列。Codex 直接读取 `.agents/skills/` 源文件，其他工具的 Skill 目录使用相对软链接入口。全局 setup 使用用户主目录 `.agents/`。个人库与分发包采用 `assets/<类型>/`，完整扩展清单见 [统一资产管理](../assets/README.md)。
+项目使用 `.agents/<类型>/` 保存资产，`skills/`、`agents/`、`hooks/` 等目录并列。Codex 直接读取 `.agents/skills/` 源文件，其他工具的 Skill 目录使用相对软链接入口。全局 setup 使用用户主目录 `.agents/`。个人库与分发包采用 `assets/<类型>/`，完整扩展清单见 [统一资产管理](../assets/README.md)。
 
 项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/rules/AGENTS.md；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
 
@@ -144,7 +144,7 @@ merge 以本地优先的目录合并补齐资产，同名不同正文保留候�
 复制项目时保留符号链接；Windows 需要文件软链接权限。系统拒绝创建链接时，安装器报错并回滚。
 
 
-`asset list` 列出所有类型，`--type` 可筛选。`asset import PATH --type agents` 导入中立角色文件；`asset import NAME.md --type prompts` 导入带单行 `description` frontmatter 的 Prompt，名称来自文件名，工具路径由安装器统一映射。Hook、MCP 和新类型通过 `asset import DIR --type TYPE` 导入带 `asset.json` 的目录。`asset edit NAME --type TYPE --file PATH` 和 Web 资产页编辑该资产入口；修改后显式同步目标项目。Prompt 自动适配已选工具，其他扩展资产按清单声明安装。
+`asset list` 列出所有类型，`--type` 可筛选。`asset import PATH --type agents` 导入中立角色文件。Hook、MCP 和新类型通过 `asset import DIR --type TYPE` 导入带 `asset.json` 的目录。`asset edit NAME --type TYPE --file PATH` 和 Web 资产页编辑该资产入口；修改后显式同步目标项目。快捷工作流通过普通 Skill 导入；扩展资产按清单声明安装。旧 Prompt 的丢弃行为见[工作流 Skill](workflow-skills.md#旧-prompt-清理)。
 
 ## 同一个测试 Skill 在不同阶段调用
 
@@ -216,4 +216,4 @@ CLI 与 Web 在本机运行，无遥测。开发偏好保存在本地个人库�
 
 ## 检查资产发现
 
-`init`、`sync`、`plan` 与 `doctor` 的 JSON 包含 `discovery`，逐工具列出 Skill、Prompt、Agent、规则和扩展资产。终端安装结果显示原生调用方式。`doctor.healthy` 检查文件装配一致性；宿主菜单识别和实际调用需独立验证，不能从 `healthy` 或 `ready` 推断。Hook/MCP 等扩展需要在宿主配置注册，详见 [Prompt 与入口说明](custom-prompts.md)。
+`init`、`sync`、`plan` 与 `doctor` 的 JSON 包含 `discovery`，逐工具列出 Skill、Agent、规则和扩展资产。终端安装结果显示原生调用方式。`doctor.healthy` 检查文件装配一致性；宿主菜单识别和实际调用需独立验证，不能从 `healthy` 或 `ready` 推断。通用 Hook/MCP 扩展需要在宿主配置注册，详见 [工作流与入口说明](workflow-skills.md)。内置 [my-format](format-hooks.md) 在检测到根目录格式化配置时自动合并所选宿主注册，执行时仅复用项目已有脚本。

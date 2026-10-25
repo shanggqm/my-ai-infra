@@ -25,7 +25,7 @@ mai upgrade [--home PATH]
 mai catalog
 mai agents
 mai asset list
-mai asset import PATH [--type skills|agents|prompts|hooks|mcp|TYPE]
+mai asset import PATH [--type skills|agents|hooks|mcp|TYPE]
 mai asset edit NAME --file PATH [--type TYPE]
 mai web [--project PATH] [--port 4317]
 mai memory bind [--project PATH] [--project-id ID|new]

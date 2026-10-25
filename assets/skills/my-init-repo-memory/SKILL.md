@@ -1,5 +1,11 @@
 ---
+name: "my-init-repo-memory"
 description: "依据仓库事实生成或精简优化根目录 AGENTS.md"
+compatibility: "需要可读取的目标项目；流程编排使用当前作用域已安装的阶段 Skill。"
+metadata:
+  author: "andy"
+  source: "assets/skills/my-init-repo-memory/SKILL.md"
+disable-model-invocation: true
 ---
 
 为当前仓库创建或更新根目录的 `AGENTS.md`，按如下步骤完成。

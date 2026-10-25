@@ -62,14 +62,14 @@ async function legacy(t) {
 }
 test('fresh init keeps every asset type directly under .agents and creates no assets layer',async t => {
   const {home,project} = await fixture(t); await apply(home,project,chosen);
-  for (const type of ['skills','agents','prompts','hooks','rules']) assert.ok((await fs.stat(path.join(project,'.agents',type))).isDirectory());
+  for (const type of ['skills','agents','hooks','rules']) assert.ok((await fs.stat(path.join(project,'.agents',type))).isDirectory());
   assert.ok((await fs.lstat(path.join(project,source))).isFile());
   await assert.rejects(fs.lstat(path.join(project,'.agents/assets')),{code:'ENOENT'});
   assert.equal((await doctor(home,project)).healthy,true);
 });
 test('nested layout migrates read-only preview, customized sources, rules, backups and stable relative links',async t => {
   const {root,home,project} = await legacy(t);
-  const customized = [source,'.agents/agents/code-review.md','.agents/prompts/my-auto-feature.md','.agents/hooks/check/run.sh'];
+  const customized = [source,'.agents/agents/code-review.md','.agents/hooks/check/run.sh'];
   for (const file of customized) await fs.appendFile(path.join(project,oldPath(file)),'\nLocal customization\n');
   await write(project,'.agents/assets/rules/AGENTS.md','# Local rules\n');
   const before = await fs.readFile(path.join(project,'.my-ai-infra/state.json'),'utf8');

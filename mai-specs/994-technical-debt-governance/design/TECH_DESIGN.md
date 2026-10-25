@@ -1,5 +1,7 @@
 # 技术债治理贯穿 SDD 与独立债务分析 Skill 技术方案
 
+> 本记录保留当时的结论与证据范围；已重命名资产和评测的链接指向当前路径。
+
 > [返回 BRIEF](../BRIEF.md) · Feature：994 · Profile：standard · 状态：2026-10-18 实现已交付，review；当前证据与限制见[验收记录](../test/ACCEPTANCE.md)
 > 有效需求来源：[用户材料](../context/pasted-text.txt)、[本轮请求与附图解读](../context/需求说明与附图解读.md)
 > 实际模板：项目 `mai-specs/_templates/TECH_DESIGN.tmpl.md`，按当前分发 Skill 的产物约束补充需求依据、AC 与供评审设计
@@ -51,7 +53,7 @@ AC-01～13 用于初版实现验收；AC-14 的设计阶段暂停已有交付记
 
 | 入口 | 已有能力与证据 | 本次增量 |
 |---|---|---|
-| [仓库规则 Prompt](../../../assets/prompts/my-init-repo-memory.md) | 从代码/文档核实边界，冲突不自动覆盖规则 | 区分当前约束、临时例外和已确认偿债结果，避免将坏模式写成规范 |
+| [仓库规则 Prompt](../../../assets/skills/my-init-repo-memory/SKILL.md) | 从代码/文档核实边界，冲突不自动覆盖规则 | 区分当前约束、临时例外和已确认偿债结果，避免将坏模式写成规范 |
 | [设计 Skill](../../../assets/skills/my-create-design/SKILL.md)、[方案评审](../../../assets/skills/my-review-design/SKILL.md) | MVP、复用、减法检查、风险和供评审代码设计 | 让实际新增成本、接受依据和退出条件可审查 |
 | [代码评审](../../../assets/skills/my-review-code/SKILL.md) | 固定基线、沿调用链、区分新增缺陷与历史债务 | 明确新增/放大的持续成本、最小修复及复验，复用原有 P0/P1/P2 |
 | [测试 Skill](../../../assets/skills/my-create-test-plan/SKILL.md) | 用户旅程、AC、反例与真实验收证据 | 校验偿债前后的业务不变量及关闭证据，防止验证失真 |

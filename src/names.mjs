@@ -1,6 +1,7 @@
 import registry from '../catalog/skills.json' with { type: 'json' };
 
 export const BUILTINS = registry.skills;
+export const SHORTCUT_SKILLS = BUILTINS.filter(skill => skill.category === 'workflow').map(skill => skill.name);
 export const REMOVED_SKILLS = new Set(registry.removedSkills || []);
 export const NAMING_VERSION = registry.namingVersion;
 export const ALIASES = Object.fromEntries(BUILTINS.flatMap(s => s.aliases.map(a => [a, s.name])));

@@ -66,7 +66,7 @@ CLI 初始化只选择工具，未保存固定清单时默认装配 catalog 全�
 - 包、个人库、项目和全局源分别位于 assets/、个人库 assets/、.agents/；Codex Skill 为源文件，Claude Code Skill 以及各工具 Agent 入口为相对链接。
 - Agent 中立源修改后 sync 更新全部派生格式；原生文件修改受冲突保护。
 - 旧个人库、项目 Skill、Agent 和规则迁移保留正文、基线与备份，plan 只读。
-- Prompt 通过单个 Markdown 文件导入，以文件名与 frontmatter 描述识别，四种工具入口均链接到 `.agents/prompts/<名称>.md`；编辑、重复同步、移动、升级与旧清单兼容通过回归，新旧同名冲突及无效描述不覆盖原文。
+- 快捷工作流通过普通 Skill 目录导入，正文直接位于 SKILL.md；四种工具按标准 Skill 入口装配。旧 Prompt 导入被拒绝，init / sync 丢弃旧 Prompt 正文与入口，并以当前包更新四个同名 Skill。
 - Hook、MCP 及未预置的新类型使用同一清单、导入、编辑、计划、冲突与移除机制；非法目标与过期编辑拒绝。
 - 运行包内 test/assets.test.mjs 和既有冲突、Agent、single-source 回归；测试仅验证装配，宿主执行能力依各工具的配置。
 
@@ -90,7 +90,7 @@ CLI 初始化只选择工具，未保存固定清单时默认装配 catalog 全�
 
 ## 所有内置资产来源统一回归
 
-- init / sync / setup 直接使用当前发行包中的 Skill、Agent、Prompt、Hook、MCP 和扩展类型；旧个人库副本不能遮蔽新版本，无需先执行 upgrade。
+- init / sync / setup 直接使用当前发行包中的 Skill、Agent、Hook、MCP 和扩展类型；旧个人库副本不能遮蔽新版本，无需先执行 upgrade。
 - 有来源记录的旧副本整体备份，包含本地定制与附属文件；未知来源的同名资产报冲突，个人新增资产保持可编辑。
 - CLI 与 Web 均标记内置 / 个人；内置资产保存和同名导入被拒绝。
 - 包更新后，未改动的项目副本更新，已删除资源清理，定制项目副本继续按冲突策略处理；runtime 整体刷新并保留恢复副本。
@@ -114,7 +114,7 @@ CLI 初始化只选择工具，未保存固定清单时默认装配 catalog 全�
 | “收录这个项目 Skill”，个人库已有同名项 | 保留原资产，按意图编辑或改名 | 删除旧项后重新导入 |
 | “修改个人 Skill 正文”，指定 home 与环境不同 | mai 命令使用指定 home，asset edit 后回读与报告备份 | 写环境库、runtime 或项目源 |
 | “修改个人 Skill 脚本附件” | 在授权范围保留恢复副本并改个人源、检查脚本 | 用 asset edit 将脚本写成入口正文 |
-| “导入 Prompt / Agent / MCP” | 选择实际类型，mai asset import --type TYPE 后检查 | 全部当 Skill；自动启动服务 |
+| “导入工作流 Skill / Agent / MCP” | 选择实际类型，mai asset import --type TYPE 后检查 | 将 Agent / MCP 当 Skill；自动启动服务 |
 | “让这个任意个人 Skill 全局可调用” | 核对 setup 支持范围，说明限制，依用户宿主与范围处理入口方案 | 仅 setup --skills 就宣称全局安装成功 |
 | “取消当前项目的 Cursor” | 保留其他选择，预览包含专属目录影响，按策略同步 | 删除其他工具或全局入口；隐去整目录移除影响 |
 | “从全局取消某工具” | 说明 setup 保留历史工具，核对真实入口和授权范围 | 声称 setup 不选该工具即可卸载 |

@@ -16,7 +16,7 @@
 ```text
 bin/my-ai-infra.mjs       # mai / my-ai-infra 共用入口
 src/                     # cli/web 入口；project 装配，store 个人库，conflicts 恢复，memory 偏好
-assets/                  # 分发资产唯一源：skills、agents、prompts 及扩展类型
+assets/                  # 分发资产唯一源：skills、agents 及扩展类型
 catalog/skills.json      # 内置 Skill 名称、别名与类别登记源
 templates/mai-specs/     # 分发给目标项目的规格工作区模板
 web/、design-system/    # 本地工作台与设计规范、tokens、图标
@@ -81,7 +81,7 @@ dist/                   # 忽略的发行包与检查报告
 | 代码或脚本 | `npm run verify` |
 | 打包与分发 | 另运行 `npm run release:check` |
 | 浏览器行为 | 另运行 `npm run test:web` |
-| Prompt / Skill 行为 | 按对应 `evals/` 或 `test/prompt-evals.md` 核对行为；装配测试不能替代宿主行为评测 |
+| Skill 行为 | 按对应 `evals/` 或 `test/workflow-evals.md` 核对行为；装配测试不能替代宿主行为评测 |
 
 当前仓库没有 CI workflow，以上入口由维护流程执行。发布前同时完成浏览器与实际安装包检查。测试和分发验收使用隔离项目及个人库，不操作真实用户配置；宿主发现的可选验证条件见发布指南。
 
@@ -92,7 +92,7 @@ dist/                   # 忽略的发行包与检查报告
 | 涉及内容 | 查阅入口 |
 |---|---|
 | 安装、冲突、备份、旧布局与运行规则迁移 | [使用指南](../../docs/usage.md)、[故障排查](../../docs/troubleshooting.md) |
-| 新增或修改资产及工具适配 | [资产唯一源](../../assets/README.md)、[Agent](../../docs/custom-agents.md)、[Prompt](../../docs/custom-prompts.md)、[Skill 登记](../../catalog/README.md) |
+| 新增或修改资产及工具适配 | [资产唯一源](../../assets/README.md)、[Agent](../../docs/custom-agents.md)、[工作流 Skill](../../docs/workflow-skills.md)、[Skill 登记](../../catalog/README.md) |
 | 记忆存储、身份隔离、场景与并发 | [个人记忆](../../docs/memory.md)、[存储契约](../../assets/skills/my-create-memory/references/storage.md) |
 | Feature 产物与路径 | [规格工作区](../../mai-specs/README.md)、[默认布局契约](../../assets/skills/my-create-feature/template/FEATURE_LAYOUT.json) |
 | Web 视觉与资源 | [设计规范](../../design-system/BXY_DESIGN_SYSTEM.md) |

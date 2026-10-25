@@ -75,7 +75,7 @@ test('v3 flat sources and shared rules remain intact through read-only preview a
   assert.equal(preview.actions.find(a => a.path === '.agents/rules/AGENTS.md').action,'preserve');
   assert.equal((await doctor(home,project)).healthy,true);
 });
-for(const type of ['prompts','hooks','mcp','future-assets']) test(`${type} shares import, edit, CLI/Web listing, conflict, setup and removal`,async t=>{
+for(const type of ['hooks','mcp','future-assets']) test(`${type} shares import, edit, CLI/Web listing, conflict, setup and removal`,async t=>{
   const {root,home,project,toolHome}=await fixture(t),name='demo',source=path.join(root,name);
   const targets={codex:`.codex/${type}/demo.txt`,claudecode:`.claude/${type}/demo.txt`};
   await write(source,'asset.json',json({name,description:'test asset',entry:'entry.txt',targets,globalTargets:targets}));
@@ -90,9 +90,8 @@ for(const type of ['prompts','hooks','mcp','future-assets']) test(`${type} share
   await assert.rejects(saveAsset(home,name,'stale overwrite',asset.revision,type),/changed since/);
   await apply(home,project,chosen);
   const center=path.join(project,`.agents/${type}/${name}/entry.txt`);
-  const entries = type === 'prompts' ? ['.claude/skills/demo/SKILL.md'] : Object.values(targets);
-  for(const target of entries) {assert.ok((await fs.lstat(path.join(project,target))).isSymbolicLink());assert.equal(await fs.realpath(path.join(project,target)),type === 'prompts' ? path.join(project,'.agents/skills/demo/SKILL.md') : center);}
-  if(type === 'prompts') assert.ok((await fs.lstat(path.join(project,'.agents/skills/demo/SKILL.md'))).isFile());
+  const entries = Object.values(targets);
+  for(const target of entries) {assert.ok((await fs.lstat(path.join(project,target))).isSymbolicLink());assert.equal(await fs.realpath(path.join(project,target)),center);}
   await fs.writeFile(center,'local customization');
   const merged=await apply(home,project,undefined,undefined,{conflict:'merge'}); assert.ok(merged.review.length);assert.equal(await fs.readFile(center,'utf8'),'local customization');
   await setup(home,chosen.tools,toolHome,chosen.skills);
