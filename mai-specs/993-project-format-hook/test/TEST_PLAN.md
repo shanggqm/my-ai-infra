@@ -29,3 +29,15 @@
 - JSONC 共享宿主配置保留现场，自动合并只支持标准 JSON；异常进程终止可能遗留格式化锁，需确认进程状态后处理。
 
 本次记录是实现验证证据；真实宿主触发未验收前，Feature 保持 review。
+
+## 0.0.14 发行复验
+
+2026-10-25，经负责人授权发布 `0.0.14`。本节记录后续发行，前文保留实现阶段的检查结果。
+
+- `npm run release:check` 通过：276 项自动化测试及 17 组实际安装包检查，启用 Codex/Claude 资产发现。
+- `npm run test:web` 通过：8 组浏览器回归，使用本机 Chrome。
+- 发布后 7 组固定版本检查通过，包含旧 Prompt 清理、当前工作流 Skill 安装、四工具装配、格式化脚本执行、个人 Skill 保留和 Web 鉴权。
+- npm `latest`、integrity、下载包 SHA-256 与 GitHub 附件一致。源码标签提交为 `4e2012b468180c80fab678a3d4a9da8b038b61c1`，SHA-256 为 `4f747ccca20b446384b2449769e742ecddfffe17fc4887cafb44f2e30ea7ee49`。
+- 本地证据：`dist/release-0.0.14/release-report.json`、`dist/release-0.0.14/web/report.json`、`dist/release-0.0.14/postpublish.json`；公开发行见 [v0.0.14](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.14)。
+
+发行未补齐前述模型行为和真实宿主事件验收，Feature 保持 review。

@@ -33,3 +33,15 @@
 AC-01 至 AC-04 的装配、存储和事务行为已验证；AC-05 的工程、浏览器、安装包检查已通过。对 test/workflow-evals.md 完成了资产路径及原正文一致性核对，本次未重新执行四个工作流的模型行为评测，也未验证 Cursor / Copilot 的真实菜单与执行行为。宿主发现成功不代表模型端到端行为通过。
 
 已有格式化 Hook 改动保留并通过本次回归。未修改真实个人库、其他项目或父仓库指针；未提交、推送或发布。独立代码评审尚未执行，Feature 保持 review。
+
+## 0.0.14 发行复验
+
+2026-10-25，经负责人授权发布 `0.0.14`。本节记录后续发行，前文保留实现阶段的检查结果。
+
+- `npm run release:check` 通过：276 项自动化测试及 17 组实际安装包检查，启用 Codex/Claude 资产发现。
+- `npm run test:web` 通过：8 组浏览器回归，使用本机 Chrome。
+- 发布后 7 组固定版本检查通过，包含旧 Prompt 清理、当前工作流 Skill 安装、四工具装配、格式化脚本执行、个人 Skill 保留和 Web 鉴权。
+- npm `latest`、integrity、下载包 SHA-256 与 GitHub 附件一致。源码标签提交为 `4e2012b468180c80fab678a3d4a9da8b038b61c1`，SHA-256 为 `4f747ccca20b446384b2449769e742ecddfffe17fc4887cafb44f2e30ea7ee49`。
+- 本地证据：`dist/release-0.0.14/release-report.json`、`dist/release-0.0.14/web/report.json`、`dist/release-0.0.14/postpublish.json`；公开发行见 [v0.0.14](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.14)。
+
+发行未补齐前述模型行为和真实宿主事件验收，Feature 保持 review。

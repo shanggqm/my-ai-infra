@@ -13,6 +13,8 @@
 
 `0.0.13` 已于 2026-10-19 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。249 项自动化测试、7 组浏览器回归及 16 组实际 tarball 检查通过，包含 Codex/Claude 资产发现；包内 105 个文件与合入提交逐字节一致。发布后固定版本下载/安装、四工具 init/doctor、包内容一致性、simple 初始化、个人 Skill 导入/同步及 Web 鉴权共 5 组通过。源码标签 `v0.0.13` 指向 `9ecc1dd500608bc84364b5bb3c0f1f527f8f9663`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.13)。tarball SHA-256 为 `ad09c107ce58b923b290b924e81c3b8e525a91eb16ccc4ae61aa4d5df995e9a4`，GitHub 附件与 npm 下载包一致。新增自适应 SDD 流程、技术债分析及兼容修复；两个实际 Codex 附录定向场景通过，AC-21 全组、部分跨宿主行为与 994 R-05 继续待验，Feature 保持原状态。原始复制资产的来源与许可登记继续如实保留。
 
+`0.0.14` 已于 2026-10-25 经负责人明确授权发布到 npm，`latest` 与 registry integrity 已核验。276 项自动化测试、8 组浏览器回归及 17 组实际 tarball 检查通过，包含 Codex/Claude 对 15 个 Skill 的资产发现；包内 114 个文件与合入提交逐字节一致。发布后 7 组固定版本检查通过，覆盖 registry 与下载包、隔离安装和四工具 init/doctor、旧 Prompt 清理、当前工作流 Skill、simple 初始化、个人 Skill 导入/同步、格式化脚本执行与 Web 鉴权。源码标签 `v0.0.14` 指向 `4e2012b468180c80fab678a3d4a9da8b038b61c1`，见 [GitHub Release](https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.14)。tarball SHA-256 为 `4f747ccca20b446384b2449769e742ecddfffe17fc4887cafb44f2e30ea7ee49`，GitHub 附件与 npm 下载包一致。升级后执行 `mai init`，旧 Prompt 正文和入口会被丢弃并替换为当前包的同名 Skill。模型端到端行为、Cursor/Copilot 真实菜单和格式化 Hook 的真实宿主事件触发继续待验，Feature 992 / 993 保持 review。原始复制资产的来源与许可登记继续如实保留。
+
 ## 发布前的负责人事项
 
 - 决定发行版本和 dist-tag，确认该 npm 名称/版本可由当前账号发布。
