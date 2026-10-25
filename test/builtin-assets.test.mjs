@@ -10,7 +10,7 @@ import { PACKAGE } from '../src/store.mjs';
 import { hash, json, read, write } from '../src/fs.mjs';
 
 const exec = promisify(execFile);
-const chosen = { version: 1, tools: ['codex', 'claudecode'], skills: ['my-review-code'] };
+const chosen = { version: 1, tools: ['codex', 'claudecode'], skills: ['my-review-code', 'my-init-repo-memory'] };
 async function fixture(t) {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'mai-builtins-')));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -30,7 +30,7 @@ async function fixture(t) {
 test('CLI init upgrades every builtin from the package, archives old copies and preserves personal assets', async t => {
   const { root, bundle, home, project, store, projectApi } = await fixture(t);
   await projectApi.apply(home, project, chosen);
-  const paths = ['skills/my-review-code/SKILL.md', 'agents/code-review.md', 'prompts/my-init-repo-memory.md', ...['hooks', 'mcp', 'future-assets'].map(type => `${type}/bundled-check/entry.txt`)];
+  const paths = ['skills/my-review-code/SKILL.md', 'agents/code-review.md', 'skills/my-init-repo-memory/SKILL.md', ...['hooks', 'mcp', 'future-assets'].map(type => `${type}/bundled-check/entry.txt`)];
   const state = { version: 1, files: {} }, archived = new Map();
   for (const relative of paths) {
     const old = await read(bundle, `assets/${relative}`);
@@ -49,13 +49,13 @@ test('CLI init upgrades every builtin from the package, archives old copies and 
     await fs.rm(path.join(bundle, `assets/${type}/bundled-check/obsolete.txt`));
   }
   await write(home, 'bundle-state.json', json(state));
-  const personal = '---\ndescription: Team-only prompt\n---\nKeep personal body\n';
-  await write(home, 'assets/prompts/team-only.md', personal);
+  const personal = '---\nname: team-only\ndescription: Team-only skill\n---\nKeep personal body\n';
+  await write(home, 'assets/skills/team-only/SKILL.md', personal);
   const preview = await projectApi.plan(home, project, chosen);
-  assert.equal(preview.assetMigrations.length, 5);
-  assert.equal(preview.skillMigrations.length, 1);
-  assert.equal(await read(home, 'assets/prompts/my-init-repo-memory.md'), archived.get('prompts/my-init-repo-memory.md'));
-  const command = ['bin/my-ai-infra.mjs', 'init', '--home', home, '--project', project, '--tools', 'codex,claudecode', '--skills', 'my-review-code', '--yes'];
+  assert.equal(preview.assetMigrations.length, 4);
+  assert.equal(preview.skillMigrations.length, 2);
+  assert.equal(await read(home, 'assets/skills/my-init-repo-memory/SKILL.md'), archived.get('skills/my-init-repo-memory/SKILL.md'));
+  const command = ['bin/my-ai-infra.mjs', 'init', '--home', home, '--project', project, '--tools', 'codex,claudecode', '--skills', 'my-review-code,my-init-repo-memory,team-only', '--yes'];
   const result = JSON.parse((await exec(process.execPath, command, { cwd: bundle })).stdout);
   assert.equal(result.complete, true);
   for (const relative of paths) {
@@ -65,7 +65,7 @@ test('CLI init upgrades every builtin from the package, archives old copies and 
     const [type, source] = relative.split('/');
     const migration = (type === 'skills' ? result.skillMigrations : result.assetMigrations).find(copy => copy.sourceName === source && (type === 'skills' || copy.type === type));
     assert.ok(migration, relative);
-    const backup = ['agents', 'prompts'].includes(type) ? migration.backup : path.join(migration.backup, relative.split('/').at(-1));
+    const backup = type === 'agents' ? migration.backup : path.join(migration.backup, relative.split('/').at(-1));
     assert.equal(await fs.readFile(backup, 'utf8'), archived.get(relative));
   }
   for (const type of ['hooks', 'mcp', 'future-assets']) {
@@ -74,8 +74,8 @@ test('CLI init upgrades every builtin from the package, archives old copies and 
     const migration = result.assetMigrations.find(copy => copy.type === type);
     assert.equal(await read(migration.backup, 'custom.txt'), 'Keep custom attachment\n');
   }
-  assert.equal(await read(home, 'assets/prompts/team-only.md'), personal);
-  assert.equal(await read(project, '.agents/prompts/team-only.md'), personal);
+  assert.equal(await read(home, 'assets/skills/team-only/SKILL.md'), personal);
+  assert.equal(await read(project, '.agents/skills/team-only/SKILL.md'), personal);
   // Fresh projects and a repeated init use exactly the same latest package source.
   const fresh = path.join(root, 'fresh'); await fs.mkdir(fresh);
   await projectApi.apply(home, fresh, chosen);
@@ -97,7 +97,7 @@ test('Web preview/apply uses package content; builtin edits and stale previews r
   const headers = { 'X-My-Ai-Token': web.token, 'Content-Type': 'application/json' };
   const post = (route, body) => fetch(web.origin + route, { method: 'POST', headers, body: JSON.stringify(body) });
   const state = await (await fetch(web.origin + '/api/state', { headers })).json();
-  for (const type of ['skills', 'agents', 'prompts', 'hooks', 'mcp', 'future-assets']) {
+  for (const type of ['skills', 'agents', 'hooks', 'mcp', 'future-assets']) {
     const asset = state.inventory.find(item => item.type === type);
     assert.equal(asset.origin, 'builtin'); assert.equal(asset.readOnly, true);
     const rejected = await post('/api/asset', { type, name: asset.name, content: asset.content, revision: asset.revision });
@@ -106,7 +106,7 @@ test('Web preview/apply uses package content; builtin edits and stale previews r
     await assert.rejects(store.importAsset(home, source, type), /already exists|builtin/i);
   }
   const preview = await (await post('/api/plan', { project, config: chosen })).json();
-  assert.equal(preview.assetMigrations.length, 1);
+  assert.equal(preview.assetMigrations.length, 0);
   assert.equal(await read(home, `${legacy}/notes.md`), 'Preserve all old resources\n');
   const body = { project, config: chosen, revision: preview.revision };
   await fs.appendFile(path.join(bundle, 'assets/hooks/bundled-check/entry.txt'), 'Changed after preview\n');
@@ -116,8 +116,8 @@ test('Web preview/apply uses package content; builtin edits and stale previews r
   body.revision = (await (await post('/api/plan', { project, config: chosen })).json()).revision;
   const applied = await post('/api/apply', body); assert.equal(applied.status, 200);
   const result = await applied.json(); assert.equal(result.complete, true);
-  assert.equal(await read(result.assetMigrations[0].backup, 'notes.md'), 'Preserve all old resources\n');
-  assert.equal(await read(project, `.agents/prompts/${name}.md`), await read(bundle, `assets/prompts/${name}.md`));
+  await assert.rejects(fs.lstat(path.join(home, legacy)), { code: 'ENOENT' });
+  assert.equal(await read(project, `.agents/skills/${name}/SKILL.md`), await read(bundle, `assets/skills/${name}/SKILL.md`));
   await write(home, 'assets/hooks/bundled-check/entry.txt', 'Unknown namesake\n');
   await assert.rejects(store.seed(home), /conflicts with builtin/);
   assert.equal(await read(home, 'assets/hooks/bundled-check/entry.txt'), 'Unknown namesake\n');

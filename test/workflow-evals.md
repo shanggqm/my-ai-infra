@@ -1,10 +1,10 @@
-# Prompt 行为评测
+# 工作流 Skill 行为评测
 
 ## 连续开发流程
 
-适用资产：`assets/prompts/my-auto-feature.md`、`assets/prompts/my-auto-design.md`、`assets/prompts/my-simple-feature.md`。
+适用资产：`assets/skills/my-auto-feature/SKILL.md`、`assets/skills/my-auto-design/SKILL.md`、`assets/skills/my-simple-feature/SKILL.md`。
 
-Prompt 组合原子 Skill，负责阶段选择、输入输出交接与状态；阶段执行细节由 Skill 维护。以下检查真实调用、产物和证据，不以关键词断言代替模型行为。
+工作流 Skill 组合原子 Skill，负责阶段选择、输入输出交接与状态；阶段执行细节由 Skill 维护。以下检查真实调用、产物和证据，不以关键词断言代替模型行为。
 
 | 场景 | 预期行为 |
 |---|---|
@@ -14,7 +14,7 @@ Prompt 组合原子 Skill，负责阶段选择、输入输出交接与状态；�
 | 方案或代码评审发现问题 | 修复并复评，继续已授权后续步骤 |
 | 验收失败 | 修复并复验；有真实阻塞时说明并询问 |
 
-自动化装配回归：`node --test test/prompts.test.mjs test/assets.test.mjs`。覆盖单文件导入与描述校验、编辑、旧清单兼容、软链唯一源、移动、重复同步、定制保护、升级及全局安装。
+自动化装配回归：`node --test test/workflow-skills.test.mjs test/assets.test.mjs`。覆盖四工具 Skill 正文与显式调用配置、旧 Prompt 丢弃、移动、重复同步、外部链接边界、预览失效、失败回滚及全局安装。
 
 宿主内行为评测需记录实际工具、模型、输入、Skill 调用和验收证据；文件装配测试不能代替模型行为评测。
 
@@ -39,9 +39,9 @@ Prompt 组合原子 Skill，负责阶段选择、输入输出交接与状态；�
 
 | 用例 / AC | 输入与操作 | 可观察预期与证据 |
 |---|---|---|
-| H-01 / AC-01 | simple Prompt：只改输入框圆角和文案，行为不变 | 直接变更并验证；无新 Feature、PRD 或 ROADMAP 行；保存 diff 与检查结果 |
-| H-02 / AC-02 | simple Prompt：给定模拟数据、行为与可判定 AC 的本地 Demo | simple 技术方案登记有效来源/AC；不制造 PRD；实施、代码审查及验收真实执行 |
-| H-03 / AC-03 | simple Prompt：查询工具缺店铺隔离 | 明确授权契约、设计审查及复评、实现、代码审查；授权店铺成功及越权/缺权限失败证据；代码少也不得跳过 |
+| H-01 / AC-01 | simple 工作流 Skill：只改输入框圆角和文案，行为不变 | 直接变更并验证；无新 Feature、PRD 或 ROADMAP 行；保存 diff 与检查结果 |
+| H-02 / AC-02 | simple 工作流 Skill：给定模拟数据、行为与可判定 AC 的本地 Demo | simple 技术方案登记有效来源/AC；不制造 PRD；实施、代码审查及验收真实执行 |
+| H-03 / AC-03 | simple 工作流 Skill：查询工具缺店铺隔离 | 明确授权契约、设计审查及复评、实现、代码审查；授权店铺成功及越权/缺权限失败证据；代码少也不得跳过 |
 | H-04 / AC-04 | 只要求验证一个原型假设 | 限定探索问题、方法及退出标准；只交探索结论，未继续业务实现或宣称 Feature 完成 |
 | H-05 / AC-05 | 大量导出，权限和容量未知 | 先澄清/探索，再按依赖切片；首阶段完成不代表整体通过 |
 | H-06 / AC-06 | 模拟数据实施中改接生产/共享权限 | 同 ID 接续；暂停受影响实现，补契约、评审及反例；旧验证标待复查 |
@@ -78,7 +78,7 @@ W-01：保留旧项目模板的 PRD 字段及批注，在无 PRD 场景分别执
 
 ## 仓库记忆初始化
 
-适用资产：`assets/prompts/my-init-repo-memory.md`。在隔离仓库副本中执行，比较执行前后的文件与链接；以下场景是待执行的宿主评测用例。
+适用资产：`assets/skills/my-init-repo-memory/SKILL.md`。在隔离仓库副本中执行，比较执行前后的文件与链接；以下场景是待执行的宿主评测用例。
 
 | 场景 | 预期行为 |
 |---|---|

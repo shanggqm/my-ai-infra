@@ -1,12 +1,11 @@
 # AI 资产唯一源
 
-此目录统一保存分发资产，按类型分目录。所有内置资产（Skill、Agent、Prompt、Hook、MCP 及扩展类型）统一从当前发行包读取，CLI / Web 只读；个人资产独立保存。
+此目录统一保存分发资产，按类型分目录。所有内置资产（Skill、Agent、Hook、MCP 及扩展类型）统一从当前发行包读取，CLI / Web 只读；个人资产独立保存。
 
 | 类型 | 结构 | 原生适配 |
 |---|---|---|
 | Skill | `skills/<名称>/SKILL.md` 与附属文件 | Codex 直接使用源文件，其他工具逐文件相对软链接 |
 | SubAgent | `agents/<名称>.md` | 从中立源生成原生格式，原生入口链接到派生文件 |
-| Prompt | `prompts/<名称>.md`，frontmatter 提供 `description` | 安装器统一映射工具路径，安装相对软链接 |
 | Hook / MCP / 扩展类型 | `<类型>/<名称>/asset.json` 与文本文件 | 清单声明入口和工具路径，安装相对软链接 |
 
 项目源位于 `.agents/`，个人库源位于 `<home>/assets/`，全局入口源位于用户目录 `.agents/`。项目运行规则单独保存在项目 `.agents/rules/`，正文由项目维护。
@@ -33,17 +32,11 @@ Skill 的 `references/` 保存按需读取的决策规范，`assets/templates/` 
 
 [my-analyze-debt](skills/my-analyze-debt/SKILL.md) 自带债务分类、报告约定和模板，可单独安装并分析项目或模块，比较全局最优与 MVP 方案后让用户选择下一步。原则与流程保留在入口，具体线索、反例及输出细则按需读取；已有阶段只检查与当前变更相关的债务，不依赖该 Skill。报告默认写入项目 `docs/technical-debt/`，明确关联 Feature 时遵守其报告路径；项目模板可覆盖默认模板，方案比较和用户选择信息仍须保留。
 
-## Prompt
+## 工作流 Skill
 
-内置 [四个 Prompt](prompts/README.md)：`my-auto-feature`、`my-auto-design`、`my-simple-feature` 组合原子 Skill 适配场景；`my-init-repo-memory` 依据仓库事实生成或精简优化根目录 `AGENTS.md`。每个资产只需单个 Markdown，无需单独目录和清单。名称取文件名，描述来自 frontmatter；各工具原生入口通过 共享 Skill 入口读取同一 Markdown。安装、调用与宿主兼容边界见[自定义 Prompt 指南](../docs/custom-prompts.md)。
+[四个工作流 Skill](../docs/workflow-skills.md) 与阶段 Skill 使用相同的目录结构和装配流程。`my-auto-feature`、`my-auto-design`、`my-simple-feature` 编排阶段能力；`my-init-repo-memory` 依据仓库事实维护根目录 `AGENTS.md`。正文直接保存在各自的 `SKILL.md`，`agents/openai.yaml` 保留显式调用策略。
 
-```bash
-my-ai-infra asset import /path/to/my-shortcut.md --type prompts
-my-ai-infra asset edit my-shortcut --type prompts --file /path/to/my-shortcut.md
-my-ai-infra sync --project /path/to/project
-```
-
-旧清单式个人 Prompt 保持兼容；同名新旧源同时存在时报冲突，保留现场。
+新版本移除 Prompt 资产类型。`init` / `sync` 丢弃目标项目旧 Prompt 正文与入口，用当前包的同名 Skill 替换旧转接入口；旧内容不合并。个人库里的旧 `assets/prompts/` 在写入操作时移除。新增快捷指令通过普通 Skill 目录导入。
 
 ## 扩展清单
 
@@ -73,9 +66,11 @@ my-ai-infra asset edit check --type hooks --file /path/to/check.sh
 my-ai-infra sync --project /path/to/project
 ```
 
-Hook 脚本、MCP 服务定义和未来类型使用相同清单。资产安装负责文件装配，不自动执行脚本或启动服务。需要写入 `.claude/settings.json`、`.mcp.json`、Codex 配置等共享配置时，须另行实现对应宿主的结构化配置适配；当前通用清单拒绝用单份资产替换共享配置。新增类型无需修改存储、备份和冲突流程。
+Hook 脚本、MCP 服务定义和未来类型使用相同清单。通用资产安装负责文件装配，不自动执行脚本或启动服务。需要写入 `.claude/settings.json`、`.mcp.json`、Codex 配置等共享配置时，使用对应宿主的结构化配置适配；通用清单拒绝用单份资产替换共享配置。新增类型无需修改存储、备份和冲突流程。
 
-CLI 与 Web 的资产清单、编辑界面包含所有类型。Web 新建按钮创建 Skill；其他类型先使用 CLI 导入 Prompt、角色文件或扩展目录，然后可在 Web 编辑入口正文。项目初始化默认包含适用于所选工具的扩展资产；Agent 继续随其依赖的 Skill 选择。
+内置 [my-format](hooks/my-format/README.md) 提供项目格式化接入：`init` / `sync` 检测根目录已有配置后安装，并通过专用适配合并宿主 Hook 注册。安装过程不执行格式化；主任务结束事件触发时复用项目 format / fmt 脚本，缺入口即跳过。检测、脚本优先级、共享配置保护和宿主限制见[格式化 Hook](../docs/format-hooks.md)。
+
+CLI 与 Web 的资产清单、编辑界面包含所有类型。Web 新建按钮创建 Skill；其他类型先使用 CLI 导入角色文件或扩展目录，然后可在 Web 编辑入口正文。项目初始化默认包含适用于所选工具的扩展资产；Agent 继续随其依赖的 Skill 选择。
 
 ## 迁移
 

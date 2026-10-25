@@ -36,8 +36,8 @@ metadata:
 | “看看个人库有哪些 Skill / Agent / 资产” | `mai catalog` / `mai agents` / `mai asset list`；按类型用 `mai asset list --type TYPE`，用 origin 区分 builtin 与 personal |
 | “把这个项目 Skill 收进个人库” | 检查完整目录、名称及资源，再 `mai asset import /absolute/my-skill`，回读库中新增项 |
 | “新增一个全局个人自定义 Skill” | 按下方创建并入库流程完成，不停留在操作建议 |
-| “修改个人库里的 Skill / Prompt” | 读取当前个人源，准备更新文本，`mai asset edit NAME --file /absolute/updated.md --type TYPE`，回读验证；Skill 可省略 type |
-| “导入 Agent / Prompt / Hook / MCP” | `mai asset import /absolute/source --type TYPE`；TYPE 取 agents、prompts、hooks 或 mcp，再 `mai asset list --type TYPE` 验证 |
+| “修改个人库里的 Skill” | 读取当前个人源，准备更新文本，`mai asset edit NAME --file /absolute/updated.md --type TYPE`，回读验证；Skill 可省略 type |
+| “导入 Agent / Hook / MCP” | `mai asset import /absolute/source --type TYPE`；TYPE 取 agents、hooks 或 mcp，再 `mai asset list --type TYPE` 验证 |
 | “以后项目默认选择这些资产” | `mai defaults` 读取，再 `mai defaults --skills FULL_LIST`；工具偏好用 `--tools FULL_LIST`，不同步已有项目 |
 | “打开资产管理界面” | `mai web --project PATH`，返回实际本地链接并保持进程；端口占用用 `--port 0` |
 | “刷新内置资产 / runtime” | `mai upgrade` 使用当前安装包版本刷新 runtime，报告迁移和恢复路径；该命令不下载新版 npm 包，也不自动同步项目 |
@@ -54,7 +54,7 @@ metadata:
 ### 编辑边界与格式
 
 - `mai asset edit` 修改入口正文并备份。附件、名称或目录结构变更没有批量编辑命令；按授权保留恢复副本后维护个人源，不用同名 import 绕过保护。删除资产也没有专用 CLI 命令，先定位影响范围再按明确授权处理具体文件。
-- Skill 为包含 `SKILL.md` 的完整文本目录；Agent 为中立 Markdown 文件；Prompt 为单个 Markdown 文件，以文件名命名，frontmatter 提供单行 `description`。保留作者与来源信息。
+- Skill 为包含 `SKILL.md` 的完整文本目录；Agent 为中立 Markdown 文件。保留作者与来源信息。
 - Hook、MCP 和扩展类型为含 `asset.json` 的文本目录，清单声明 name、description、entry、targets 及可选 globalTargets。工具仅装配文件，不自动执行 Hook、启动 MCP 或替换宿主整份共享配置。格式不明时参考当前可用的同类型资产，不臆造清单字段。
 
 ## 目标项目资产维护

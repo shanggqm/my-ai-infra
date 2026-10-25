@@ -87,11 +87,11 @@ test('validation rejects resource entries placed after the manifest deliverables
   await run(process.execPath, [validator]);
   const manifest = path.join(copy, 'manifest.yml');
   const original = await fs.readFile(manifest, 'utf8');
-  const resource = '- assets/prompts/my-simple-feature.md\n';
+  const resource = '- assets/skills/my-simple-feature/SKILL.md\n';
   await fs.writeFile(manifest, original.replace(resource, '') + resource);
   await assert.rejects(run(process.execPath, [validator]), error => {
     assert.match(error.stderr, /Top-level resource list outside deliverables/);
-    assert.match(error.stderr, /Missing extension deliverable: prompts\/my-simple-feature.md/);
+    assert.match(error.stderr, /Missing deliverable: my-simple-feature/);
     return error.code === 1;
   });
 });

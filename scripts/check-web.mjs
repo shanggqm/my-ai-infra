@@ -80,6 +80,10 @@ try {
   await page.mouse.move(100, 20);
   await page.getByRole('button', { name: '配置当前项目', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#cog-hero').dataset.motion === 'idle');
+  const workflows = page.locator('#project-skills .skill-group').filter({ has: page.getByRole('heading', { name: '快捷工作流', exact: true }) });
+  assert.deepEqual(await workflows.locator('input:checked').evaluateAll(inputs => inputs.map(input => input.value).sort()), BUILTINS.filter(skill => skill.category === 'workflow').map(skill => skill.name).sort());
+  await shot('workflow-skills');
+  pass('Four workflow Skills appear as selectable defaults in the workflow group');
   const debtChoice = page.locator('#project-skills input[value="my-analyze-debt"]');
   assert.equal(await debtChoice.isChecked(), true);
   assert.equal(await page.locator('#project-skills .skill-group').filter({ has: page.locator('input[value="my-analyze-debt"]') }).locator('h3').textContent(), '编码辅助');
@@ -94,7 +98,8 @@ try {
   await page.waitForTimeout(120);
   assert.equal(await imageData(), offscreen);
   await page.locator('.nav[data-tab="assets"]').click();
-  for (const key of ['prompts/my-init-repo-memory', 'agents/code-review', 'skills/my-review-design', 'skills/my-analyze-debt']) {
+  assert.equal(await page.locator('[data-name^="prompts/"]').count(), 0);
+  for (const key of ['skills/my-init-repo-memory', 'agents/code-review', 'skills/my-review-design', 'skills/my-analyze-debt']) {
     await page.locator(`[data-name="${key}"]`).click();
     assert.match(await page.locator(`[data-name="${key}"]`).textContent(), /内置/);
     assert.equal(await page.locator('#asset-content').evaluate(node => node.readOnly), true);

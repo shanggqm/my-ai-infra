@@ -23,6 +23,17 @@ const checks = [], pass = message => { checks.push(message); console.log(`OK: ${
 const ensure = (condition, message) => { if (!condition) throw Error(message); };
 const run = (file, args, options = {}) => exec(file, args, { cwd: temp, timeout: 60000, maxBuffer: 8 * 1024 * 1024, ...options });
 const npmRun = args => run(process.execPath, [npm, ...args]);
+async function runFormatHook(file, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [file], { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+    let output = '', errors = '';
+    const timer = setTimeout(() => { child.kill(); reject(Error('Packaged format Hook timed out')); }, 25000);
+    child.stdout.on('data', chunk => { output += chunk; }); child.stderr.on('data', chunk => { errors += chunk; });
+    child.once('error', error => { clearTimeout(timer); reject(error); });
+    child.once('close', code => { clearTimeout(timer); if (code === 0) resolve({ output, errors }); else reject(Error(`Packaged format Hook exited ${code}: ${errors}`)); });
+    child.stdin.end('{}');
+  });
+}
 let server;
 async function startServer(cli, args, options = {}) {
   const child = spawn(cli, args, { cwd: temp, stdio: ['ignore','pipe','pipe'], ...options });
@@ -72,7 +83,12 @@ try {
   for (const resource of ['SKILL.md', 'references/debt-taxonomy.md', 'references/report-output.md', 'assets/templates/DEBT_ANALYSIS.tmpl.md', 'evals/cases.md']) ensure(debtResources.includes(resource), `Missing debt analysis resource: ${resource}`);
   for (const resource of debtResources) ensure(names.filter(name => name === `${debtRoot}/${resource}`).length === 1, `Missing or duplicate packaged debt resource: ${resource}`);
   for (const resource of [
-    'assets/prompts/my-simple-feature.md',
+    'assets/hooks/my-format/asset.json',
+    'assets/hooks/my-format/run.mjs',
+    'assets/hooks/my-format/README.md',
+    'src/format-hook.mjs',
+    'docs/format-hooks.md',
+    'assets/skills/my-simple-feature/SKILL.md',
     'assets/skills/my-create-feature/references/FEATURE_PROFILES.json',
     'assets/skills/my-create-feature/references/stage-contracts.md',
     'assets/skills/my-create-prd/assets/templates/PRD.simple.tmpl.md',
@@ -116,14 +132,21 @@ try {
   await fs.mkdir(path.join(home, 'assets/prompts'), { recursive: true });
   await fs.writeFile(path.join(home, promptKey), oldPrompt);
   await fs.writeFile(path.join(home, 'bundle-state.json'), JSON.stringify({ version: 1, files: { [promptKey]: createHash('sha256').update(oldPrompt).digest('hex') } }));
+  await fs.mkdir(path.join(project, '.agents/prompts'), { recursive: true });
+  await fs.writeFile(path.join(project, '.agents/prompts/my-init-repo-memory.md'), oldPrompt);
+  await fs.mkdir(path.join(project, '.agents/skills/my-init-repo-memory'), { recursive: true });
+  await fs.writeFile(path.join(project, '.agents/skills/my-init-repo-memory/SKILL.md'), 'Customized old wrapper: ../../prompts/my-init-repo-memory.md\n');
+  await fs.writeFile(path.join(project, '.my-ai-infra.json'), JSON.stringify({ version: 1, tools: ['codex'], skills: assets.filter(asset => asset.category !== 'workflow').map(asset => asset.name) }));
   const initialized = JSON.parse((await run('mai', ['init','--tools','codex,claudecode,cursor,copilot','--yes'], globalOptions)).stdout);
-  const promptMigration = initialized.assetMigrations.find(item => item.type === 'prompts' && item.name === 'my-init-repo-memory');
-  ensure(promptMigration && await fs.readFile(promptMigration.backup, 'utf8') === oldPrompt, 'Legacy packaged Prompt was not backed up');
-  ensure(await fs.readFile(path.join(project, '.agents/prompts/my-init-repo-memory.md'), 'utf8') === await fs.readFile(path.join(installedRoot, promptKey), 'utf8'), 'Init used a stale personal Prompt instead of the package');
-  pass('Installed CLI init replaces a recorded legacy Prompt with the current package without a separate upgrade');
+  ensure(initialized.complete, 'Init did not finish');
+  await fs.access(path.join(home, 'assets/prompts')).then(() => { throw Error('Retired Prompt library survived init'); }, error => { if (error.code !== 'ENOENT') throw error; });
+  ensure(await fs.readFile(path.join(project, '.agents/skills/my-init-repo-memory/SKILL.md'), 'utf8') === await fs.readFile(path.join(installedRoot, 'assets/skills/my-init-repo-memory/SKILL.md'), 'utf8'), 'Init did not use the current workflow Skill');
+  await fs.access(path.join(project, '.agents/prompts')).then(() => { throw Error('Retired project Prompts survived init'); }, error => { if (error.code !== 'ENOENT') throw error; });
+  ensure(!names.some(name => name.startsWith('assets/prompts/')), 'Retired Prompt assets were packaged');
+  pass('Installed CLI init discards old Prompts and installs current workflow Skills');
   ensure(JSON.parse((await run('mai', ['doctor'], globalOptions)).stdout).healthy, 'Global mai init did not initialize the current directory');
   pass('Global mai and my-ai-infra commands, current-directory init and doctor');
-  const selectedSkills = [...JSON.parse(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8')).skills, 'my-auto-design', 'my-auto-feature', 'my-init-repo-memory', 'my-simple-feature'];
+  const selectedSkills = JSON.parse(await fs.readFile(path.join(project,'.my-ai-infra.json'),'utf8')).skills;
   for (const name of selectedSkills) {
     const directory = path.join(project,'.agents/skills',name);
     ensure((await fs.readdir(directory,{withFileTypes:true})).some(entry => entry.name === 'SKILL.md' && entry.isFile()), `Skill manifest must be a regular file: ${name}`);
@@ -135,7 +158,7 @@ try {
   }
   if (process.env.MAI_CLAUDE_BIN) {
     await checkClaudeDiscovery(process.env.MAI_CLAUDE_BIN,await fs.realpath(project),selectedSkills,['architecture-review','code-review']);
-    pass('Claude SDK initialization discovers all project Skills, Prompts and review roles without duplicate commands');
+    pass('Claude SDK initialization discovers all project Skills and review roles without duplicate commands');
   }
   await fs.access(path.join(project, 'mai-specs/FEATURE_LAYOUT.json')).then(() => { throw Error('Default layout should stay bundled'); }, error => { if (error.code !== 'ENOENT') throw error; });
   const layout = JSON.parse(await fs.readFile(path.join(project,'.agents/skills/my-create-feature/template/FEATURE_LAYOUT.json'),'utf8'));
@@ -190,6 +213,24 @@ try {
   await run(process.execPath,[cli,'sync','--home',home,'--project',project]);
   ensure(JSON.parse((await run(process.execPath,[cli,'doctor','--home',home,'--project',project])).stdout).healthy, 'Packaged install drift');
   pass('Four adapters, installed Feature initializer/templates, repeat sync and doctor');
+  const formatProject = path.join(temp, 'format project 中文'); await fs.mkdir(formatProject);
+  await fs.writeFile(path.join(formatProject, '.prettierrc.json'), '{}\n');
+  await fs.mkdir(path.join(formatProject, 'scripts'));
+  await fs.writeFile(path.join(formatProject, 'scripts/format.mjs'), "import fs from 'node:fs'; fs.writeFileSync('formatted.txt', process.cwd());\n");
+  const formatInit = JSON.parse((await run(process.execPath, [cli, 'init', '--home', home, '--project', formatProject, '--tools', 'codex,claudecode,cursor,copilot', '--skills', 'my-review-code', '--yes'])).stdout);
+  ensure(formatInit.formatting.status === 'ready', 'Packaged init did not detect the formatter');
+  ensure(formatInit.discovery.filter(item => item.name === 'my-format' && item.status === 'ready').length === 4, 'Packaged format Hook registrations are incomplete');
+  await fs.access(path.join(formatProject, 'formatted.txt')).then(() => { throw Error('Init ran formatting unexpectedly'); }, error => { if (error.code !== 'ENOENT') throw error; });
+  const formatHook = path.join(formatProject, '.agents/hooks/my-format/run.mjs');
+  const formatted = await runFormatHook(formatHook, temp);
+  ensure(formatted.output === '{}\n' && !formatted.errors, 'Packaged format Hook emitted an invalid response');
+  ensure(await fs.readFile(path.join(formatProject, 'formatted.txt'), 'utf8') === await fs.realpath(formatProject), 'Packaged format Hook used an incorrect working directory');
+  await fs.unlink(path.join(formatProject, 'scripts/format.mjs'));
+  ensure(!(await runFormatHook(formatHook, temp)).errors, 'Missing format script must skip normally');
+  ensure(await fs.readFile(path.join(formatProject, '.prettierrc.json'), 'utf8') === '{}\n', 'Format Hook modified existing formatter configuration');
+  await run(process.execPath, [cli, 'sync', '--home', home, '--project', formatProject]);
+  ensure(JSON.parse((await run(process.execPath, [cli, 'doctor', '--home', home, '--project', formatProject])).stdout).healthy, 'Packaged format Hook is not idempotent');
+  pass('Packaged format Hook detects configuration, registers four hosts, executes an existing script and skips a missing script');
   const debtProject = path.join(temp, 'debt only 中文'); await fs.mkdir(debtProject);
   await run(process.execPath, [cli, 'init', '--home', home, '--project', debtProject, '--tools', 'codex,claudecode,cursor,copilot', '--skills', 'my-analyze-debt', '--yes']);
   const debtSelection = JSON.parse(await fs.readFile(path.join(debtProject, '.my-ai-infra.json'), 'utf8'));

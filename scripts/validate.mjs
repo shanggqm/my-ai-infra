@@ -33,7 +33,7 @@ for (const { name } of BUILTINS) {
   try {
     const text = await fs.readFile(path.join(root, 'assets/skills', name, 'SKILL.md'), 'utf8');
     metadata(text, name);
-    const header = text.match(/^---\nname: (".*")\ndescription: (".*")\ncompatibility: (".*")\nmetadata:\n  author: (".*")\n  source: (".*")\n---\n/);
+    const header = text.match(/^---\nname: (".*")\ndescription: (".*")\ncompatibility: (".*")\nmetadata:\n  author: (".*")\n  source: (".*")\n(?:disable-model-invocation: true\n)?---\n/);
     check(Boolean(header), `Noncanonical frontmatter: ${name}`);
     if (header) {
       const [identity, description, compatibility, author, source] = header.slice(1).map(s => JSON.parse(s));
@@ -61,7 +61,7 @@ try {
   }
   for (const global of [false, true]) addExtensions(new Map(), extensions, ['codex', 'claudecode', 'cursor', 'copilot'], global);
 } catch (error) { errors.push(error.message); }
-for (const relative of ['README.md', 'assets/README.md', 'assets/agents/README.md', 'assets/prompts/README.md', 'scripts/README.md', 'catalog/README.md', 'skill-inventory.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md', ...await files(path.join(root, 'docs')).then(names => names.filter(name => name.endsWith('.md')).map(name => 'docs/' + name))]) {
+for (const relative of ['README.md', 'assets/README.md', 'assets/agents/README.md', 'scripts/README.md', 'catalog/README.md', 'skill-inventory.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md', ...await files(path.join(root, 'docs')).then(names => names.filter(name => name.endsWith('.md')).map(name => 'docs/' + name))]) {
   const body = (await fs.readFile(path.join(root, relative), 'utf8')).replace(/```[\s\S]*?```/g, '');
   for (const [, target] of body.matchAll(/\]\(([^)]+)\)/g)) {
     if (!target.includes('://') && !target.startsWith('#')) check(await exists(path.join(path.dirname(relative), target.split('#')[0])), `Broken link: ${relative} -> ${target}`);

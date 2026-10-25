@@ -15,8 +15,8 @@ my-ai-infra 汲取开源社区在规格驱动开发（SDD）与 Agent 工作流�
 
 - **轻量接入**：一条命令初始化，CLI 与本地 Web 工作台随手切换；运行时无第三方 npm 依赖。
 - **规格驱动**：从需求到验收，以明确规格和评审支撑交付；按任务规模裁剪流程。
-- **持续进化**：记住长期开发偏好，沉淀自己的 Skill 与 Prompt，在后续项目中复用有效经验。
-- **一份资产，多种工具**：Skill、Agent、Prompt 等统一维护，通过软链连接工具入口；同步前可预览，冲突有备份。
+- **持续进化**：记住长期开发偏好，沉淀自己的 Skill，在后续项目中复用有效经验。
+- **一份资产，多种工具**：Skill、Agent 等统一维护，通过软链连接工具入口；同步前可预览，冲突有备份。
 
 ## 快速开始
 
@@ -30,7 +30,9 @@ mai init
 
 按提示选择 Coding 工具，即可装配内置 Skill 与 SDD 工作区。需要可视化管理时运行 `mai web`，通过终端给出的本机链接打开工作台。
 
-内置 Skill、Agent、Prompt、Hook 等资产在工作台中统一只读；`init` / `sync` 使用当前 npm 版本的资产内容，无需先执行 `upgrade`。自己的 Skill 可从项目导入：
+项目根目录已有格式化配置时，初始化会接入 [my-format Hook](docs/format-hooks.md)，在主任务结束时尝试运行仓库已有的格式化脚本。缺少配置或脚本时跳过，不为项目生成格式化配置。
+
+内置 Skill、Agent、Hook 等资产在工作台中统一只读；`init` / `sync` 使用当前 npm 版本的资产内容，无需先执行 `upgrade`。自己的 Skill 可从项目导入：
 
 ```bash
 mai asset import .agents/skills/my-team-review
@@ -53,7 +55,7 @@ mai catalog
 
 需求 → 产品规格 → 技术方案 → 方案评审 → 测试规划 → 编码实现 → 代码评审 → 测试验收
 
-内置 [Prompt 快捷指令](docs/custom-prompts.md)，支持连续开发与仓库知识初始化：
+内置 [工作流 Skill](docs/workflow-skills.md)，支持连续开发与仓库知识初始化：
 
 | 指令 | 适用场景 |
 |---|---|
@@ -62,11 +64,11 @@ mai catalog
 | `my-auto-design` | 需求已经明确，从技术方案开始，评审修复后实现与验收 |
 | `my-init-repo-memory` | 依据当前仓库事实，直接生成或精简优化根目录 `AGENTS.md` |
 
-规格与交付记录保存在项目的 `mai-specs/` 中。Skill 提供原子阶段能力，Prompt 负责组合；各阶段可独立使用，已有方案可以接续。`simple / standard` 是规格模板档位，风险决定评审和验证强度，复杂度决定拆分。类型由 [Profile 常量](assets/skills/my-create-feature/references/FEATURE_PROFILES.json) 定义，BRIEF 保存默认值，ROADMAP 展示；目录始终 `NNN-slug`。
+规格与交付记录保存在项目的 `mai-specs/` 中。阶段 Skill 提供原子能力，编排 Skill 负责组合；各阶段可独立使用，已有方案可以接续。`simple / standard` 是规格模板档位，风险决定评审和验证强度，复杂度决定拆分。类型由 [Profile 常量](assets/skills/my-create-feature/references/FEATURE_PROFILES.json) 定义，BRIEF 保存默认值，ROADMAP 展示；目录始终 `NNN-slug`。
 
 ## 面向中文开发者调优的 Skill
 
-内置 **7 个 SDD 核心 Skill + 4 个辅助 Skill**，围绕职责边界、输入输出、评审尺度与阶段衔接做了深度调优。中文指引和文档模板覆盖需求澄清、业务规则、交互文案与技术评审；既方便开发者阅读和决策，也为 Coding Agent 提供明确的执行上下文。
+内置 **7 个 SDD 核心 Skill + 4 个辅助 Skill + 4 个工作流 Skill**，围绕职责边界、输入输出、评审尺度与阶段衔接做了深度调优。中文指引和文档模板覆盖需求澄清、业务规则、交互文案与技术评审；既方便开发者阅读和决策，也为 Coding Agent 提供明确的执行上下文。
 
 | Skill | 用途 | 调优重点 |
 |---|---|---|
@@ -82,7 +84,7 @@ mai catalog
 | [my-create-memory](assets/skills/my-create-memory/SKILL.md) | 沉淀长期偏好 | 审慎提炼、合并和修订偏好，按项目与场景复用 |
 | [my-ai-infra](assets/skills/my-ai-infra/SKILL.md) | 维护全局与项目 AI 资产 | 通过 mai 管理个人资产库、项目资产、装配配置与同步检查 |
 
-每个 Skill 都可以独立调用，也可以由 Prompt 连续编排。已有明确需求或方案时，从对应阶段接续即可。
+每个 Skill 都可以独立调用，也可以由工作流 Skill 连续编排。已有明确需求或方案时，从对应阶段接续即可。
 
 技术债治理贯穿各阶段：设计核对边界、复用与契约，代码评审关注本次新增或放大的持续成本，验收确认业务不变量与治理证据。需要盘点模块或系统存量时，单独调用 `my-analyze-debt`，例如“分析订单模块的技术债，给出证据和优先偿还建议”。它会分析债务、比较全局最优与 MVP 解决方案，并让用户选择下一步，无需先创建 Feature；后续偿债按选择及任务授权推进。
 
@@ -91,7 +93,7 @@ mai catalog
 [GitHub 源码仓库](https://github.com/shanggqm/my-ai-infra) · [问题反馈](https://github.com/shanggqm/my-ai-infra/issues)（公开源码仓库）
 
 - [使用指南](docs/usage.md)：配置、同步、升级与恢复。
-- [资产管理](assets/README.md)：统一维护 Skill、Agent、Prompt 与扩展能力。
+- [资产管理](assets/README.md)：统一维护 Skill、Agent 与扩展能力。
 - [个人记忆](docs/memory.md)：积累开发偏好，管理跨项目与项目内的长期记忆。
 - [开发与发布](docs/releasing.md) · [故障排查](docs/troubleshooting.md) · [版本记录](CHANGELOG.md)
 

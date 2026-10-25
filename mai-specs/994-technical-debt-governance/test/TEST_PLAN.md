@@ -1,5 +1,7 @@
 # 技术债治理测试与验收
 
+> 本记录保留当时的结论与证据范围；已重命名资产和评测的链接指向当前路径。
+
 > [返回 BRIEF](../BRIEF.md) · [有效需求与 AC](../design/TECH_DESIGN.md#需求依据与验收) · Feature 994
 
 本 Feature 无独立 PRD，预期以技术方案登记的 AC-01～15 及用户后续授权为依据。AC-14 的开发前暂停已有记录；扩充后的 AC-06 与新增 AC-15 要求比较方案并请用户选择，后续实施仍按已有授权。测试对象为本轮工作树；已有 998 的结果不能代替当前验证。
@@ -17,7 +19,7 @@
 
 ## 需要实际宿主验证的业务场景
 
-具体输入、夹具与判据只维护在 [Skill 行为用例](../../../assets/skills/my-analyze-debt/evals/cases.md)；阶段编排补充见 [Prompt 行为评测](../../../test/prompt-evals.md#技术债治理feature-994)。以下保留追溯和执行边界。
+具体输入、夹具与判据只维护在 [Skill 行为用例](../../../assets/skills/my-analyze-debt/evals/cases.md)；阶段编排补充见 [Prompt 行为评测](../../../test/workflow-evals.md#技术债治理feature-994)。以下保留追溯和执行边界。
 
 | 用例 / AC | 操作与关键预期 | 必留证据 |
 |---|---|---|

@@ -91,12 +91,6 @@ export function resolveConflicts(actions, nextFiles, policy, desired) {
     }
     if (action.action !== 'conflict') continue;
     if (action.unreadable) { action.action = 'preserve'; action.resolution = 'skip'; action.after = action.before; skipped.push({ path: action.path, reason: action.reason }); delete nextFiles[action.path]; continue; }
-    if (policy === 'merge' && action.requires && action.before?.kind === 'file' && action.after?.kind === 'file') {
-      action.candidates = [{path:`incoming/${action.path}`,text:action.after.text}];
-      action.action = 'preserve'; action.resolution = 'skip'; action.after = action.before;
-      skipped.push({path:action.path,reason:'已有不同内容的 Prompt 入口，保留原文件与旧入口；请核对候选后重试。'});
-      delete nextFiles[action.path]; continue;
-    }
     action.resolution = policy;
     if (policy === 'merge' && action.path.startsWith(ASSET_ROOT+'/.generated/') && action.before?.kind === 'file' && action.after?.kind === 'file') {
       action.candidates = [{path:`local/${action.path}`,text:action.before.text}];

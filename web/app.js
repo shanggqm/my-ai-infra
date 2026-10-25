@@ -3,7 +3,7 @@ import { mountCogTrain } from './cog-train.js';
 const $ = id => document.getElementById(id);
 const labels = { codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot' };
 const originLabel = asset => asset.type === 'skills' || asset.origin ? (asset.origin === 'builtin' ? '内置' : '个人') : '';
-const groups = { sdd: 'SDD 主流程', support: '编码辅助', management: '资产管理', custom: '个人扩展' };
+const groups = { workflow: '快捷工作流', sdd: 'SDD 主流程', support: '编码辅助', management: '资产管理', custom: '个人扩展' };
 const token = (/^[a-f0-9]{48}$/.test(location.hash.slice(1)) ? location.hash.slice(1) : '') || sessionStorage.getItem('my-ai-token') || '';
 if (token) sessionStorage.setItem('my-ai-token', token);
 history.replaceState(null, '', location.pathname);

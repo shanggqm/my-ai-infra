@@ -1,5 +1,11 @@
 ---
+name: "my-simple-feature"
 description: "按实际需求选择阶段，以简版规格完成小功能、Demo 与分阶段模拟链路"
+compatibility: "需要可读取的目标项目；流程编排使用当前作用域已安装的阶段 Skill。"
+metadata:
+  author: "andy"
+  source: "assets/skills/my-simple-feature/SKILL.md"
+disable-model-invocation: true
 ---
 
 针对本次需求，使用原子 Skill 组合完成已授权范围，默认新 Feature 为 simple。先读取当前作用域 my-create-feature 的 `references/stage-contracts.md` 与 `references/FEATURE_PROFILES.json`、项目规则和已有上下文；其他能力也从同作用域读取。缺资源明确返回受影响阶段及路径，不借另一作用域或占位文档补缺。
@@ -20,4 +26,4 @@ description: "按实际需求选择阶段，以简版规格完成小功能、Dem
 
 新建时向 my-create-feature 传 profile；旧 Feature 的有效 BRIEF Profile 优先，缺字段用注册表 default。单产物模板覆盖只写入产物；改变 Feature 默认值时按共享契约定点同步 BRIEF 与 ROADMAP，保持 ID/目录，保护批注及外部编辑，中断报告索引待同步；最后复读一致再报告成功。已有文档增量维护，simple 与 standard 共用 layout 路径。后补 PRD 保留 AC ID 并安排有效源迁移与证据复查。
 
-当前 Prompt / 主 Agent 负责后续调度、阶段状态和修复闭环。独立 Skill 只完成当前能力。显式完整 SDD 优先遵守，单阶段/仅设计请求停在授权范围；常规接续在已有授权内推进，真实业务决策冲突再询问。状态按实际内容、门槛和项目定义推进；Phase 跨索引分区时按目标表头渲染。必要测试失败、评审阻塞或承诺证据缺失时保留未完成，不降低 AC，不把计划、路径检查或静态检查当实际验收。全部承诺及集成有当前证据后再按项目规则结项；提交、推送与发布遵循已有授权。
+当前 Skill / 主 Agent 负责后续调度、阶段状态和修复闭环。独立 Skill 只完成当前能力。显式完整 SDD 优先遵守，单阶段/仅设计请求停在授权范围；常规接续在已有授权内推进，真实业务决策冲突再询问。状态按实际内容、门槛和项目定义推进；Phase 跨索引分区时按目标表头渲染。必要测试失败、评审阻塞或承诺证据缺失时保留未完成，不降低 AC，不把计划、路径检查或静态检查当实际验收。全部承诺及集成有当前证据后再按项目规则结项；提交、推送与发布遵循已有授权。

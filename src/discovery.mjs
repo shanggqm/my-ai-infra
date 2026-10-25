@@ -1,7 +1,8 @@
 import path from 'node:path';
-import { ASSET_ROOT, assetRelative, promptTargets } from './assets.mjs';
+import { ASSET_ROOT, assetRelative } from './assets.mjs';
 import { AGENT_TOOLS, agentFilename } from './agents.mjs';
 import { RULES } from './rules.mjs';
+import { FORMAT_ASSET } from './format-hook.mjs';
 
 const skillRoots = {codex:'.agents/skills',claudecode:'.claude/skills',cursor:'.cursor/skills',copilot:'.github/skills'};
 const invocation = (tool,name) => tool === 'codex' ? `ChatGPT: @${name}；Codex CLI/IDE: $${name} 或 /skills` : `/${name}`;
@@ -36,11 +37,19 @@ export function discoveryEntries(p, phase = 'plan') {
     }
     for (const asset of p.extensions) {
       const supported = Boolean(asset.targets[tool]);
-      const target = supported ? asset.type === 'prompts' ? promptTargets(asset.name)[tool] : asset.targets[tool] : null;
+      const target = supported ? asset.targets[tool] : null;
       const source = `${ASSET_ROOT}/${assetRelative(asset)}`;
-      add(tool,asset.type,asset.name,target,asset.type === 'prompts' ? invocation(tool,asset.name) : asset.type === 'hooks' ? '由宿主事件触发' : asset.type === 'mcp' ? '配置并授权服务器后，由宿主工具调用' : '显式引用资产文件',asset.type !== 'prompts' && supported ? '当前仅装配资产文件；请在宿主完成注册或配置并验证生效。' : undefined);
+      add(tool,asset.type,asset.name,target,asset.type === 'hooks' ? '由宿主事件触发' : asset.type === 'mcp' ? '配置并授权服务器后，由宿主工具调用' : '显式引用资产文件',supported ? '当前仅装配资产文件；请在宿主完成注册或配置并验证生效。' : undefined);
       entries.at(-1).source = source;
       if (!supported) entries.at(-1).limitation = '此资产未声明该工具的适配入口。';
+      if (asset.type === 'hooks' && asset.name === FORMAT_ASSET && supported) {
+        const entry = entries.at(-1), registration = p.formatRegistrations?.[tool];
+        const scriptState = state(target), registrationState = registration ? state(registration) : 'needs-sync';
+        entry.status = [scriptState, registrationState].includes('needs-sync') ? 'needs-sync' : [scriptState, registrationState].includes('planned') ? 'planned' : 'ready';
+        entry.registration = registration;
+        entry.invocation = '主 Agent 一轮结束时尝试执行项目已有格式化脚本';
+        entry.limitation = p.formatting.status === 'no-script' ? '未找到项目 format / fmt 脚本，执行时直接跳过。' : '实际运行遵循宿主的 Hook 开关、信任与权限设置；尚未验证宿主调用。';
+      }
     }
   }
   return entries;

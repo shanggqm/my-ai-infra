@@ -17,7 +17,7 @@
 | Another operation is running | 等待现有操作；确认相关进程已退出后，再处理个人库 `.lock`。不要删除仍在使用的锁。 |
 | 旧名和新名同时存在 | 比较两份个人源并保留所需内容，解决重复后再迁移；不要静默删除一份。 |
 | 初始化后找不到项目 Skill | 在目标目录运行 `mai doctor`，确认 `.agents/skills/<名称>/SKILL.md` 是普通文件。旧版文件软链接布局通过修复版 `mai sync` 迁移；同时核对实际执行的 `mai` 安装版本，源码修复不会自动更新全局命令。ChatGPT 用 `@` 选择 Skill，Codex CLI/IDE 用 `/skills` 或 `$`；列表未刷新时重新打开项目会话。 |
-| Prompt 在菜单中缺失或重复 | 使用包含原生入口适配的版本运行 sync；Prompt 通过共享 Skill 和 Claude Skill 链接发现，受管旧 commands/prompts 会迁移。用 doctor.discovery 查看 needs-sync 和配置限制，刷新宿主会话；未受管同名命令先比较再自行处理。 |
+| 工作流 Skill 在菜单中缺失或重复 | 使用最新版运行 init / sync，丢弃旧 Prompt 并安装同名 Skill。用 doctor.discovery 查看 needs-sync 和配置限制，刷新宿主会话；核对所选工具及安装作用域。 |
 | 修改 Skill 后项目未更新 | 个人库改动需对指定项目执行 plan / sync；项目内修改 .agents 实体会立即反映到软链接入口，本地改动会受到同步冲突保护。 |
 | Builtin Skill / asset is read-only | 内置资产随 npm 维护；需要个人定制时使用新名称，按类型同步修改文件名、目录名或元信息，再导入个人库。 |
 | Personal Skill conflicts with builtin | 未知来源同名目录受到保护；先保留原文并改名，再重试。不能通过修改 origin 绕过保护。 |

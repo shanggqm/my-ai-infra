@@ -1,0 +1,11 @@
+{
+  "name": "my-format",
+  "description": "检测项目已有格式化规范，在主任务结束时复用仓库的 format / fmt 脚本；缺配置或入口时跳过。",
+  "entry": "run.mjs",
+  "targets": {
+    "codex": ".codex/hooks/my-format.mjs",
+    "claudecode": ".claude/hooks/my-format.mjs",
+    "cursor": ".cursor/hooks/my-format.mjs",
+    "copilot": ".github/hooks/scripts/my-format.mjs"
+  }
+}

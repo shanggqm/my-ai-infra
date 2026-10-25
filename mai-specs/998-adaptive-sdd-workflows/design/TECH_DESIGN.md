@@ -1,5 +1,7 @@
 # 原子 Skill 与场景 Prompt 的自适应 SDD 流程：技术方案
 
+> 本记录保留当时的结论与证据范围；已重命名资产和评测的链接指向当前路径。
+
 > Feature：998 | PRD：[需求规格](../spec/PRD.md) | 更新：2026-10-18 | 状态：实现与代码复查完成，验收中
 >
 > 本轮代码基线：`main` / `b82c0733c1a67c618a2c7becd71f82fa6b5ea460`，包版本 `0.0.12`；本日首次修订时工作区干净，本次常量与索引增补保留已有文档修改。
@@ -25,14 +27,14 @@
 
 | 已核对的当前事实 | 实际入口 | 设计影响 |
 |---|---|---|
-| 两条自动 Prompt 固定串行调用阶段 Skill | [my-auto-feature](../../../assets/prompts/my-auto-feature.md)、[my-auto-design](../../../assets/prompts/my-auto-design.md) | 保持各自默认场景，增加接续约定；新 Prompt 承担 simple 默认组合 |
+| 两条自动 Prompt 固定串行调用阶段 Skill | [my-auto-feature](../../../assets/skills/my-auto-feature/SKILL.md)、[my-auto-design](../../../assets/skills/my-auto-design/SKILL.md) | 保持各自默认场景，增加接续约定；新 Prompt 承担 simple 默认组合 |
 | 实施要求独立设计，设计默认要求 PRD | [实施 Skill](../../../assets/skills/my-implement-code/SKILL.md)、[设计 Skill](../../../assets/skills/my-create-design/SKILL.md) | 改为校验有效内容及来源，允许选用不同输入 |
 | 部分 Skill 会建议 / 委派下一阶段并处理全局进度 | [PRD Skill](../../../assets/skills/my-create-prd/SKILL.md)、[测试 Skill](../../../assets/skills/my-create-test-plan/SKILL.md) | 流程调度和全局状态归编排者；单项能力的执行方式保持独立 |
 | 初始化仅生成 BRIEF、context 索引，参数有白名单与事务保护 | [init-feature.mjs](../../../assets/skills/my-create-feature/scripts/init-feature.mjs) | 小幅增加 profile 记录，保留初始文件集合、预检、锁及回滚 |
 | ROADMAP 写入严格校验四列表头，目录生成使用 ID 与 slug | 同一初始化脚本的 `roadmapWithRow`、编号扫描与目录生成 | 增加四列 / 五列兼容；目录命名和全局编号池保持 |
 | layout 已登记独立产物，校验器只检查路径 | [布局契约](../../../assets/skills/my-create-feature/template/FEATURE_LAYOUT.json)、[校验器](../../../assets/skills/my-create-feature/scripts/validate-feature.mjs) | simple 沿用相同产物 ID / 路径，不增加 layout 版本 |
 | 项目模板首次写入后 preserve，Skill 附属资源随资产装配 | [project.mjs](../../../src/project.mjs)、[资产约定](../../../assets/README.md) | 新 simple 模板放在各自 Skill 中，项目可提供覆盖模板 |
-| Prompt 从 Markdown 发现，生成工具原生入口 | [assets.mjs](../../../src/assets.mjs)、[Prompt 测试](../../../test/prompts.test.mjs) | 新增一个 Prompt 源文件，沿用现有四工具入口；无需新增核心 Skill |
+| Prompt 从 Markdown 发现，生成工具原生入口 | [assets.mjs](../../../src/assets.mjs)、[Prompt 测试](../../../test/workflow-skills.test.mjs) | 新增一个 Prompt 源文件，沿用现有四工具入口；无需新增核心 Skill |
 
 ```mermaid
 flowchart TD
@@ -495,7 +497,7 @@ simple / standard 新旧模板可以共存，但同一有效产物只维护一�
 
 少量代码内联；较多代码写入技术方案实际所在目录的代码附录，默认候选名 `CODE_DESIGN.md`，命名避让与已有附录维护按 §5.7。主文保留评审重点与相对链接，附录返回主文，同一片段只维护一份。附录按需创建，沿用 design artifact 的辅助文档机制，不新增强制 layout artifact 或生产实现文件。现有 catalog / manifest 已登记修改的资产与模板，无需新增分发项；项目安装副本及定制模板沿用现有同步保护。
 
-新增六类行为用例见[技术方案的代码设计评测](../../../test/prompt-evals.md#技术方案的代码设计评测feature-998ac-21)。静态资源检查与新增宿主行为验收分别报告；AC-21 的原增补未取得宿主执行证据；2026-10-19 的定向命名兼容复验另见验收记录，不能覆盖全部六类。原 AC-01～20 的通过记录保持其原范围。
+新增六类行为用例见[技术方案的代码设计评测](../../../test/workflow-evals.md#技术方案的代码设计评测feature-998ac-21)。静态资源检查与新增宿主行为验收分别报告；AC-21 的原增补未取得宿主执行证据；2026-10-19 的定向命名兼容复验另见验收记录，不能覆盖全部六类。原 AC-01～20 的通过记录保持其原范围。
 
 
 ### 5.7 代码复审修正（2026-10-19，CR-W-03 / CR-W-04）
