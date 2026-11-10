@@ -61,3 +61,5 @@ mai sync --project /path/to/repo
 档位唯一源为 [FEATURE_PROFILES.json](../assets/skills/my-create-feature/references/FEATURE_PROFILES.json)，默认 standard。新建脚本接受 `--profile`；BRIEF 是默认值真源，ROADMAP 为展示。目录保持 NNN-slug，两种档位共用编号池。新索引五列；旧四列保留，目标行说明前记规格前缀。单产物模板覆盖不改变 Feature 默认值；改默认值按[阶段契约](../assets/skills/my-create-feature/references/stage-contracts.md)定点同步、保护外部编辑，中断后按 BRIEF 恢复。
 
 简版模板随 PRD/设计 Skill 安装；项目 `_templates/simple/` 可覆盖。已有文档增量维护，坏覆盖模板不会静默回退。simple 和 standard 共用产物路径，旧模板固定 PRD 字段可填写实际有效需求来源及 AC，不要求生成占位 PRD。
+
+`my-create-design` 写完新建或修订的 Markdown 方案和关联附录后，默认调用 [my-render-design-html](../assets/skills/my-render-design-html/SKILL.md)，生成同目录同名 HTML 审阅版。只要 Markdown 时可在请求中注明。工作台的“选择 SDD 主流程”同时选中两项。已有固定清单的项目可选中渲染 Skill 后同步。

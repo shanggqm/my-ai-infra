@@ -91,9 +91,10 @@ try {
   assert.deepEqual(await selectedSkills(), BUILTINS.map(skill => skill.name).sort());
   await page.locator('#select-core').click();
   assert.deepEqual(await selectedSkills(), BUILTINS.filter(skill => skill.default).map(skill => skill.name).sort());
+  assert.equal(await page.locator('#project-skills input[value="my-render-design-html"]').isChecked(), true);
   assert.equal(await debtChoice.isChecked(), false);
   for (const skill of BUILTINS) await page.locator(`#project-skills input[value="${skill.name}"]`).check();
-  pass('Debt analysis appears in the auxiliary group, is included by default and is excluded by the core workflow shortcut');
+  pass('The core workflow shortcut includes design HTML rendering and excludes standalone debt analysis');
   const offscreen = await imageData();
   await page.waitForTimeout(120);
   assert.equal(await imageData(), offscreen);

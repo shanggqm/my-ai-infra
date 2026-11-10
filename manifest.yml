@@ -1,8 +1,8 @@
 name: my-ai-infra
 package_name: "@easyuseai/my-ai-infra"
 license: MIT
-version: 0.0.14
-status: released
+version: 0.0.15
+status: release-candidate
 purpose: Lightweight SDD scaffolding for enterprise AI coding, with reusable assets and persistent development preferences
 repository:
   url: https://github.com/shanggqm/my-ai-infra
@@ -46,6 +46,7 @@ canonical:
   attribution: THIRD_PARTY_NOTICES.md
   skill_registry: catalog/skills.json
   design_review_skill: assets/skills/my-review-design/SKILL.md
+  design_html_skill: assets/skills/my-render-design-html/SKILL.md
   debt_analysis_skill: assets/skills/my-analyze-debt/SKILL.md
 configuration:
   global_home: ~/.my-ai-infra
@@ -114,6 +115,8 @@ deliverables:
 - assets/skills/my-create-prd/SKILL.md
 - assets/skills/my-create-prd/references/interaction-and-copy.md
 - assets/skills/my-create-design/SKILL.md
+- assets/skills/my-render-design-html/SKILL.md
+- assets/skills/my-render-design-html/assets/templates/DESIGN_REVIEW.tmpl.html
 - assets/skills/my-create-test-plan/SKILL.md
 - assets/skills/my-implement-code/SKILL.md
 - assets/skills/my-review-code/SKILL.md
@@ -137,12 +140,12 @@ validation:
   scope: Source-and-packed-CLI-Web-adapters-upgrades-conflicts-Feature-resources-and-documentation
   isolated: true
 publication:
-  npm: published
-  previous_version: 0.0.13
+  npm: pending
+  previous_version: 0.0.14
   dist_tag: latest
   url: https://www.npmjs.com/package/@easyuseai/my-ai-infra
-  published_at: "2026-10-25T13:20:53.801Z"
-  git_tag: v0.0.14
-  source_commit: 4e2012b468180c80fab678a3d4a9da8b038b61c1
-  github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.14
-  github_published_at: "2026-10-25T13:21:47Z"
+  published_at: null
+  git_tag: v0.0.15
+  source_commit: null
+  github_release: https://github.com/shanggqm/my-ai-infra/releases/tag/v0.0.15
+  github_published_at: null

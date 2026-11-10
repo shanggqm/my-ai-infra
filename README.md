@@ -68,13 +68,14 @@ mai catalog
 
 ## 面向中文开发者调优的 Skill
 
-内置 **7 个 SDD 核心 Skill + 4 个辅助 Skill + 4 个工作流 Skill**，围绕职责边界、输入输出、评审尺度与阶段衔接做了深度调优。中文指引和文档模板覆盖需求澄清、业务规则、交互文案与技术评审；既方便开发者阅读和决策，也为 Coding Agent 提供明确的执行上下文。
+内置 **7 个 SDD 阶段 Skill + 5 个辅助 Skill + 4 个工作流 Skill**，围绕职责边界、输入输出、评审尺度与阶段衔接做了深度调优。中文指引和文档模板覆盖需求澄清、业务规则、交互文案与技术评审；既方便开发者阅读和决策，也为 Coding Agent 提供明确的执行上下文。
 
 | Skill | 用途 | 调优重点 |
 |---|---|---|
 | [my-create-feature](assets/skills/my-create-feature/SKILL.md) | 建立需求上下文 | 收拢目标、素材与约束，创建统一的需求工作区 |
 | [my-create-prd](assets/skills/my-create-prd/SKILL.md) | 编写产品规格 | 串联用户故事、业务流程与验收标准，按需补充交互、文案与原型 |
-| [my-create-design](assets/skills/my-create-design/SKILL.md) | 设计技术方案 | 结合现有代码与约束，以 MVP 为默认，拆出可执行任务 |
+| [my-create-design](assets/skills/my-create-design/SKILL.md) | 设计技术方案 | 以 MVP 为默认，拆出可执行任务，并默认生成 HTML 审阅版 |
+| [my-render-design-html](assets/skills/my-render-design-html/SKILL.md) | 生成技术方案 HTML 审阅版 | 从已有 Markdown 提炼架构、数据流程和核心代码，保存为同目录同名 HTML |
 | [my-review-design](assets/skills/my-review-design/SKILL.md) | 评审技术方案 | 同时检查遗漏与过度设计，验证关键假设，给出可执行的取舍建议 |
 | [my-create-test-plan](assets/skills/my-create-test-plan/SKILL.md) | 规划与执行业务验证 | 从真实用户旅程补齐验收缺口，区分测试计划与实际通过证据 |
 | [my-implement-code](assets/skills/my-implement-code/SKILL.md) | 按规格实现代码 | 遵循项目约定，逐步实现与验证，遇到设计冲突先对齐 |

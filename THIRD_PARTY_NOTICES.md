@@ -22,6 +22,10 @@ Icon 来自 Google Material Symbols Rounded，以 Apache License 2.0 分发。�
 
 字体许可适用于对应第三方文件，不自动改变本项目其他文件的许可。
 
+## 技术方案 HTML 审阅版
+
+审阅页通过 CDN 加载 [Mermaid](https://mermaid.js.org/)、[Highlight.js](https://highlightjs.org/) 和 [Google Material Symbols](https://developers.google.com/fonts/docs/material_symbols)。npm 包分发 HTML 模板及其 CDN 引用。
+
 ## Logo 与设计基础
 
 Logo 由内置 imagegen 于 2026-10-13 生成；项目内保存透明 PNG，来源与提示词见 [Logo 说明](web/assets/README.md)。界面按负责人指定的 bxy-core-design-system 沉淀 tokens 和交互约束；未分发商业产品组件、设备外框或私有业务素材。
