@@ -68,6 +68,13 @@
       ]
     },
     {
+      "name": "my-render-design-html",
+      "label": "技术方案 HTML 审阅版",
+      "category": "support",
+      "default": true,
+      "aliases": []
+    },
+    {
       "name": "my-analyze-debt",
       "label": "技术债分析与偿债建议",
       "category": "support",
