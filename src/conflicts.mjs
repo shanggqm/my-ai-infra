@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { safe, stat, hash, json, write } from './fs.mjs';
+import { readLink, safe, stat, hash, json, write } from './fs.mjs';
 import { equalEntry, putEntry } from './entries.mjs';
 import { ASSET_ROOT, SKILL_SOURCE } from './assets.mjs';
 import { isManagedAgentPath } from './agents.mjs';
@@ -12,7 +12,7 @@ export function conflictPolicy(value = 'abort') {
 }
 async function digest(file) {
   const info = await fs.lstat(file);
-  if (info.isSymbolicLink()) return hash('link:' + await fs.readlink(file));
+  if (info.isSymbolicLink()) return hash('link:' + await readLink(file));
   if (info.isDirectory()) {
     const names = (await fs.readdir(file)).sort();
     return hash(json(await Promise.all(names.map(async name => [name, await digest(path.join(file, name))]))));
@@ -27,7 +27,7 @@ async function digest(file) {
 export async function inspectEntry(root, relative) {
   const file = await safe(root, relative, { leafLink: true }), info = await stat(file);
   if (!info) return null;
-  if (info.isSymbolicLink()) return { kind: 'symlink', target: await fs.readlink(file) };
+  if (info.isSymbolicLink()) return { kind: 'symlink', target: await readLink(file) };
   if (info.isDirectory()) return { kind: 'directory', hash: await digest(file) };
   if (!info.isFile()) throw Error(`不支持的文件类型：${relative}`);
   const bytes = await fs.readFile(file), text = bytes.toString('utf8');

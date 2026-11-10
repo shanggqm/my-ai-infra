@@ -127,7 +127,7 @@ my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，�
 
 MiniMax Code 拒绝软链接的 `SKILL.md`，因此它的入口是整个 Skill 目录的相对软链接：项目内为 `.minimax/skills/<名称>` → `../../.agents/skills/<名称>`，全局为 `~/.minimax/skills/<名称>` → `../../.agents/skills/<名称>`，正文仍是 `.agents/skills/<名称>/SKILL.md` 的普通文件，用户修改后各入口立即同步。宿主侧读取项目目录时依赖外部技能根 `workspace-minimax`（默认开启）；该来源关闭时项目内 Skill 不再被发现，可改用全局 setup。MiniMax Code 只在用户数据目录注册自定义 Agent，项目内不装配角色入口。
 
-项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/rules/AGENTS.md；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
+项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/rules/AGENTS.md；已有 CLAUDE.md 软链接到根目录 AGENTS.md，且 AGENTS.md 是普通文件或受管链接时，同样按共享处理；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
 
 CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用后也在终端单独显示；Web 在预览和成功提示中显示。Codex / Claude Code 在各自会话中执行 /init；Copilot 执行 copilot init；Cursor 使用 Agent 对话补全 AGENTS.md。具体命令及官方说明见 [项目规则入口](#项目规则入口)。安装器不自动运行这些命令；doctor 健康表示安装一致，空规则仍需用户补全。
 

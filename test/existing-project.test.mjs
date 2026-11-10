@@ -99,6 +99,21 @@ test('selecting Claude alongside existing AGENTS links new CLAUDE to its existin
   const {home,project}=await fixture(t);await write(project,'AGENTS.md','# Already configured\n');
   const result=await apply(home,project,{...chosen,tools:['claudecode']});assert.equal(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'),'# Already configured\n');assert.deepEqual(result.nextSteps,[]);assert.equal(await fs.realpath(path.join(project,'CLAUDE.md')),await fs.realpath(path.join(project,'AGENTS.md')));
 });
+test('an existing CLAUDE alias of a root AGENTS file joins the shared source without an empty Claude rule',async t=>{
+  const {home,project}=await fixture(t);const text='# Project rules\n\nKeep these.\n';const config={...chosen,tools:['codex','claudecode']};
+  await write(project,'AGENTS.md',text);await fs.symlink('AGENTS.md',path.join(project,'CLAUDE.md'));
+  assert.deepEqual(publicPlan(await plan(home,project,config)).conflicts,[]);
+  await apply(home,project,config);
+  for(const name of ['AGENTS.md','CLAUDE.md']){assert.equal((await fs.readlink(path.join(project,name))).split(path.sep).join('/'),SHARED_RULE_SOURCE);assert.equal(await fs.readFile(path.join(project,name),'utf8'),text);}
+  await assert.rejects(fs.lstat(path.join(project,'.agents/rules/CLAUDE.md')),{code:'ENOENT'});
+  assert.equal((await doctor(home,project)).healthy,true);
+});
+test('a CLAUDE alias of an AGENTS link to an unknown target stays a conflict and is not followed',async t=>{
+  const {home,project}=await fixture(t);const outside=path.join(path.dirname(project),'outside-rules.md');await fs.writeFile(outside,'# Outside\n');
+  await fs.symlink(outside,path.join(project,'AGENTS.md'));await fs.symlink('AGENTS.md',path.join(project,'CLAUDE.md'));
+  const conflicts=publicPlan(await plan(home,project,{...chosen,tools:['codex','claudecode']})).conflicts.map(c=>c.path);
+  assert.ok(conflicts.includes('CLAUDE.md'));assert.equal(await fs.readFile(outside,'utf8'),'# Outside\n');
+});
 test('agent initialization can replace an empty root symlink with a file and sync re-centralizes it',async t=>{
   const {home,project}=await fixture(t);await apply(home,project,{...chosen,tools:['claudecode']});
   await fs.unlink(path.join(project,'CLAUDE.md'));await fs.writeFile(path.join(project,'CLAUDE.md'),'# Generated project principles\n');
