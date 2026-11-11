@@ -18,4 +18,4 @@ Feature 默认规格档位记录在 BRIEF 的 Profile，常量位于已安装 my
 
 新 simple PRD/技术方案先用项目 `_templates/simple/PRD.tmpl.md` / `TECH_DESIGN.tmpl.md`，没有时用所属 Skill 的 assets/templates/ 简版模板；显式指定优先，坏覆盖不绕过。已有文档增量保留，单产物覆盖不改 Feature 默认值。两档位共用 artifact 路径。无 PRD 时设计登记充分需求与 AC，后续使用该有效源；后补 PRD 保留 AC ID 并同步引用。
 
-从 OpenSpec 迁入的需求和差量要求位于 Feature 的 `spec/PRD.md`，设计和任务位于 `design/TECH_DESIGN.md`。现行规格在 `specs/`，历史资料和来源索引在 `history/INDEX.md`。后续阶段按各 Feature BRIEF 中的链接继续。
+从 OpenSpec 迁入的需求和差量要求位于 Feature 的 `spec/PRD.md`，设计和任务位于 `design/TECH_DESIGN.md`。现行规格在 `specs/`。已归档 change 按同样布局对齐，Phase 为 done，列在 ROADMAP 已完成。`history/` 保留归档原文，供人工阅读。后续阶段按各 Feature BRIEF 中的链接继续。

@@ -47,22 +47,18 @@ CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变
 | 对象 | 路径和规则 |
 |---|---|
 | 现行规格 | `mai-specs/specs/<capability-path>/spec.md`，整仓切换从源现行规格按路径和字节复制；不扫描历史来反推现行状态。已有目标仅在同字节时复用，否则冲突。 |
-| 活动 Feature | `mai-specs/NNN-slug/`。共用编号、Profile、BRIEF、ROADMAP 规则。新导入保持 `draft`；单导入后整仓切换保留已有 ID、进度和 Phase。 |
+| 活动 Feature | `mai-specs/NNN-slug/`。共用编号、Profile、BRIEF、ROADMAP 规则。新导入的活动 change 保持 `draft`，登记在 ROADMAP 规划中。单导入后若源仍在活动目录，整仓切换保留已有 ID 和 Phase。 |
 | 在途材料 | 按 MAI 布局对齐，不把 OpenSpec 目录原样放入 Feature。`proposal.md` 和差量要求对齐为 `spec/PRD.md`，`design.md` 与 `tasks.md` 对齐为 `design/TECH_DESIGN.md`。`.openspec.yaml` 只参与迁移状态，不写入 Feature。其余附件进入 `context/` 并记入索引。任务勾选保留。后续阶段按 BRIEF 链接打开这些产物。 |
-| 历史归档 | `mai-specs/history/openspec/<archive-folder>/` 保留原目录与附件；`mai-specs/history/INDEX.md` 标记历史来源、原目录或可可靠识别的 change ID、能力路径及资料链接。不为历史分配活动编号。 |
+| 已归档 change | 每个 `openspec/changes/archive/<folder>/` 按在途材料的同一规则对齐为 Feature。BRIEF Phase 写 `done`，ROADMAP 行放在已完成。`mai-specs/history/openspec/<archive-folder>/` 与 `mai-specs/history/INDEX.md` 保留原文，供人工阅读。已导入后再出现在归档目录的 change 复用原 Feature，并把 Phase 与 ROADMAP 同步为 done。 |
 | 切换与导入状态 | `mai-specs/.mai-migration/state.json` 保存版本、独立维护源、按来源 ID 和源路径分组的 Feature 映射，以及受管材料上次源和目标摘要。使用项目相对路径，可随仓库移动。和规格一起提交到版本库；临时日志、锁和恢复副本留在本地并排除出 Git。 |
 
 先读取项目布局，缺省使用随包契约。保形目录与自定义登记路径重叠、命名在大小写或 Unicode 归一后冲突、或初始化模板与 `initialFiles` 不一致时在预览阻塞。Markdown 原文和二进制附件保留字节；同子树链接自然保留。指向子树之外的相对引用按来源映射生成索引提示，无法定位时列原文位置和失效路径；关键材料无法访问时阻塞。源本来缺少设计、任务或 PRD 时可保真导入为资料不全的草稿；缺少任务或有效需求时标明不可接续。原文的勾选、评审和测试材料保留，进入实施前要核对当前代码、前置条件与证据；没有可判定前置时先明确缺口。
 
-切换前，单导入依靠相对源路径匹配，而不是按标题或 slug 猜测。上次源与目标摘要用于识别哪一侧改动：源未变则保留本地；仅源变化且目标未改，可在预览列明更新，已导入文件从源消失时保留并列人工处理；双方不同步修改时阻塞，维护者备份后把受管副本调成一致，再重新预览。若源已归档但 MAI 仍存在单导入的活动映射，整仓切换阻塞并列出两个位置，交维护者确认、保全本地改动并处置旧活动记录；不得悄悄丢弃。整仓成功后禁止继续从 OpenSpec 增量导入；重复整仓操作返回原切换结果，源快照后续变化只提示漂移。状态文件损坏或与 Feature / ROADMAP 不一致时阻塞，不从 slug 重建身份。
+切换前，单导入依靠相对源路径匹配，而不是按标题或 slug 猜测。上次源与目标摘要用于识别哪一侧改动：源未变则保留本地；仅源变化且目标未改，可在预览列明更新，已导入文件从源消失时保留并列人工处理；双方不同步修改时阻塞，维护者备份后把受管副本调成一致，再重新预览。若源已进入归档目录且 MAI 已有该 change 的 Feature，整仓切换复用该 Feature，把 BRIEF Phase 写成 done，并把 ROADMAP 行移到已完成。不另建第二个 Feature，不改写已对齐且未分叉的 PRD。整仓成功后禁止继续从 OpenSpec 增量导入；重复整仓操作返回原切换结果，源快照后续变化只提示漂移。状态文件损坏或与 Feature / ROADMAP 不一致时阻塞，不从 slug 重建身份。
 
 ### 2.3 历史接续
 
-整仓切换把 `openspec/changes/archive/` 复制到 `mai-specs/history/openspec/`，并写入 `mai-specs/history/INDEX.md`。历史不占用活动 Feature 编号，也不回放进现行规格。后续 Feature 完成沿用 MAI 既有阶段，本次不新增归档命令。
-
-归档预览读取任务、有效需求源、独立必验清单与当前验证记录。CLI 核验已完成任务、引用可读、通过证据完整覆盖独立必验集合，以及记录的文件摘要仍匹配；维护者负责判断验收范围、证据充分性和阻塞评审是否解除。首次补登记可引用现有测试和评审结果，不重新发明验收 ID；仅勾选任务或导入旧证据不能过门槛。归档复核记录、能力差量匹配、元数据兼容范围及手工准备示例见[代码设计](CODE_DESIGN.md)。
-
-后续开发：从 `mai-specs/README.md` 的迁移使用说明进入 `history/INDEX.md`，在索引中查找如 `account/session` 或原 change ID，再按需打开历史资料。新 Feature 将选中的原文链接加入上下文索引并标注“历史”；历史记录与现行规格冲突时，以当前有效规格和本次需求为准。只有历史材料本身不足以触发差量执行或让旧证据生效。工作区说明的已知生成版可补一段入口；自定义 README 保留原文，由命令结果、迁移使用指南和相关 BRIEF 提供索引路径。Skill 指引随分发源更新，不写项目规则正文。
+整仓切换把 `openspec/changes/archive/` 复制到 `mai-specs/history/openspec/`，并写入 `mai-specs/history/INDEX.md`，供人工阅读原文。每个已归档 change 同时按在途 change 的规则对齐为 Feature，并用 MAI 既有完成状态记录：BRIEF Phase 为 `done`，ROADMAP 行在已完成。差量只进入该 Feature 的 PRD，不回放进现行规格。MAI 不新增归档阶段，也不改 Skill。后续阶段仍按各 Feature 的 BRIEF 链接读取。
 
 ### 2.4 并发、发布与恢复
 

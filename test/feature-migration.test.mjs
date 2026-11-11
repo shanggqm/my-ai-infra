@@ -154,6 +154,19 @@ test('cutover copies current specs without replaying active or historical deltas
   const index = await fs.readFile(path.join(root, 'mai-specs/history/INDEX.md'), 'utf8');
   assert.match(index, /2026-01-02-old/);
   assert.match(index, /auth/);
+  const archived = submitted.items.find(item => item.id === 'old');
+  assert.ok(archived.feature);
+  const archivedName = archived.feature.split('/').at(-1);
+  assert.match(await fs.readFile(path.join(root, archived.feature, 'spec/PRD.md'), 'utf8'), /PRD/);
+  const brief = await fs.readFile(path.join(root, archived.feature, 'BRIEF.md'), 'utf8');
+  assert.match(brief, /\| Phase \| done \|/);
+  assert.match(brief, /ROADMAP 记在已完成/);
+  assert.match(await fs.readFile(path.join(root, archived.feature, 'context/_INDEX.md'), 'utf8'), /spec\/PRD\.md/);
+  assert.equal(await fs.lstat(path.join(root, archived.feature, 'spec/deltas')).then(() => 'present', error => error.code), 'ENOENT');
+  const roadmap = await fs.readFile(path.join(root, 'mai-specs/ROADMAP.md'), 'utf8');
+  assert.match(roadmap.split('## 已完成')[1], new RegExp(archivedName));
+  assert.match(roadmap.split('## 进行中')[0], /add-login\/BRIEF\.md/);
+  assert.match(index, new RegExp(archivedName));
   assert.equal(await fs.readFile(path.join(root, 'openspec/specs/auth/spec.md'), 'utf8'), current);
   const repeated = await planMigration(root, { all: true });
   assert.equal(repeated.actions.length, 0);
@@ -285,7 +298,14 @@ test('an imported change archived by OpenSpec can still be cut over', async t =>
   await submitMigration(root, { all: true }, cutover.revision);
   assert.match(await fs.readFile(path.join(root, feature, 'spec/PRD.md'), 'utf8'), /Add login/);
   assert.equal(await fs.lstat(path.join(root, feature, 'context/openspec')).then(() => 'present', error => error.code), 'ENOENT');
-  assert.match(await fs.readFile(path.join(root, 'mai-specs/history/INDEX.md'), 'utf8'), /2026-02-02-add-login/);
+  const index = await fs.readFile(path.join(root, 'mai-specs/history/INDEX.md'), 'utf8');
+  const featureName = feature.split('/').at(-1);
+  assert.match(index, /2026-02-02-add-login/);
+  assert.match(index, new RegExp(featureName));
+  const roadmap = await fs.readFile(path.join(root, 'mai-specs/ROADMAP.md'), 'utf8');
+  assert.match(roadmap.split('## 已完成')[1], new RegExp(featureName));
+  assert.match(await fs.readFile(path.join(root, feature, 'BRIEF.md'), 'utf8'), /\| Phase \| done \|/);
+  assert.equal(roadmap.split(featureName).length - 1, 1);
   assert.equal(await fs.readFile(path.join(root, 'mai-specs/specs/auth/spec.md'), 'utf8'), current);
 });
 
