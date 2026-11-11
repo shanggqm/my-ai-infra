@@ -43,12 +43,12 @@ async function fixture(t, { linked = false, sole = false } = {}) {
   return { home, project, selected };
 }
 
-for (const linked of [false, true]) test(`retired verification upgrades safely across four adapters (${linked ? 'links' : 'copies'})`, async t => {
+for (const linked of [false, true]) test(`retired verification upgrades safely across every adapter (${linked ? 'links' : 'copies'})`, async t => {
   const { home, project, selected } = await fixture(t, { linked });
   assert.ok(!(await catalog(home)).some(a => a.name === retired));
   const preview = await plan(home, project);
   assert.deepEqual(preview.config.skills, ['my-review-code']);
-  assert.equal(preview.actions.filter(a => a.path.includes(`/${retired}/`) && a.action === 'remove').length, 4);
+  assert.equal(preview.actions.filter(a => a.path.includes(`/${retired}/`) && a.action === 'remove').length, Object.keys(TOOLS).length);
   assert.equal(await read(project, '.my-ai-infra.json'), json(selected));
   assert.equal(await read(home, 'defaults.json'), json(selected));
   await apply(home, project, preview.config, preview.revision);

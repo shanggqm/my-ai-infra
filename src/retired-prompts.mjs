@@ -7,7 +7,7 @@ import { SHORTCUT_SKILLS } from './names.mjs';
 // Prompt is retired. Only identify files to discard; never parse or merge its content.
 const sources = ['.agents/prompts', '.agents/assets/prompts'];
 const directories = [...sources, '.codex/prompts', '.github/prompts', '.copilot/prompts'];
-const skillRoots = ['.agents/skills', '.claude/skills', '.cursor/skills', '.github/skills', '.copilot/skills'];
+const skillRoots = ['.agents/skills', '.claude/skills', '.cursor/skills', '.github/skills', '.copilot/skills', '.minimax/skills'];
 const within = (file, directory) => file === directory || file.startsWith(directory + '/');
 
 export async function hasRetiredPromptLibrary(home) {

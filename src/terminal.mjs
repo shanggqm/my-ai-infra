@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { stdout } from 'node:process';
 
-export const toolLabel = tool => ({ codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot' })[tool] || tool;
+export const toolLabel = tool => ({ codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', mcode: 'MiniMax Code' })[tool] || tool;
 const plain = value => String(value).replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
 
 export function palette(output = stdout, env = process.env) {

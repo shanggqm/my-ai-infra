@@ -47,7 +47,7 @@ export function pathInspector(root) {
         let before;
         try { before = await inspectEntry(root, parent); }
         catch (error) { blockers.set(parent,{path:parent,action:'conflict',before:null,after:null,blocker:true,unreadable:true,reason:`无法完整备份父路径：${error.message}`}); return null; }
-        const adapter = ['.agents/skills','.claude/skills','.cursor/skills','.github/skills'].find(prefix => parent === prefix || parent.startsWith(prefix + '/'));
+        const adapter = ['.agents/skills','.claude/skills','.cursor/skills','.github/skills','.minimax/skills'].find(prefix => parent === prefix || parent.startsWith(prefix + '/'));
         const canonical = adapter && parent.replace(adapter,SKILL_SOURCE);
         const legacy = adapter && adapter !== '.agents/skills' ? parent.replace(adapter,'.agents/skills') : null;
         if (before.kind === 'symlink' && canonical && [canonical,legacy].filter(Boolean).some(target=>path.resolve(root,path.dirname(parent),before.target) === path.resolve(root,target))) {

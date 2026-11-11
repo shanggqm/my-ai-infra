@@ -46,7 +46,19 @@ async function checkSkills(project, global = false) {
       const source = path.join(project, '.agents/skills', name, file);
       assert.ok((await fs.lstat(source)).isFile());
       assert.equal(await fs.readFile(source, 'utf8'), await read(PACKAGE, `assets/skills/${name}/${file}`));
-      for (const prefix of Object.values(global ? GLOBAL_TOOLS : TOOLS)) assert.equal(await fs.realpath(path.join(project, prefix, name, file)), source);
+      for (const prefix of Object.values(global ? GLOBAL_TOOLS : TOOLS)) {
+        const entry = path.join(project, prefix, name, file);
+        // MiniMax Code rejects a symlinked SKILL.md, so its entry links the Skill directory.
+        if (prefix === '.minimax/skills') {
+          const directory = path.join(project, prefix, name);
+          assert.ok((await fs.lstat(directory)).isSymbolicLink());
+          assert.equal(await fs.realpath(directory), await fs.realpath(path.join(project, '.agents/skills', name)));
+          assert.ok((await fs.lstat(entry)).isFile());
+          assert.equal(await fs.realpath(entry), source);
+          continue;
+        }
+        assert.equal(await fs.realpath(entry), source);
+      }
     }
     assert.match(await read(project, `.agents/skills/${name}/SKILL.md`), /disable-model-invocation: true/);
     assert.match(await read(project, `.agents/skills/${name}/agents/openai.yaml`), /allow_implicit_invocation: false/);

@@ -14,19 +14,20 @@
 ## 安装与调用
 
 ```bash
-mai init --project /path/to/repo --tools codex,claudecode,cursor,copilot --yes
+mai init --project /path/to/repo --tools codex,claudecode,cursor,copilot,mcode --yes
 mai sync --project /path/to/repo
 mai doctor --project /path/to/repo
 mai asset list --type skills
 ```
 
-项目正文直接位于 `.agents/skills/<名称>/SKILL.md`。Claude Code、Cursor、Copilot 分别通过 `.claude/skills/`、`.cursor/skills/`、`.github/skills/` 中的相对文件链接复用正文，移动整个项目后仍可使用。
+项目正文直接位于 `.agents/skills/<名称>/SKILL.md`。Claude Code、Cursor、Copilot 分别通过 `.claude/skills/`、`.cursor/skills/`、`.github/skills/` 中的相对文件链接复用正文；MiniMax Code 通过 `.minimax/skills/<名称>` 的相对目录链接复用整个 Skill 目录，宿主因此能读到普通 `SKILL.md`。移动整个项目后仍可使用。
 
 | 工具 | 调用方式 |
 |---|---|
 | ChatGPT 桌面项目 | 输入 `@` 选择对应 Skill，具体选择符以当前客户端为准 |
 | Codex CLI / IDE | `$my-auto-feature` 或 `/skills` 选择 |
 | Claude Code / Cursor / VS Code Copilot | `/my-auto-feature` |
+| MiniMax Code | 会话中按 Skill 名称或触发描述调用 |
 
 其他工作流使用对应名称，需求描述或方案路径放在同条消息中。安装后刷新或开启新会话，并确认当前工作目录为目标项目。也可明确要求读取并执行 `.agents/skills/my-auto-feature/SKILL.md`。
 

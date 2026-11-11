@@ -51,6 +51,14 @@ test('debt analysis installs alone with local resources and four movable discove
     assert.deepEqual(await fs.readFile(source), await fs.readFile(path.join(PACKAGE, 'assets/skills', name, resource)));
     for (const prefix of Object.values(TOOLS)) {
       const entry = path.join(moved, prefix, name, resource);
+      if (prefix === '.minimax/skills') {
+        // MiniMax Code rejects a symlinked SKILL.md, so its entry links the Skill directory.
+        const directory = path.join(moved, prefix, name);
+        assert.ok((await fs.lstat(directory)).isSymbolicLink());
+        assert.equal(await fs.realpath(directory), await fs.realpath(path.join(moved, '.agents/skills', name)));
+        assert.equal(await fs.realpath(entry), source);
+        continue;
+      }
       assert.equal(await fs.realpath(entry), source);
       if (prefix !== TOOLS.codex) assert.equal(path.isAbsolute(await fs.readlink(entry)), false);
     }

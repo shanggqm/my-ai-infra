@@ -6,6 +6,7 @@
     "codex": ".codex/hooks/my-format.mjs",
     "claudecode": ".claude/hooks/my-format.mjs",
     "cursor": ".cursor/hooks/my-format.mjs",
-    "copilot": ".github/hooks/scripts/my-format.mjs"
+    "copilot": ".github/hooks/scripts/my-format.mjs",
+    "mcode": ".minimax/hooks/my-format.mjs"
   }
 }

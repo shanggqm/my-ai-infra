@@ -68,7 +68,7 @@ test('registered dangling legacy rule links are repaired with empty centralized 
 });
 
 test('selected tools receive required rule entries; Claude uses the shared AGENTS source',async t=>{
-  for(const [tool,entry] of [['codex','AGENTS.md'],['cursor','AGENTS.md'],['claudecode','CLAUDE.md'],['copilot','.github/copilot-instructions.md']]){
+  for(const [tool,entry] of [['codex','AGENTS.md'],['cursor','AGENTS.md'],['mcode','AGENTS.md'],['claudecode','CLAUDE.md'],['copilot','.github/copilot-instructions.md']]){
     const {home,project}=await fixture(t);
     const result=await apply(home,project,{...chosen,tools:[tool]});
     for(const rule of RULES){

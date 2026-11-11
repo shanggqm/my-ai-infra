@@ -4,8 +4,10 @@ import { AGENT_TOOLS, agentFilename } from './agents.mjs';
 import { RULES } from './rules.mjs';
 import { FORMAT_ASSET } from './format-hook.mjs';
 
-const skillRoots = {codex:'.agents/skills',claudecode:'.claude/skills',cursor:'.cursor/skills',copilot:'.github/skills'};
-const invocation = (tool,name) => tool === 'codex' ? `ChatGPT: @${name}；Codex CLI/IDE: $${name} 或 /skills` : `/${name}`;
+const skillRoots = {codex:'.agents/skills',claudecode:'.claude/skills',cursor:'.cursor/skills',copilot:'.github/skills',mcode:'.minimax/skills'};
+// MiniMax Code links the canonical Skill directory, so its entry is the directory itself.
+const skillEntry = (tool,name) => tool === 'mcode' ? `${skillRoots[tool]}/${name}` : `${skillRoots[tool]}/${name}/SKILL.md`;
+const invocation = (tool,name) => tool === 'codex' ? `ChatGPT: @${name}；Codex CLI/IDE: $${name} 或 /skills` : tool === 'mcode' ? `会话中用 skill 工具按名称调用 ${name}` : `/${name}`;
 
 // This is a filesystem plan/diagnostic, never a claim that a host loaded the asset.
 export function discoveryEntries(p, phase = 'plan') {
@@ -26,8 +28,13 @@ export function discoveryEntries(p, phase = 'plan') {
     entries.push({tool,type,name,path:target || null,invocation:call,status:status === 'ready' && limitation ? 'configuration-required' : status,hostVerified:false,...(limitation ? {limitation} : {})});
   };
   for (const tool of p.config.tools) {
-    for (const name of p.config.skills) add(tool,'skills',name,`${skillRoots[tool]}/${name}/SKILL.md`,invocation(tool,name));
-    for (const name of p.agents) add(tool,'agents',name,`${AGENT_TOOLS[tool]}/${agentFilename(tool,name)}`,tool === 'claudecode' ? `/agents 查看；请求委派给 ${name}` : tool === 'copilot' ? `在 Agent 选择器选择 ${name}` : `请求主 Agent 委派给 ${name}`);
+    for (const name of p.config.skills) add(tool,'skills',name,skillEntry(tool,name),invocation(tool,name));
+    for (const name of p.agents) {
+      const directory = AGENT_TOOLS[tool];
+      // MiniMax Code registers a custom Agent in the user data directory only.
+      if (!directory) { add(tool,'agents',name,null,`由主 Agent 直接委派给 ${name}`,'MiniMax Code 只在用户级目录注册自定义 Agent，项目内不装配角色入口；请执行 mai setup 安装用户级角色。'); continue; }
+      add(tool,'agents',name,`${directory}/${agentFilename(tool,name)}`,tool === 'claudecode' ? `/agents 查看；请求委派给 ${name}` : tool === 'copilot' ? `在 Agent 选择器选择 ${name}` : `请求主 Agent 委派给 ${name}`);
+    }
     for (const rule of RULES.filter(rule => rule.tools.includes(tool))) {
       add(tool,'rules',rule.entry,rule.entry,'会话中自动加载项目规则');
       const source = actions.get(rule.entry)?.after;

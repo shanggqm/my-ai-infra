@@ -67,6 +67,7 @@ configuration:
   - claudecode
   - cursor
   - copilot
+  - mcode
 deliverables:
 - docs/workflow-skills.md
 - src/retired-prompts.mjs

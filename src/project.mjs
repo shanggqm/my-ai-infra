@@ -22,7 +22,7 @@ const START = '<!-- my-ai-infra:start -->', END = '<!-- my-ai-infra:end -->';
 const instructionAliases = ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md'];
 const aliasTarget = (relative, source) => path.posix.relative(path.posix.dirname(relative), source);
 // GitHub also hosts repository infrastructure; only Copilot namespaces are exclusive.
-const TOOL_DIRECTORIES = { codex: ['.codex'], claudecode: ['.claude'], cursor: ['.cursor'], copilot: ['.copilot', '.github/skills', '.github/agents', '.github/prompts', '.github/instructions'] };
+const TOOL_DIRECTORIES = { codex: ['.codex'], claudecode: ['.claude'], cursor: ['.cursor'], copilot: ['.copilot', '.github/skills', '.github/agents', '.github/prompts', '.github/instructions'], mcode: ['.minimax'] };
 const within = (relative, directory) => relative === directory || relative.startsWith(directory + '/');
 
 function segment(text, first = START, last = END) {
@@ -128,6 +128,15 @@ export async function plan(home, project, override, options = {}) {
     }
   }
   for (const tool of new Set(['codex',...selected.tools])) {
+    // MiniMax Code rejects a symlinked SKILL.md; its entry links the canonical Skill directory.
+    if (tool === 'mcode') {
+      for (const name of selected.skills) {
+        const source = `${SKILL_SOURCE}/${name}`, relative = `${TOOLS[tool]}/${name}`;
+        // The directory link depends on the canonical SKILL.md that stays a real file.
+        desired.set(relative, { kind: 'symlink', source, target: aliasTarget(relative, source), requires: `${source}/SKILL.md` });
+      }
+      continue;
+    }
     for (const [source, output] of [...desired]) {
       if (output.kind !== 'file' || !source.startsWith(SKILL_SOURCE + '/')) continue;
       const relative = source.replace(SKILL_SOURCE + '/', TOOLS[tool] + '/');
@@ -143,7 +152,8 @@ export async function plan(home, project, override, options = {}) {
     const effectiveLocal = local?.kind === 'file' ? local : legacyLocal;
     const previous = old.files[source] || old.files[legacyAssetPath(source)];
     const effective = policy !== 'replace' && effectiveLocal?.kind === 'file' && (previous?.preserve || hash(effectiveLocal.text) !== previous?.hash) ? parseAgent(effectiveLocal.text,agent.name) : agent;
-    for (const tool of selected.tools) {
+    // A tool without a project-level Agent directory keeps its roles in the user library.
+    for (const tool of selected.tools.filter(tool => Object.hasOwn(AGENT_TOOLS, tool))) {
       const target = `${AGENT_TOOLS[tool]}/${agentFilename(tool, agent.name)}`;
       const generated = derivedAgent(tool,agent.name,agentFilename(tool,agent.name));
       const text = renderAgent(effective, tool, skill => aliasTarget(target, `${TOOLS.codex}/${skill}/SKILL.md`));
@@ -183,7 +193,8 @@ export async function plan(home, project, override, options = {}) {
       if (before === null) action = 'create';
       else if (before.kind === 'symlink') action = before.target === output.target ? 'noop' : previous?.kind === 'symlink' && previous.target === before.target && before.target === aliasTarget(relative,legacyAssetPath(output.source)) ? 'update' : 'conflict';
       else if (before.kind === 'file') {
-        action = (previous?.kind === 'file' && hash(before.text) === previous.hash) || before.text === desired.get(output.source).text ? 'update' : 'conflict';
+        // A directory link names the canonical directory; its SKILL.md carries the text.
+        action = (previous?.kind === 'file' && hash(before.text) === previous.hash) || before.text === desired.get(output.requires ?? output.source)?.text ? 'update' : 'conflict';
       } else action = 'conflict';
       nextFiles[relative] = { kind: 'symlink', target: output.target, hash: hash(output.target) };
     } else {
