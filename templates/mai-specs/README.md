@@ -17,3 +17,5 @@ Feature 初始化仅生成 BRIEF.md、context/_INDEX.md。后续 Skill 默认使
 Feature 默认规格档位记录在 BRIEF 的 Profile，常量位于已安装 my-create-feature 的 references/FEATURE_PROFILES.json，缺字段时用注册表 default（standard）。simple / standard 与阶段选择独立；目录始终 NNN-slug，两档位共用编号池。新 ROADMAP 五列：需求、标题、规格、优先级、说明；旧四列保持，目标行说明前记 `规格：simple；` 或 `规格：standard；`。类型改变不重命名，索引待同步按 BRIEF 恢复。
 
 新 simple PRD/技术方案先用项目 `_templates/simple/PRD.tmpl.md` / `TECH_DESIGN.tmpl.md`，没有时用所属 Skill 的 assets/templates/ 简版模板；显式指定优先，坏覆盖不绕过。已有文档增量保留，单产物覆盖不改 Feature 默认值。两档位共用 artifact 路径。无 PRD 时设计登记充分需求与 AC，后续使用该有效源；后补 PRD 保留 AC ID 并同步引用。
+
+从 OpenSpec 迁入的需求和差量要求位于 Feature 的 `spec/PRD.md`，设计和任务位于 `design/TECH_DESIGN.md`。现行规格在 `specs/`，历史资料和来源索引在 `history/INDEX.md`。后续阶段按各 Feature BRIEF 中的链接继续。

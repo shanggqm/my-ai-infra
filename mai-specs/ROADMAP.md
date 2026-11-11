@@ -4,6 +4,7 @@
 
 | 需求 | 标题 | 优先级 | 说明 |
 |---|---|---|---|
+| 991 | [存量 OpenSpec 项目迁移](991-openspec-migration/BRIEF.md) | P1 | 规格：standard；支持存量项目从 OpenSpec 导入在途变更并接续开发，或整体切换到 my-ai-infra。 |
 
 ## 进行中
 

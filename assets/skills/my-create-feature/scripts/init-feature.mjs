@@ -3,140 +3,21 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { loadLayout, validateFeature } from './validate-feature.mjs';
+import {
+  acquireWorkspaceLock, allocateFeatureId, checkProfileTemplate, conflict, featureProfile, render,
+  roadmapWithRow, stat, table, templateRoot, templates, text,
+} from './feature-workspace.mjs';
 
-const templateRoot = fileURLToPath(new URL('../template/', import.meta.url));
-const profilesFile = fileURLToPath(new URL('../references/FEATURE_PROFILES.json', import.meta.url));
 const exec = promisify(execFile);
 const fields = new Set(['project', 'slug', 'title', 'summary', 'background', 'modules', 'priority', 'owner', 'target-date', 'context', 'profile']);
-const conflict = message => Object.assign(Error(message), { exitCode: 2 });
-const table = value => value.replaceAll('\\', '\\\\').replaceAll('|', '\\|').replace(/\r?\n/g, '<br>');
 async function defaultOwner(project) {
   try {
     const { stdout } = await exec('git', ['config', '--get', 'user.name'], { cwd: project, timeout: 5000 });
     return stdout.trim() || '待填';
   } catch { return '待填'; }
 }
-async function stat(io, filename) {
-  try { return await io.lstat(filename); } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
-}
-async function text(io, filename) {
-  const info = await stat(io, filename);
-  if (!info) return null;
-  if (info.isSymbolicLink() || !info.isFile()) throw conflict(`Expected an ordinary file: ${filename}`);
-  const bytes = await io.readFile(filename);
-  const value = bytes.toString('utf8');
-  if (!Buffer.from(value).equals(bytes)) throw Error(`Expected UTF-8 text: ${filename}`);
-  return value;
-}
-async function templates(io, dir, prefix = '') {
-  const result = [];
-  for (const entry of await io.readdir(path.join(dir, prefix), { withFileTypes: true })) {
-    const relative = path.join(prefix, entry.name);
-    if (entry.isSymbolicLink()) throw Error(`Template symlink is unsupported: ${relative}`);
-    if (entry.isDirectory()) result.push(...await templates(io, dir, relative));
-    else if (entry.isFile() && entry.name !== '.gitkeep') result.push([relative, await text(io, path.join(dir, relative))]);
-    else if (entry.isFile()) continue; // Older installed templates may retain empty-directory placeholders.
-    else throw Error(`Unsupported template entry: ${relative}`);
-  }
-  return result;
-}
-function render(source, values) {
-  return source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key) => {
-    if (!Object.hasOwn(values, key)) throw Error(`Unknown template placeholder: ${key}`);
-    return values[key];
-  });
-}
-async function featureProfile(io, requested) {
-  const source = await text(io, profilesFile);
-  if (source === null) throw Error(`Missing Profile registry: ${profilesFile}`);
-  let registry;
-  try { registry = JSON.parse(source); } catch { throw Error(`Invalid Profile registry JSON: ${profilesFile}`); }
-  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-  if (!object(registry) || Object.keys(registry).sort().join(',') !== 'default,profiles'
-    || !object(registry.profiles) || !Object.keys(registry.profiles).length
-    || Object.entries(registry.profiles).some(([key, value]) => !/^[a-z][a-z0-9-]*$/.test(key)
-      || !object(value) || Object.keys(value).join(',') !== 'label'
-      || typeof value.label !== 'string' || !value.label.trim())
-    || typeof registry.default !== 'string' || !Object.hasOwn(registry.profiles, registry.default)) {
-    throw Error(`Invalid Profile registry structure: ${profilesFile}`);
-  }
-  const profile = requested ?? registry.default;
-  if (!Object.hasOwn(registry.profiles, profile)) throw Error(`Unknown profile: ${profile}; expected ${Object.keys(registry.profiles).join(', ')}`);
-  return { profile, defaultProfile: registry.default };
-}
-function metadataText(source) {
-  let comment = false, fence = null;
-  return source.split(/\r?\n/).map(line => {
-    if (fence) {
-      const closing = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
-      if (closing && closing[1][0] === fence[0] && closing[1].length >= fence.length) fence = null;
-      return '';
-    }
-    // Code samples may contain comment delimiters; do not let them hide real metadata.
-    if (!comment && (/^(?: {4}|\t)/.test(line) || /^ {0,3}(`{3,}|~{3,})/.test(line))) {
-      fence = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1] ?? null;
-      return '';
-    }
-    let visible = '', rest = line;
-    while (rest) {
-      const marker = rest.indexOf(comment ? '-->' : '<!--');
-      const code = !comment && rest.match(/(`+)(?!`)(.*?)\1(?!`)/);
-      if (code && (marker < 0 || code.index < marker)) {
-        visible += rest.slice(0, code.index + code[0].length);
-        rest = rest.slice(code.index + code[0].length);
-        continue;
-      }
-      if (marker < 0) { if (!comment) visible += rest; break; }
-      if (!comment) visible += rest.slice(0, marker);
-      rest = rest.slice(marker + (comment ? 3 : 4));
-      comment = !comment;
-    }
-    fence = visible.match(/^ {0,3}(`{3,}|~{3,})/)?.[1] ?? null;
-    return fence ? '' : visible;
-  }).join('\n');
-}
-function checkProfileTemplate(source, profile, defaultProfile, allowLegacy = true) {
-  const visible = metadataText(source);
-  const rows = [...visible.matchAll(/^ {0,3}\|[ \t]*Profile[ \t]*\|([^\r\n]*)$/gm)];
-  if (allowLegacy && !rows.length && profile === 'standard' && profile === defaultProfile && !visible.includes('{{PROFILE}}')) return false; // Legacy standard template.
-  const tables = [...visible.matchAll(/(?:^ {0,3}\|[^\n]*(?:\n|$))+/gm)].map(match => match[0].replace(/\n$/, '').split('\n'));
-  const metadata = tables.filter(lines => /^ {0,3}\|(?:[ \t]*:?-+:?[ \t]*\|){2}[ \t]*$/.test(lines[1] || '')
-    && lines.slice(2).some(line => /^ {0,3}\|[ \t]*Phase[ \t]*\|/.test(line)));
-  if (rows.length !== 1 || !/^\s*(?:\{\{PROFILE\}\}|[a-z][a-z0-9-]*)\s*\|\s*$/.test(rows[0][1])
-    || metadata.length !== 1 || !metadata[0].slice(2).includes(rows[0][0])
-    || rows[0][1].trim().replace(/\s*\|$/, '').replace('{{PROFILE}}', profile) !== profile) {
-    throw Error('BRIEF template must record the selected Profile; update the installed Skill template');
-  }
-  return true;
-}
-function roadmapWithRow(source, fields) {
-  const row = count => `| ${fields.id} | [${table(fields.title).replaceAll('[', '\\[').replaceAll(']', '\\]')}](${fields.name}/BRIEF.md) | ${count === 5 ? fields.profile + ' | ' : ''}${fields.priority} | ${count === 4 ? '规格：' + fields.profile + '；' : ''}${table(fields.summary)} |`;
-  const cr = source.includes('\r\n') ? '\r' : '';
-  const lines = source.split('\n');
-  const headings = lines.flatMap((line, i) => /^##\s+规划中\s*$/.test(line) ? [i] : []);
-  if (headings.length > 1) throw conflict('ROADMAP contains multiple 规划中 sections; choose the intended index layout first');
-  if (!headings.length) {
-    const separator = source.endsWith('\n') ? '' : cr + '\n';
-    return source + separator + cr + '\n## 规划中' + cr + '\n' + cr + '\n| 需求 | 标题 | 规格 | 优先级 | 说明 |' + cr + '\n|---|---|---|---|---|' + cr + '\n' + row(5) + cr + '\n';
-  }
-  const start = headings[0] + 1;
-  let end = lines.findIndex((line, i) => i >= start && /^##\s/.test(line));
-  if (end < 0) end = lines.length;
-  const header = lines.findIndex((line, i) => i >= start && i < end && /^\s*\|/.test(line));
-  const columns = header < 0 ? [] : lines[header].trim().split('|').slice(1, -1).map(s => s.trim());
-  if (!['需求,标题,优先级,说明', '需求,标题,规格,优先级,说明'].includes(columns.join(','))
-    || !new RegExp(`^\\s*\\|(?:\\s*:?-+:?\\s*\\|){${columns.length}}\\s*$`).test(lines[header + 1] || '')) {
-    throw conflict('ROADMAP 规划中 table must have columns 需求、标题、[规格、]优先级、说明; preserve the file and ask the user how to adapt it');
-  }
-  let insertion = header + 2;
-  while (insertion < end && /^\s*\|/.test(lines[insertion])) insertion++;
-  if (lines.slice(insertion, end).some(line => /^\s*\|/.test(line))) throw conflict('ROADMAP 规划中 contains ambiguous tables; preserve the file before adapting it');
-  lines.splice(insertion, 0, row(columns.length) + cr);
-  return lines.join('\n');
-}
-
 async function prepareContext(io, filename) {
   if (!filename) return { files: [], rows: '', findings: '', questions: '' };
   const body = await text(io, filename);
@@ -167,6 +48,8 @@ async function prepareContext(io, filename) {
   }
   return { files, rows: rows.join('\n'), findings, questions };
 }
+
+export { allocateFeatureId, roadmapWithRow };
 
 export async function initializeFeature(input, { io = fs, checkOnly = false } = {}) {
   if (!input || Object.keys(input).some(key => !fields.has(key))) throw Error('Unknown initialization option');
@@ -202,7 +85,7 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
     if (layout.initialFiles.some(name => path.posix.basename(name).toLowerCase() === path.basename(relative).toLowerCase())) throw conflict(`Material filename conflicts with an initial file: ${relative}; resolve the input list first`);
   }
 
-  let specsCreated = false, lockHeld = false, target = null;
+  let specsCreated = false, lockHeld = null, target = null;
   const written = [], directories = [];
   const lock = path.join(specsRoot, '.feature-init.lock');
   const roadmapTemp = path.join(lock, 'ROADMAP.md');
@@ -223,46 +106,12 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
       catch (error) { if (error.code !== 'EEXIST') throw error; }
       const info = await stat(io, specsRoot);
       if (!info?.isDirectory() || info.isSymbolicLink()) throw conflict('mai-specs must be an ordinary directory');
-      try { await io.mkdir(lock); lockHeld = true; }
-      catch (error) { if (error.code === 'EEXIST') throw conflict(`Another initializer holds ${lock}; wait, or check for an interrupted run before removing its lock`); throw error; }
+      lockHeld = await acquireWorkspaceLock(project, { io });
     }
 
     const oldRoadmap = await text(io, roadmapPath);
     const names = await stat(io, specsRoot) ? await io.readdir(specsRoot) : [];
-    const seen = new Set(), slugs = new Map(), usedNumbers = new Set();
-    let lowest = 1000;
-    function reserve(digits, slug) {
-      if (!/^\d{3}$/.test(digits)) throw conflict(`Invalid Feature number: ${digits}; expected 000–999`);
-      const number = Number(digits);
-      usedNumbers.add(number);
-      lowest = Math.min(lowest, number);
-      if (slug !== undefined) {
-        if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(slug) || slug.length > 64) throw conflict(`Invalid existing Feature slug: ${slug}`);
-        if (slugs.has(digits) && slugs.get(digits) !== slug) throw conflict(`Multiple Features use ${digits}; resolve the numbering first`);
-        slugs.set(digits, slug);
-        if (slug === input.slug) throw conflict(`Feature slug already exists: ${digits}-${slug}; choose a different slug or work in the existing Feature`);
-      }
-    }
-    if (names.some(name => /^Feature-\d+(?:-|$)/.test(name)) || /\bFeature-\d+\b/.test(oldRoadmap || '')) {
-      throw conflict('Legacy Feature- numbering exists in mai-specs or ROADMAP; ask the user how to migrate or continue the old convention before creating a descending-number Feature');
-    }
-    for (const name of names) {
-      const match = name.match(/^(\d+)(?:-(.+))?$/);
-      if (!match) continue;
-      if (!match[2]) throw conflict(`Invalid Feature directory: ${name}; expected NNN-slug`);
-      reserve(match[1], match[2]);
-      if (seen.has(match[1])) throw conflict(`Multiple entries use ${match[1]}; resolve the numbering first`);
-      seen.add(match[1]);
-    }
-    // Read numeric IDs only from index cells and Feature links, not dates or prose.
-    for (const match of (oldRoadmap || '').matchAll(/^\s*\|\s*(\d+)\s*\|/gm)) reserve(match[1]);
-    for (const match of (oldRoadmap || '').matchAll(/(?:^|[(/])(\d+)-([^/\s()]+)\/BRIEF\.md\b/gm)) {
-      reserve(match[1], match[2]);
-    }
-    if (usedNumbers.size === 1000) throw conflict('All Feature numbers 999–000 are in use; preserve existing Features and ask the user how to free or extend the numbering space');
-    let next = (lowest + 999) % 1000;
-    while (usedNumbers.has(next)) next = (next + 999) % 1000;
-    const id = String(next).padStart(3, '0');
+    const id = allocateFeatureId(names, oldRoadmap, slug);
     const name = `${id}-${slug}`;
     target = path.join(specsRoot, name);
     if (await stat(io, target)) throw conflict(`Target already exists: ${target}`);
@@ -322,7 +171,7 @@ export async function initializeFeature(input, { io = fs, checkOnly = false } = 
     }
     throw error;
   } finally {
-    if (lockHeld) { await io.rm(roadmapTemp, { force: true }); await io.rmdir(lock); }
+    if (lockHeld) { await io.rm(roadmapTemp, { force: true }); await lockHeld.release(); }
     if (specsCreated) { try { await io.rmdir(specsRoot); } catch { /* retain created Feature or external content */ } }
   }
 }

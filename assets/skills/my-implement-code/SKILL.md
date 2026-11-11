@@ -15,7 +15,7 @@ metadata:
 
 ## 阶段契约
 
-先读取本作用域的[共享阶段契约](../my-create-feature/references/stage-contracts.md)，核对有效需求来源、Profile、模板、产物路径和授权。一次调用只完成本阶段，返回实际产物、证据与缺口；后续调用、修复复评和全局 Phase / ROADMAP 由 编排 Skill 或主编排者安排。连续授权内主编排者继续推进，独立调用保持边界。
+先读取本作用域的[共享阶段契约](../my-create-feature/references/stage-contracts.md)，核对有效需求来源、Profile、模板、产物路径和授权。一次调用只完成本阶段，返回实际产物、证据与缺口；后续调用、修复复评和全局 Phase / ROADMAP 由 编排 Skill 或主编排者安排。连续授权内主编排者继续推进，独立调用保持边界。导入的 Feature 按 BRIEF 链接读取已对齐的 `spec/PRD.md` 和 `design/TECH_DESIGN.md`。
 
 ## 前置条件
 

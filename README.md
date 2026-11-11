@@ -93,7 +93,7 @@ mai catalog
 
 [GitHub 源码仓库](https://github.com/shanggqm/my-ai-infra) · [问题反馈](https://github.com/shanggqm/my-ai-infra/issues)（公开源码仓库）
 
-- [使用指南](docs/usage.md)：配置、同步、升级与恢复。
+- [使用指南](docs/usage.md)：配置、同步、升级、恢复与 OpenSpec 迁移。
 - [资产管理](assets/README.md)：统一维护 Skill、Agent 与扩展能力。
 - [个人记忆](docs/memory.md)：积累开发偏好，管理跨项目与项目内的长期记忆。
 - [开发与发布](docs/releasing.md) · [故障排查](docs/troubleshooting.md) · [版本记录](CHANGELOG.md)

@@ -115,3 +115,12 @@ W-01：保留旧项目模板的 PRD 字段及批注，在无 PRD 场景分别执
 | 文件已准确精简，再次调用 | 允许无变更；不新增无意义章节、模型行为补丁或推荐清单 |
 
 验收同时记录内容依据、差异、改动范围、询问次数及理由、实际检查与未验证项。膨胀场景比较新增需求前后的根文件，检查每个引用的触发条件、稳定性及增量价值；不以关键词出现或篇幅更短代替行为评测。
+
+## OpenSpec 迁移接续（Feature 991）
+
+适用资产：`my-create-prd`、`my-create-design`、`my-implement-code`、`my-create-test-plan`、`my-review-design`、`my-review-code`。以下场景待宿主执行，装配测试和迁移命令测试不能代替。
+
+| 场景 | 预期行为 |
+|---|---|
+| 导入后的 Feature 已把提案、差量要求、设计和任务对齐到 `spec/PRD.md` 与 `design/TECH_DESIGN.md` | 后续阶段按这些路径读取，保留任务勾选；不把 OpenSpec 目录原样放进 `context/` |
+| 整仓切换后继续一个已导入 Feature | 以 `mai-specs/specs/` 为现行规格，历史只从 `mai-specs/history/INDEX.md` 解释当时决策 |
