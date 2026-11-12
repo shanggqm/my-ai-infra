@@ -24,8 +24,8 @@
 
 | 命令或场景 | 结果 |
 |---|---|
-| `npm run verify` | 通过。320 项测试，0 失败，其中迁移 29 个用例、工作区一致性 10 个用例 |
-| `npm run release:check` | 由需求负责人在最终代码上执行，结果无问题。安装包 `dist/easyuseai-my-ai-infra-0.0.14.tgz`，报告 `dist/release-report.json` |
+| `npm run verify` | 通过。变基到 0.0.15 主线后 320 项测试，0 失败，16 个 Skill；其中迁移 29 个用例、工作区一致性 10 个用例 |
+| `npm run release:check` | 通过。需求负责人在 0.0.14 基线的最终代码上执行过一次；分支随后变基到 0.0.15 主线（`fd83050`），在变基后的代码上再执行，退出码 0。安装包 `dist/easyuseai-my-ai-infra-0.0.15.tgz`，报告 `dist/release-report.json` |
 | `npm run test:web` | 本轮未运行。早先通过；`src/project.mjs` 已还原为 0.0.14，Web 写入路径未改 |
 | Cursor 宿主续接 | 通过。从迁入 Feature 的 2.1 接续，对照代码确认 1.1、1.2，完成实现并更新任务。该次同时改了 OpenSpec 源，触发整仓切换阻塞，已用只读说明与可操作提示处理 |
 | Claude Code 宿主续接 | 通过。重建隔离项目并整仓切换后，从 997 的 2.1 接续，勾选只写 MAI 一侧，未改 `openspec/`，`npm test` 6 项通过；之后再预览整仓切换，复用 4 个 Feature，无阻塞、无写入 |
