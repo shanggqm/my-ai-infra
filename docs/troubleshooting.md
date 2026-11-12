@@ -23,6 +23,10 @@
 | Personal Skill conflicts with builtin | 未知来源同名目录受到保护；先保留原文并改名，再重试。不能通过修改 origin 绕过保护。 |
 | upgrade 提示 skillMigrations | 旧内置副本已原样备份；按返回的 backup 路径检查正文及附件，改名后导入所需个人能力。 |
 | Git worktree 辅助不可用 | 确认 Git、Bash、已提交的 HEAD、分支和目录状态；它不会自动安装依赖或共享 .env。 |
+| 项目内容自预览后已变化，未执行迁移 | 重新执行对应的 `--dry-run`，使用新的 revision 提交。不要复用旧哈希。 |
+| 存在未完成的迁移事务 | 先 `mai migrate recover --dry-run`。已退出的事务再用预览给出的 revision 恢复；仍有活动拥有者时等待，不删除 `mai-specs/.feature-init.lock` 或 `mai-specs/.mai-migration/pending/`。 |
+| 不能再从 OpenSpec 增量导入 | `--all` 已经把现行规格交给 MAI。后续变更直接在 MAI 工作区维护，不再使用 `--change`、`--changes` 或 `--active`。 |
+| 迁移拒绝软链接或特殊文件 | 把 `openspec/` 与目标路径换成项目内普通文件后再预览。命令不跟随链接，也不改链接目标。 |
 
 ## 报告问题
 

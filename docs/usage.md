@@ -28,8 +28,10 @@ Esc、关闭按钮和遮罩可关闭预览，返回配置继续调整；正在�
 | `asset import PATH` | 导入文本 Skill 包 | `--home` |
 | `asset edit NAME` | 修改正文并备份 | `--file`、`--home` |
 | `web` | 启动本地配置器 | `--project`、`--port`、`--home` |
+| `migrate openspec` | 预览或提交 OpenSpec 迁移 | `--change`、`--changes`、`--active`、`--all`、`--dry-run`、`--revision` |
+| `migrate recover` | 预览或提交中断迁移的恢复 | `--dry-run`、`--revision` |
 
-所有命令支持 `--home`；`--help` / `-h` 查看帮助，`--version` / `-v` 查看版本。无效参数和额外位置参数会报错。返回 `0` 表示成功，`1` 表示错误或 doctor 发现未初始化/安装漂移；项目内容冲突和 Feature 初始化附属脚本的冲突返回 `2`；报错包含路径、原因及只读 plan 的处理指引。
+`init`、`plan`、`sync`、`doctor`、`config`、`catalog`、`defaults`、`setup`、`upgrade`、`asset` 和 `web` 支持 `--home`。`--help` / `-h` 查看帮助，`--version` / `-v` 查看版本。无效参数和额外位置参数会报错。返回 `0` 表示成功或迁移无操作，`1` 表示参数错误、意外错误或 doctor 发现未初始化/安装漂移；项目内容冲突、迁移阻塞、过期 revision、待恢复和 Feature 初始化冲突返回 `2`。报错包含路径、原因及只读 plan 的处理指引。迁移和恢复只接受 `--project`、范围、`--dry-run` 与 `--revision`。
 
 路径含空格时加引号。项目目录必须已经存在；无 `--project` 时使用当前目录。个人库和目标项目必须分开，不能互相嵌套。
 
@@ -120,6 +122,47 @@ Web 升级后需重启进程。全局入口已经绑定个人 runtime；若需�
 my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，编号从 999 递减，低于 000 回到 999，并跳过现有目录与索引占用的编号。AI 无需计算编号，直接使用脚本返回的 ID 和路径。旧命名等冲突由脚本报告，不自动迁移或覆盖已有需求。
 
 脚本评测入口：node --test test/feature-init.test.mjs test/feature-layout.test.mjs，覆盖顺序编号、循环与占号、冲突保留、并发及错误恢复。
+
+## 从 OpenSpec 迁入
+
+在含有 `openspec/` 的项目目录执行 `mai migrate openspec`。命令先只读预览，再用本次预览末尾的 `revision` 提交。`--dry-run` 与 `--revision` 不能同时使用。`--change`、`--changes`、`--active`、`--all` 只能选一个。无 `--project` 时使用当前目录。
+
+| 范围 | 写入结果 |
+|---|---|
+| `--change ID` | 导入一个活动 change。OpenSpec 继续维护现行规格和 `openspec/changes/archive/`。 |
+| `--changes ID ID...` | 一次导入至少两个活动 change。空格或逗号都可以。任一项阻塞则整批不写。 |
+| `--active` | 导入当前全部活动 change，不包含 `archive/`。 |
+| `--all` | 活动 change 与已归档 change 都按 MAI 布局建立或复用 Feature；已归档 change 的 Phase 为 done。不复制现行规格目录或归档原文目录。 |
+
+```bash
+mai migrate openspec --help
+mai migrate openspec --change add-login --dry-run
+mai migrate openspec --changes add-login add-search --dry-run
+mai migrate openspec --changes add-login,add-search --dry-run
+mai migrate openspec --active --dry-run
+mai migrate openspec --all --dry-run
+mai migrate openspec --change add-login --revision HASH
+mai migrate recover --dry-run
+```
+
+预览 JSON 写到 stdout，`revision` 和可复制的提交命令放在结果末尾。终端还会给出摘要，最后一行是提交命令。输出被重定向时只保留 JSON。不可提交时不打印提交命令，并退出 2。空的 `--active` 或 `--changes` 报告无可迁移项并退出 0。找不到活动 change、同时选择两种范围、或提交过期 revision 时退出 2，且不写文件。
+
+每个活动 change 按 MAI 布局对齐，原 `openspec/` 保持只读：
+
+| OpenSpec 材料 | MAI 位置 |
+|---|---|
+| `proposal.md`，以及差量里的 Purpose、ADDED、MODIFIED、REMOVED、RENAMED 和场景 | `mai-specs/NNN-slug/spec/PRD.md` |
+| `design.md` 与 `tasks.md` | `mai-specs/NNN-slug/design/TECH_DESIGN.md` |
+| 其他附件 | `mai-specs/NNN-slug/context/`，并记入 `context/_INDEX.md` |
+| `.openspec.yaml`、`openspec/config.yaml` | 不写入 Feature |
+
+提案的 Why、What Changes、Capabilities、Impact，以及设计的 Context、Goals、Decisions、Risks、Migration Plan，分别进入 PRD 和技术方案的对应章节。任务勾选保持原样。BRIEF 登记三项接续入口：有效需求来源 `spec/PRD.md`、技术方案 `design/TECH_DESIGN.md`、当前任务。当前任务指向第一项未勾选任务；源任务变化并重新提交后，这一节会更新。后续阶段沿用现有 Skill，按 BRIEF 里的这些链接继续，不在阶段 Skill 中增加 OpenSpec 专用说明。提案列出的能力与 `specs/<能力>/spec.md` 不一致时，预览给出警告，仍可提交。
+
+`--all` 把活动 change 和已归档 change 都按上表对齐为 Feature。已归档 change 的 BRIEF Phase 为 `done`，登记在 ROADMAP 的已完成。仍在活动目录的 change 保持 `draft`，登记在规划中。迁移不创建 `mai-specs/specs/` 或 `mai-specs/history/`。差量只写入对应 Feature 的 PRD，不回放进 `openspec/specs/`。切换完成后，`--change`、`--changes`、`--active` 会退出 2；再次 `--all` 不改写已迁入的 Feature。
+
+Feature 编号从 999 递减，同一次提交内按 change ID 排序占用。实际目录以预览 JSON 的 `feature` 字段为准，例如 `mai-specs/997-add-login/`。重复导入复用原编号。源和已导入副本都有独立修改时，预览阻塞，需要先把受管副本调成一致。
+
+状态在 `mai-specs/.mai-migration/state.json`，应纳入版本库。同目录的 `.gitignore` 排除 `pending/`。工作区锁是 `mai-specs/.feature-init.lock`，只在写入期间存在。执行期间暂停编辑预览列出的文件。写入中断时先执行 `mai migrate recover --dry-run`；没有未完成事务时，它说明无须恢复。常见阻塞见 [故障排查](troubleshooting.md)。
 
 ## 单一内容源与已有项目兼容
 

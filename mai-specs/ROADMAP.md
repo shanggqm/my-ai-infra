@@ -9,6 +9,7 @@
 
 | 需求 | 标题 | 优先级 | 说明 |
 |---|---|---|---|
+| 990 | [存量 OpenSpec 项目迁移](990-openspec-migration/BRIEF.md) | P1 | 规格：standard；review，`mai migrate openspec` 把 OpenSpec 变更按 MAI 布局对齐；320 项自动化与安装包验收通过，Cursor、Claude Code 宿主续接通过；Codex 宿主与真实项目样本待验。 |
 | 991 | [接入 MiniMax Code 工具](991-minimax-code-adapter/BRIEF.md) | P1 | 规格：standard；按原生目录接入 Skill、规则、格式化 Hook 与用户级角色；实现与自动化验证完成，278 项测试及安装包验收通过；宿主真实发现待验。 |
 | 992 | [统一快捷指令为 Skill](992-prompt-skills/BRIEF.md) | P1 | 规格：simple；review，四个工作流已统一为 Skill；276 项自动化、8 组浏览器、安装包及 Codex/Claude 发现通过，模型行为回归待验。 |
 | 993 | [复用项目既有格式化规范的 Hook](993-project-format-hook/BRIEF.md) | P1 | 规格：standard；实现与自检完成，review；277 项自动化、7 组浏览器回归及安装包验收通过；真实宿主触发与独立代码评审待验。 |

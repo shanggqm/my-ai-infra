@@ -11,6 +11,9 @@ import { conflictPolicy } from './conflicts.mjs';
 import { agentCatalog } from './agents.mjs';
 import { bindMemoryProject, readMemory, recallMemory, saveMemory, putMemory, deleteMemory } from './memory.mjs';
 import { terminalUI } from './terminal.mjs';
+import { migrationHelp } from './migrations/openspec.mjs';
+import { planMigration, presentMigration, submitMigration } from './feature-migration.mjs';
+import { planRecovery, submitRecovery } from './feature-transaction.mjs';
 
 const HELP = `my-ai-infra · 个人 AI Coding / SDD 工具
 
@@ -34,6 +37,8 @@ mai memory recall --scene SCENE [--project PATH] [--query TEXT] [--budget 2400]
 mai memory put --file entry.md --revision HASH [--project PATH] [--scope project|global]
 mai memory save --file memory.md --revision HASH [--project PATH] [--scope project|global]
 mai memory delete ID --revision HASH [--project PATH] [--scope project|global]
+mai migrate openspec (--change ID | --changes ID ID... | --active | --all) (--dry-run | --revision HASH)
+mai migrate recover (--dry-run | --revision HASH)
 
 mai 与 my-ai-infra 共用全部命令和选项。
 --home PATH   指定个人资产库（或 MY_AI_INFRA_HOME）
@@ -54,11 +59,11 @@ function parse(args) {
     const arg = ({ '-h': '--help', '-v': '--version' })[args[i]] || args[i];
     if (!arg.startsWith('--')) { positionals.push(arg); continue; }
     const equal = arg.indexOf('='), name = arg.slice(2, equal < 0 ? undefined : equal);
-    if (['yes', 'dry-run', 'help', 'version'].includes(name)) {
+    if (['yes', 'dry-run', 'help', 'version', 'active', 'all'].includes(name)) {
       if (equal >= 0) throw Error(`Flag does not accept a value: --${name}`);
       options[name] = true; continue;
     }
-    if (!['project', 'tools', 'skills', 'port', 'home', 'file', 'conflict', 'type', 'scope', 'scene', 'query', 'budget', 'revision', 'project-id'].includes(name)) throw Error(`Unknown option: ${arg}`);
+    if (!['project', 'tools', 'skills', 'port', 'home', 'file', 'conflict', 'type', 'scope', 'scene', 'query', 'budget', 'revision', 'project-id', 'change', 'changes'].includes(name)) throw Error(`Unknown option: ${arg}`);
     if (equal >= 0) { if (!arg.slice(equal + 1)) throw Error(`Missing value for --${name}`); options[name] = arg.slice(equal + 1); continue; }
     if (!args[i + 1] || args[i + 1].startsWith('--')) throw Error(`Missing value for ${arg}`);
     options[name] = args[++i];
@@ -80,9 +85,56 @@ async function preferences(base, options, interactive) {
   if (options.skills) result.skills = csv(options.skills);
   return result;
 }
+function once(args) {
+  const seen = new Set();
+  for (const arg of args) {
+    const name = arg.split('=')[0];
+    if (!name.startsWith('--')) continue;
+    if (seen.has(name)) throw Error(`Duplicate option: ${name}`);
+    seen.add(name);
+  }
+}
+function emit(payload, plan, completion) {
+  const { revision, submit, ...rest } = payload;
+  console.log(json({ ...rest, revision, submit, ...(completion ? { completion } : {}) }));
+  if (process.stderr.isTTY) for (const message of plan.messages || []) console.error(message);
+  if (completion && process.stderr.isTTY) console.error(completion);
+  const empty = (plan.messages || []).some(message => message === '无可迁移项' || message.includes('无须恢复'));
+  if (!plan.canApply && !empty) process.exitCode = 2;
+}
+async function workspaceCommand(command, positionals, options, args) {
+  once(args);
+  for (const key of Object.keys(options)) if (['home', 'yes', 'conflict', 'tools', 'skills'].includes(key)) throw Error(`Option --${key} is not supported by ${command}`);
+  const project = options.project || process.cwd();
+  if (options.help && positionals[1] === 'openspec') { console.log(migrationHelp('openspec')); return; }
+  if (options.help && positionals[1] === 'recover') { console.log('mai migrate recover (--dry-run | --revision HASH) [--project PATH]\n无事务时说明无须恢复。缺少 --dry-run 和 --revision 时只显示用法。'); return; }
+  if (options.help || positionals.length < 2) { console.log(migrationHelp(positionals[1])); if (!options.help) process.exitCode = 1; return; }
+  if (!options.help && command === 'migrate' && typeof options.changes === 'string' && positionals.length > 2) {
+    options.changes = [options.changes, ...positionals.splice(2)].join(',');
+  }
+  if (positionals.length !== 2) throw Error('迁移命令只接受一个来源。使用 mai migrate --help');
+  if (positionals[1] === 'recover') {
+    if (!options['dry-run'] && !options.revision) throw Error('恢复需要 --dry-run 或本次预览的 --revision');
+    if (options['dry-run'] && options.revision) throw Error('--dry-run 与 --revision 不能同时使用');
+    const root = await fs.realpath(project);
+    const plan = await planRecovery(root);
+    if (options['dry-run']) { emit(plan, plan); return; }
+    emit(await submitRecovery(root, options.revision), plan);
+    return;
+  }
+  if (positionals[1] !== 'openspec') { console.log(migrationHelp(positionals[1])); process.exitCode = 1; return; }
+  if (!options['dry-run'] && !options.revision) throw Error('迁移需要 --dry-run 或本次预览的 --revision');
+  if (options['dry-run'] && options.revision) throw Error('--dry-run 与 --revision 不能同时使用');
+  const request = { ...options, project: options.project };
+  const plan = await planMigration(project, request);
+  if (options['dry-run']) { emit(presentMigration(plan), plan); return; }
+  const result = await submitMigration(project, request, options.revision);
+  emit(presentMigration(result), result, result.applied ? result.completion : null);
+}
 export async function main(args = process.argv.slice(2)) {
   const { positionals, options } = parse(args);
   const [command = 'help', sub, name] = positionals;
+  if (command === 'migrate') return workspaceCommand(command, positionals, options, args);
   if (options.help) { console.log(HELP); return; }
   if (command === 'version' || options.version) { console.log((await readJSON(PACKAGE, 'package.json')).version); return; }
   if (command === 'help') { console.log(HELP); return; }
