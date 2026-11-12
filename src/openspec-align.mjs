@@ -1,15 +1,17 @@
 import path from 'node:path';
 import { parseDelta } from './spec-delta.mjs';
 
-const layoutTargets = {
-  proposal: 'spec/PRD.md',
-  design: 'design/TECH_DESIGN.md',
+// 缺少项目布局契约时沿用随包默认路径；调用方传入项目 FEATURE_LAYOUT.json 登记的 prd 与 design 路径。
+export const defaultTargets = { proposal: 'spec/PRD.md', design: 'design/TECH_DESIGN.md' };
+const link = (from, to) => {
+  const relative = path.posix.relative(path.posix.dirname(from), to);
+  return encodeURI(relative.startsWith('.') ? relative : `./${relative}`);
 };
 
-export function alignChange({ id, featureName, profile, sourcePath, files }) {
+export function alignChange({ id, featureName, profile, sourcePath, files, targets = defaultTargets }) {
   const inputs = files.map(file => ({ ...file, relative: file.relative.split(path.sep).join('/') }));
   const byRelative = new Map(inputs.map(file => [file.relative, file]));
-  const classified = inputs.map(file => ({ ...file, targetRel: targetFor(file.relative) }));
+  const classified = inputs.map(file => ({ ...file, targetRel: targetFor(file.relative, targets) }));
   const byProject = new Map(classified.filter(file => file.targetRel).map(file => [`${sourcePath}/${file.relative}`, file.targetRel]));
   const textOf = relative => {
     const file = byRelative.get(relative);
@@ -20,21 +22,19 @@ export function alignChange({ id, featureName, profile, sourcePath, files }) {
   const design = textOf('design.md');
   const tasks = textOf('tasks.md');
   const deltas = classified.filter(file => file.relative.startsWith('specs/') && file.relative.endsWith('/spec.md')).sort((a, b) => a.relative.localeCompare(b.relative));
-  const prd = renderPrd({ id, featureName, profile, sourcePath, proposal, deltas, tasks, design, byProject });
-  const tech = renderDesign({ id, featureName, profile, sourcePath, proposal: Boolean(proposal), design, tasks });
+  const prd = renderPrd({ id, featureName, profile, sourcePath, proposal, deltas, tasks, design, byProject, targets });
+  const tech = renderDesign({ id, featureName, profile, sourcePath, proposal: Boolean(proposal), design, tasks, targets });
   const outputs = new Map();
-  outputs.set(layoutTargets.proposal, Buffer.from(prd));
-  outputs.set(layoutTargets.design, Buffer.from(tech));
+  outputs.set(targets.proposal, Buffer.from(prd));
+  outputs.set(targets.design, Buffer.from(tech));
   for (const file of classified) {
-    if (!file.targetRel || file.targetRel === layoutTargets.proposal || file.targetRel === layoutTargets.design) continue;
+    if (!file.targetRel || file.targetRel === targets.proposal || file.targetRel === targets.design) continue;
     const rewritten = file.bytes.includes(0) ? file.bytes : Buffer.from(rewriteMarkdown(file.bytes.toString('utf8'), `${sourcePath}/${file.relative}`, file.targetRel, sourcePath, featureName, byProject));
     outputs.set(file.targetRel, rewritten);
   }
   const bytesFor = relative => {
-    const target = targetFor(relative);
-    if (!target) return null;
-    if (relative === 'proposal.md' || relative === 'tasks.md' || relative === 'design.md') return outputs.get(target);
-    return outputs.get(target);
+    const target = targetFor(relative, targets);
+    return target ? outputs.get(target) : null;
   };
   return {
     entries: classified.map(file => ({ sourceRel: file.relative, targetRel: file.targetRel, bytes: bytesFor(file.relative) })),
@@ -45,15 +45,16 @@ export function alignChange({ id, featureName, profile, sourcePath, files }) {
   };
 }
 
-function targetFor(relative) {
-  if (relative === 'proposal.md') return layoutTargets.proposal;
-  if (relative === 'design.md' || relative === 'tasks.md') return layoutTargets.design;
+export function targetFor(relative, targets = defaultTargets) {
+  if (relative === 'proposal.md') return targets.proposal;
+  if (relative === 'design.md' || relative === 'tasks.md') return targets.design;
   if (relative === '.openspec.yaml') return null;
-  if (relative.startsWith('specs/') && relative.endsWith('/spec.md')) return layoutTargets.proposal;
+  if (relative.startsWith('specs/') && relative.endsWith('/spec.md')) return targets.proposal;
   return `context/${relative}`;
 }
 
-function renderPrd({ id, featureName, profile, sourcePath, proposal, deltas, tasks, design, byProject }) {
+function renderPrd({ id, featureName, profile, sourcePath, proposal, deltas, tasks, design, byProject, targets }) {
+  const back = link(targets.proposal, 'BRIEF.md');
   const parsed = proposalSections(proposal);
   const exclude = parsed.exclude || nonGoals(design);
   const requirements = deltaRequirements(deltas, sourcePath, featureName, byProject);
@@ -69,7 +70,7 @@ function renderPrd({ id, featureName, profile, sourcePath, proposal, deltas, tas
 > Feature：${featureName} | Profile：simple | 状态：草案
 > 需求来源：\`${sourcePath}/proposal.md\` | 模板来源：MAI simple
 
-[返回需求简报](../BRIEF.md)
+[返回需求简报](${back})
 
 ## 目标与范围
 
@@ -98,7 +99,7 @@ ${pending.length ? `## 待决定事项\n\n${pending.map(item => `- ${item}`).joi
 
 > 状态：草案 | 负责人：待填
 
-[返回需求简报](../BRIEF.md)
+[返回需求简报](${back})
 
 本文由 \`${sourcePath}\` 的提案和差量对齐到 MAI PRD。来源没有表达的章节已省略。
 
@@ -130,8 +131,9 @@ ${pending.length ? pending.map(item => `| ${cell(item)} | \`${sourcePath}\` | �
 `;
 }
 
-function renderDesign({ id, featureName, profile, sourcePath, proposal, design, tasks }) {
-  const source = proposal ? '[PRD](../spec/PRD.md)' : `\`${sourcePath}\``;
+function renderDesign({ id, featureName, profile, sourcePath, proposal, design, tasks, targets }) {
+  const back = link(targets.design, 'BRIEF.md');
+  const source = proposal ? `[PRD](${link(targets.design, targets.proposal)})` : `\`${sourcePath}\``;
   const taskBody = tasks?.trim() || '来源没有 tasks.md，当前不可接续。';
   const parts = designParts(design);
   const designBody = [parts.context, parts.goals, parts.rest].filter(Boolean).join('\n\n') || '来源没有 design.md。技术方案只登记已有任务，不补写未提供的设计。';
@@ -141,7 +143,7 @@ function renderDesign({ id, featureName, profile, sourcePath, proposal, design, 
 > Feature：${featureName} | Profile：simple | 状态：草案 | 代码基线：待核对
 > 需求来源：${source} | 模板来源：MAI simple
 
-[返回需求简报](../BRIEF.md)
+[返回需求简报](${back})
 
 ## 需求依据与验收
 
@@ -162,7 +164,7 @@ ${taskBody}
 
 > Feature：${featureName} | 有效需求来源：${source} | Profile：${profile || 'standard'} | 模板：MAI standard | 代码基线：待核对 | 状态：草案
 
-[返回需求简报](../BRIEF.md)
+[返回需求简报](${back})
 
 ## 需求依据与验收
 

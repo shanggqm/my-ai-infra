@@ -132,7 +132,7 @@ my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，�
 | `--change ID` | 导入一个活动 change。OpenSpec 继续维护现行规格和 `openspec/changes/archive/`。 |
 | `--changes ID ID...` | 一次导入至少两个活动 change。空格或逗号都可以。任一项阻塞则整批不写。 |
 | `--active` | 导入当前全部活动 change，不包含 `archive/`。 |
-| `--all` | 复制现行规格和归档原文。活动 change 与已归档 change 都按 MAI 布局建立或复用 Feature；已归档 change 的 Phase 为 done。 |
+| `--all` | 活动 change 与已归档 change 都按 MAI 布局建立或复用 Feature；已归档 change 的 Phase 为 done。不复制现行规格目录或归档原文目录。 |
 
 ```bash
 mai migrate openspec --help
@@ -156,9 +156,9 @@ mai migrate recover --dry-run
 | 其他附件 | `mai-specs/NNN-slug/context/`，并记入 `context/_INDEX.md` |
 | `.openspec.yaml`、`openspec/config.yaml` | 不写入 Feature |
 
-提案的 Why、What Changes、Capabilities、Impact，以及设计的 Context、Goals、Decisions、Risks、Migration Plan，分别进入 PRD 和技术方案的对应章节。任务勾选保持原样。BRIEF 的当前任务指向第一项未勾选任务；源任务变化并重新提交后，这一节会更新。提案列出的能力与 `specs/<能力>/spec.md` 不一致时，预览给出警告，仍可提交。
+提案的 Why、What Changes、Capabilities、Impact，以及设计的 Context、Goals、Decisions、Risks、Migration Plan，分别进入 PRD 和技术方案的对应章节。任务勾选保持原样。BRIEF 登记三项接续入口：有效需求来源 `spec/PRD.md`、技术方案 `design/TECH_DESIGN.md`、当前任务。当前任务指向第一项未勾选任务；源任务变化并重新提交后，这一节会更新。后续阶段沿用现有 Skill，按 BRIEF 里的这些链接继续，不在阶段 Skill 中增加 OpenSpec 专用说明。提案列出的能力与 `specs/<能力>/spec.md` 不一致时，预览给出警告，仍可提交。
 
-`--all` 把 `openspec/specs/` 按原路径和原文字节复制到 `mai-specs/specs/`，把 `openspec/changes/archive/` 复制到 `mai-specs/history/openspec/`，并写入 `mai-specs/history/INDEX.md`。`history/` 保留归档原文，供人工阅读。每个已归档 change 同时按上表对齐为 Feature：BRIEF 的 Phase 为 `done`，登记在 ROADMAP 的已完成。仍在活动目录的 change 保持 `draft`，登记在规划中。活动差量和历史差量都不回放进现行规格。切换完成后，`--change`、`--changes`、`--active` 会退出 2；再次 `--all` 不覆盖已复制的规格。
+`--all` 把活动 change 和已归档 change 都按上表对齐为 Feature。已归档 change 的 BRIEF Phase 为 `done`，登记在 ROADMAP 的已完成。仍在活动目录的 change 保持 `draft`，登记在规划中。迁移不创建 `mai-specs/specs/` 或 `mai-specs/history/`。差量只写入对应 Feature 的 PRD，不回放进 `openspec/specs/`。切换完成后，`--change`、`--changes`、`--active` 会退出 2；再次 `--all` 不改写已迁入的 Feature。
 
 Feature 编号从 999 递减，同一次提交内按 change ID 排序占用。实际目录以预览 JSON 的 `feature` 字段为准，例如 `mai-specs/997-add-login/`。重复导入复用原编号。源和已导入副本都有独立修改时，预览阻塞，需要先把受管副本调成一致。
 

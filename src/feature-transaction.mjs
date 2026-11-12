@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { safe, stat } from './fs.mjs';
-import { acquireWorkspaceLock, lockPath } from '../assets/skills/my-create-feature/scripts/feature-workspace.mjs';
+import { acquireWorkspaceLock, lockPath } from './migrations/workspace.mjs';
 
 export const conflict = message => Object.assign(Error(message), { exitCode: 2 });
 const pendingRelative = 'mai-specs/.mai-migration/pending';

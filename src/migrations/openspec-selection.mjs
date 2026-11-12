@@ -1,6 +1,6 @@
 import path from 'node:path';
+import { conflict } from '../feature-transaction.mjs';
 
-const conflict = message => Object.assign(new Error(message), { exitCode: 2 });
 
 // Selection is validated independently of the filesystem; callers must still
 // compare every selected ID against the current active directory snapshot.

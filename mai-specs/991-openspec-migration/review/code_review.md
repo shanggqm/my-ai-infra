@@ -3,13 +3,47 @@
 | 项 | 值 |
 |---|---|
 | 日期 | 2026-11-10 初评；同日复评 P1-1 至 P1-4 |
-| 结论 | 有条件合并。四条 P1 已关闭，不再退回实现 |
+| 结论 | 有条件合并。四条 P1 已关闭，不再退回实现；2026-11-12 复审见下节 |
 | 比较基线 | HEAD `9c436d2ad920d9711f05776ea79b84b5cfd2c859`，评审对象是未提交工作区 |
 | 需求来源 | `spec/PRD.md`（standard）。方案为 `design/TECH_DESIGN.md`、`design/CODE_DESIGN.md`。方案评审最新结论为有条件通过 |
 
 个人记忆召回为空，未写入新记忆。`.my-ai-infra.json`、受管 `.gitignore` 片段、`.idea/` 和 `CLAUDE.md` 是本地工具状态，不纳入本结论。
 
-## 范围与证据
+## 复审（2026-11-12）
+
+本次范围收窄后复审：既有流程文件回到 0.0.14，迁移自带工作区辅助，不提供归档命令。下文「范围与证据」及其后的初评记录对应收窄前的实现，其中 `feature-archive.mjs`、`applyDelta` 等已不在代码中，仅作历史保留。
+
+复审对象与指纹（相对 `9c436d2`）：
+
+| 文件 | git hash-object |
+|---|---|
+| `src/feature-migration.mjs` | `8f2909b0e031918d0ad1b60469d81dde13b4f437` |
+| `src/feature-transaction.mjs` | `bc2142c57e65d97b5ebd573c00a666f8d34364fd` |
+| `src/openspec-align.mjs` | `2602badaebde0702051f7071d4324a887830c88b` |
+| `src/spec-delta.mjs` | `368e690d11dbe98991982dbb2e6f9636a4f45f4f` |
+| `src/migrations/workspace.mjs` | `fc947f6b7a35422a4db17197a99d581693db2272` |
+| `src/cli.mjs` | `7336be399a41bc2b5aea078452bd8e9c0337a6a1` |
+| `test/feature-migration.test.mjs` | `ae0447e817006eb6f5dfa48a4353775a77614e18` |
+| `test/migration-workspace-parity.test.mjs` | `d42c08786de23ec2c130b562fdf1e1593e0459ac` |
+
+发现与处理：
+
+| 发现 | 处理 |
+|---|---|
+| 产物路径写死为 `spec/PRD.md`、`design/TECH_DESIGN.md`，不读项目 `FEATURE_LAYOUT.json` | 已修复。路径取自项目布局，链接按实际位置计算，自定义布局有回归测试 |
+| `markDone` 只替换 `Phase = draft`，推进过的 Feature 归档后 BRIEF 与 ROADMAP 不一致，并覆盖用户写的当前任务 | 已修复。任意 Phase 改为 done，仅在当前任务仍是迁移文字时替换 |
+| BRIEF 当前任务是一次性快照，推进后过期 | 已修复。明确标为迁移时快照，之后以技术方案任务分解的勾选为准 |
+| 导入后新增源文件检查过期路径，整仓切换一律冲突 | 已修复。目标空闲时带入 `context/`，目标已被本地文件占用时仍冲突 |
+| 缺少推进后切换、自定义布局的测试 | 已补 8 个用例；迁移测试共 29 个 |
+| `parseSpec` 无生产调用方；`conflict` 辅助重复定义 | 已删除 `parseSpec`；三个模块改用同一个导出。`workspace.mjs` 因循环引用保留自己的定义 |
+| 宿主续接中 Cursor 同时改了 OpenSpec 源与 MAI 任务，导致整仓切换阻塞 | 已处理。BRIEF 注明来源迁入后只读；阻塞提示列出被改的源文件并给出恢复办法；Claude Code 复测未再改源 |
+| 重复预览整仓切换时复用数漏计归档 Feature，并在无写入时仍提示提交 | 已修复。复用数为全部已迁入 Feature；无写入时不给提交命令 |
+
+未处理：同一文件多次读取与串行 I/O；发布代码中的故障注入钩子与发布后不校验文件权限位；`proposalSections` 与 `headingBlocks` 的重复拆分。均不影响结果的正确性。
+
+结论：有条件合并。条件是 Codex 宿主续接与真实项目样本迁移完成前，Feature 991 不视为验收通过。
+
+## 范围与证据（初评，2026-11-10）
 
 工作区无 staged 变更。实现指纹：
 

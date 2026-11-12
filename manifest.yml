@@ -30,7 +30,6 @@ canonical:
   format_hook: assets/hooks/my-format/
   format_hook_usage: docs/format-hooks.md
   feature_initializer: assets/skills/my-create-feature/scripts/init-feature.mjs
-  feature_workspace: assets/skills/my-create-feature/scripts/feature-workspace.mjs
   feature_profiles: assets/skills/my-create-feature/references/FEATURE_PROFILES.json
   stage_contracts: assets/skills/my-create-feature/references/stage-contracts.md
   feature_layout: assets/skills/my-create-feature/template/FEATURE_LAYOUT.json
@@ -108,7 +107,6 @@ deliverables:
 - assets/skills/my-ai-infra/SKILL.md
 - assets/skills/my-create-feature/SKILL.md
 - assets/skills/my-create-feature/scripts/init-feature.mjs
-- assets/skills/my-create-feature/scripts/feature-workspace.mjs
 - assets/skills/my-create-feature/scripts/validate-feature.mjs
 - assets/skills/my-create-feature/template/FEATURE_LAYOUT.json
 - assets/skills/my-create-feature/template/README.md

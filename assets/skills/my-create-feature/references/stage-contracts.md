@@ -17,10 +17,6 @@ Skill 校验本阶段所需内容，产出自己负责的文档、代码或评�
 - 来源已有可维护 AC 时引用稳定位置/编号；只有素材时在设计建立规范化 AC。BRIEF 索引说明有效维护位置。后续实施、评审、测试使用这一来源，不因缺文件强推完整前置阶段。
 - 后补 PRD：编排者安排 PRD Skill 迁入原 AC ID，再安排设计 Skill 保留技术内容、改为引用 PRD、把旧快照标历史，最后更新 BRIEF 的有效源。逐项复核任务、用例及受影响证据；中断时登记未同步部分，未完成迁移不宣称输入就绪。保留有效历史和人工批注。
 
-## 迁移接续
-
-从 OpenSpec 导入的 Feature 按 MAI 布局对齐：提案和差量要求写入 `spec/PRD.md`，设计与任务写入 `design/TECH_DESIGN.md`。对齐后的 `spec/PRD.md` 是该 Feature 的有效需求来源。`context/` 只保留无法归入这些产物的附件和索引。BRIEF 链接这些路径。任务勾选保留，源任务变化后更新 BRIEF 的当前任务。后续阶段按 BRIEF 链接读取，不把 OpenSpec 目录原样放进 Feature。提案 Capabilities 与差量能力不一致时在预览中警告。
-
 ## Profile 与模板
 
 读取同作用域 [FEATURE_PROFILES.json](FEATURE_PROFILES.json)，以其键和 default 为合法值及默认值的唯一来源。缺失、损坏、未知值或相互冲突时报告资源/元数据问题，暂停依赖它的写入；不硬编码回退。首版 simple 表示简版规格，standard 表示标准规格；阶段数、风险、复杂度与 Phase 各自独立。

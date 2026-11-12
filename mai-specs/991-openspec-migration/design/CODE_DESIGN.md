@@ -6,9 +6,9 @@
 
 ## 1. 工作区规划与导入
 
-`assets/skills/my-create-feature/scripts/feature-workspace.mjs` 保持可随 Skill 独立运行，只依赖 Node 和同 Skill 资源。它提供 `readWorkspace`、`allocateFeature`、`renderFeature`、`updateRoadmap` 和 `acquireWorkspaceLock`；初始化脚本保留原 CLI 和退出码。编号分配从已有目录和 ROADMAP 收集占用，同一批次在内存逐项预留，不调用有写入副作用的 `initializeFeature`，也不在预览时预留实体目录。ROADMAP 只改目标行，复用四/五列表规则；归档跨分区重新渲染。
+`src/migrations/workspace.mjs` 是迁移自带的工作区辅助，初始化脚本与项目装配保持原样。它提供 `readWorkspace`、`reserveFeature`、`renderFeature`、`moveRoadmapRow` 和 `acquireWorkspaceLock`；编号规则、ROADMAP 行和锁与 `init-feature.mjs` 一致，由 `test/migration-workspace-parity.test.mjs` 约束。编号分配从已有目录和 ROADMAP 收集占用，同一批次在内存逐项预留，不调用有写入副作用的 `initializeFeature`，也不在预览时预留实体目录。ROADMAP 只改目标行，复用四/五列表规则；归档跨分区重新渲染。
 
-`src/feature-migration.mjs` 生成计划，并调用 `src/feature-transaction.mjs` 提交。CLI 和 Web 资产装配经同一个 `src/project.mjs` 写入入口竞争工作区锁：若初始计划会写 `mai-specs/`，在个人库锁内取得工作区锁再重算；若重算前未取工作区锁、重算后出现规格写入，转为在工作区锁内重算并重新核对原 revision。装配流程不依赖迁移格式，只检查共享锁和未完成事务。读取端报告锁状态，预览不等待或修改现场。
+`src/feature-migration.mjs` 生成计划，并调用 `src/feature-transaction.mjs` 提交。迁移提交时取得与初始化器相同的工作区锁；`src/project.mjs` 的装配不参与该锁，迁移在写入前逐文件核对预览时的状态，装配改动过目标文件时拒绝提交并要求重新预览。读取端报告锁状态，预览不等待或修改现场。
 
 ```js
 // 形状示意；路径一律为项目内 POSIX 相对路径。
@@ -116,7 +116,7 @@ async function submit(root, request, expectedRevision) {
 
 ## 3. 差量对齐
 
-迁移解析 change 里的 ADDED、MODIFIED、REMOVED、RENAMED，把需求、场景和 Purpose 写入该 Feature 的 `spec/PRD.md`。不新增 `mai feature archive`，不把差量原文写到 `spec/deltas/`，也不在迁移时改写 `mai-specs/specs/` 里已经复制的现行规格。
+迁移解析 change 里的 ADDED、MODIFIED、REMOVED、RENAMED，把需求、场景和 Purpose 写入该 Feature 的 `spec/PRD.md`。不新增 `mai feature archive`，不把差量原文写到 `spec/deltas/`，也不创建 `mai-specs/specs/` 或 `mai-specs/history/`。
 
 ## 5. OpenSpec 元数据输入边界（拟议）
 

@@ -7,16 +7,16 @@
 
 ## 1. 方案概述
 
-CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变更导入把提案、差量要求、设计和任务对齐到现有 Feature 布局，OpenSpec 继续负责现行规格和归档。整仓切换保留 OpenSpec 原目录，将现行规格、活动 Feature 和历史分别登记。首版只处理标准 Markdown 工作区，无需 OpenSpec CLI、运行时 npm 依赖、模型或后台服务。
+CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变更导入把提案、差量要求、设计和任务对齐到现有 Feature 布局，OpenSpec 继续负责现行规格和归档。整仓切换保留 OpenSpec 原目录，把活动 change 和已归档 change 对齐为 Feature。首版只处理标准 Markdown 工作区，无需 OpenSpec CLI、运行时 npm 依赖、模型或后台服务。
 
-当前 [CLI](../../../src/cli.mjs) 无迁移子命令；[项目装配](../../../src/project.mjs#L256) 只按需补齐工作区模板，保留现有普通文件；[Feature 初始化器](../../../assets/skills/my-create-feature/scripts/init-feature.mjs) 有编号、ROADMAP、模板校验和项目锁。设计复用这些规则，并单独实现迁移的计划和恢复流程，避免沿用安装器写个人库、按冲突策略跳过或替换资产的行为。
+当前 [CLI](../../../src/cli.mjs) 无迁移子命令；[项目装配](../../../src/project.mjs#L256) 只按需补齐工作区模板，保留现有普通文件；[Feature 初始化器](../../../assets/skills/my-create-feature/scripts/init-feature.mjs) 有编号、ROADMAP、模板校验和项目锁。设计保持初始化器与项目装配不变，迁移在 `src/migrations/workspace.mjs` 自带同一套规则，并单独实现迁移的计划和恢复流程，避免沿用安装器写个人库、按冲突策略跳过或替换资产的行为。
 
 | 预审事项 | 本方案响应 |
 |---|---|
 | 缺少可评审的执行方案 | 定义 CLI、文件归属、切换和归档流程，并以代码骨架展开关键判断；任务表对应 AC-01 至 AC-08。 |
-| 并发和中断 | 继续使用 `mai-specs/.feature-init.lock`；迁移、归档、初始化以及装配中的规格写入统一互斥。用项目内恢复记录分辨已提交、可回滚和需人工处理的状态。 |
-| 在途差量已经同步 | 切换时逐字节迁入源现行规格；归档时对四类操作分别判断可应用、已满足或冲突。仅在有足够依据时跳过已满足的操作。AC-03 已由需求负责人确认，见 §4。 |
-| 历史 change 用于后续开发 | 从工作区说明进入历史索引，可按能力路径或原 change ID 找到提案、设计和差量。后续 Feature 可以引用这些资料解释决策，以当前现行规格和本次有效需求判定行为。 |
+| 并发和中断 | 继续使用 `mai-specs/.feature-init.lock`；迁移与初始化互斥。项目装配不参与该锁，迁移写入前逐文件核对预览时的状态，装配改动过目标文件则拒绝提交并要求重新预览。用项目内恢复记录分辨已提交、可回滚和需人工处理的状态。 |
+| 在途差量已经同步 | 切换时不改写 `openspec/specs/`，也不把差量回放进源现行规格。AC-03 已由需求负责人确认，见 §4。 |
+| 历史 change 用于后续开发 | 已归档 change 按现有 Feature 布局对齐。后续从该 Feature 的 BRIEF 读取 PRD、技术方案和当前任务。 |
 
 ## 2. 详细设计
 
@@ -46,10 +46,10 @@ CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变
 
 | 对象 | 路径和规则 |
 |---|---|
-| 现行规格 | `mai-specs/specs/<capability-path>/spec.md`，整仓切换从源现行规格按路径和字节复制；不扫描历史来反推现行状态。已有目标仅在同字节时复用，否则冲突。 |
+| 源现行规格 | 留在 `openspec/specs/`。迁移不复制到 `mai-specs/specs/`，也不改写源文件。 |
 | 活动 Feature | `mai-specs/NNN-slug/`。共用编号、Profile、BRIEF、ROADMAP 规则。新导入的活动 change 保持 `draft`，登记在 ROADMAP 规划中。单导入后若源仍在活动目录，整仓切换保留已有 ID 和 Phase。 |
 | 在途材料 | 按 MAI 布局对齐，不把 OpenSpec 目录原样放入 Feature。`proposal.md` 和差量要求对齐为 `spec/PRD.md`，`design.md` 与 `tasks.md` 对齐为 `design/TECH_DESIGN.md`。`.openspec.yaml` 只参与迁移状态，不写入 Feature。其余附件进入 `context/` 并记入索引。任务勾选保留。后续阶段按 BRIEF 链接打开这些产物。 |
-| 已归档 change | 每个 `openspec/changes/archive/<folder>/` 按在途材料的同一规则对齐为 Feature。BRIEF Phase 写 `done`，ROADMAP 行放在已完成。`mai-specs/history/openspec/<archive-folder>/` 与 `mai-specs/history/INDEX.md` 保留原文，供人工阅读。已导入后再出现在归档目录的 change 复用原 Feature，并把 Phase 与 ROADMAP 同步为 done。 |
+| 已归档 change | 每个 `openspec/changes/archive/<folder>/` 按在途材料的同一规则对齐为 Feature。BRIEF Phase 写 `done`，ROADMAP 行放在已完成。不创建 `mai-specs/history/`。已导入后再出现在归档目录的 change 复用原 Feature，并把 Phase 与 ROADMAP 同步为 done。 |
 | 切换与导入状态 | `mai-specs/.mai-migration/state.json` 保存版本、独立维护源、按来源 ID 和源路径分组的 Feature 映射，以及受管材料上次源和目标摘要。使用项目相对路径，可随仓库移动。和规格一起提交到版本库；临时日志、锁和恢复副本留在本地并排除出 Git。 |
 
 先读取项目布局，缺省使用随包契约。保形目录与自定义登记路径重叠、命名在大小写或 Unicode 归一后冲突、或初始化模板与 `initialFiles` 不一致时在预览阻塞。Markdown 原文和二进制附件保留字节；同子树链接自然保留。指向子树之外的相对引用按来源映射生成索引提示，无法定位时列原文位置和失效路径；关键材料无法访问时阻塞。源本来缺少设计、任务或 PRD 时可保真导入为资料不全的草稿；缺少任务或有效需求时标明不可接续。原文的勾选、评审和测试材料保留，进入实施前要核对当前代码、前置条件与证据；没有可判定前置时先明确缺口。
@@ -58,7 +58,7 @@ CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变
 
 ### 2.3 历史接续
 
-整仓切换把 `openspec/changes/archive/` 复制到 `mai-specs/history/openspec/`，并写入 `mai-specs/history/INDEX.md`，供人工阅读原文。每个已归档 change 同时按在途 change 的规则对齐为 Feature，并用 MAI 既有完成状态记录：BRIEF Phase 为 `done`，ROADMAP 行在已完成。差量只进入该 Feature 的 PRD，不回放进现行规格。MAI 不新增归档阶段，也不改 Skill。后续阶段仍按各 Feature 的 BRIEF 链接读取。
+每个已归档 change 按在途 change 的规则对齐为 Feature，并用 MAI 既有完成状态记录：BRIEF Phase 为 `done`，ROADMAP 行在已完成。差量只进入该 Feature 的 PRD，不回放进 `openspec/specs/`。不创建 `mai-specs/specs/` 或 `mai-specs/history/`。MAI 不新增归档阶段，也不改 Skill。后续阶段仍按各 Feature 的 BRIEF 链接读取。
 
 ### 2.4 并发、发布与恢复
 
@@ -71,17 +71,17 @@ CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变
 
 | 风险 | 最小验证 |
 |---|---|
-| 写前已检测到外部编辑或 MAI 操作争用编号 | 在隔离项目并行运行初始化、迁移和装配规格写入，观察互斥及重新预览；分别替换源文件、目标索引、任务证据和现行规格，确认旧 revision 不提交；在写前复核前注入外部编辑并确认保留。最终复核与替换之间的外部编辑窗口由上述暂停编辑约束覆盖。 |
+| 写前已检测到外部编辑或 MAI 操作争用编号 | 在隔离项目并行运行初始化与迁移，观察互斥及重新预览；装配改动目标文件后确认迁移旧 revision 不提交；分别替换源文件、目标索引、任务证据和现行规格，确认旧 revision 不提交；在写前复核前注入外部编辑并确认保留。最终复核与替换之间的外部编辑窗口由上述暂停编辑约束覆盖。 |
 | 进程中断或磁盘错误造成部分切换 | 在已写规格、未写索引；已写状态、未写提交标记；已提交、未清理三个位置注入失败。比较回滚后的字节和目录；另测外部编辑、软链接替换与恢复重复执行。 |
 | Markdown 语法误判或丢失未涉及内容 | 对照[上游规格约定](https://github.com/Fission-AI/OpenSpec/blob/main/openspec/specs/openspec-conventions/spec.md)和[差量应用源码](https://github.com/Fission-AI/OpenSpec/blob/main/src/core/specs-apply.ts)选样本。验证嵌套能力、围栏、四类差量、同一需求改名后修改、重放和已满足冲突。 |
-| 迁了历史却找不到，或接续误用旧依据 | 用一组脱敏项目，从新 Feature 只给能力路径查到历史；从迁入活动 Feature 继续首项可执行任务，并验证历史差量、旧批准和旧证据未自动生效。需做真实宿主行为验证。 |
+| 已归档 change 无法被后续需求引用 | 用一组脱敏项目，从 ROADMAP 已完成打开归档 Feature 的 BRIEF、PRD 和技术方案；确认没有 `mai-specs/history/` 或 `mai-specs/specs/`。从迁入活动 Feature 继续首项可执行任务。 |
 
 ## 4. 兼容性与待确认
 
 - 跨 change 的标准依赖字段尚无明确约定；[OpenSpec 依赖字段提案](https://github.com/Fission-AI/OpenSpec/issues/1915)尚未成为本方案支持的契约。首版不扫描自由文本推断依赖；未来上游形成稳定约定后按版本评估。
 - 首版输入是标准 OpenSpec Markdown 布局和 `spec-driven` 语义；自定义 schema、非标准目录和影响归档语义的选项在受影响操作中显式阻塞。标准目录即使带有未识别附件也保留原文。具体兼容版本待用脱敏样本和固定的上游夹具确定；暂无真实仓库证据。
 - **AC-03 已确认**：保留源现行规格中已同步结果，迁移不应用尚未生效的在途差量，也不重放历史差量；用户于 2026-11-10 确认。按 PRD 原编号验收，补充已同步 A 与未同步 B 的混合场景。
-- 保持原 OpenSpec 文件与宿主配置；切换说明要求维护者将后续规格工作改用 MAI。旧 MAI 包的装配不持工作区锁，迁移与归档期间使用已升级的 CLI/Web 装配入口；旧 Feature 初始化脚本已经竞争同一个锁路径。旧包不会识别新的归档状态和恢复提示。
+- 保持原 OpenSpec 文件与宿主配置；切换说明要求维护者将后续规格工作改用 MAI。装配不持工作区锁，迁移期间避免同时运行装配；旧 Feature 初始化脚本已经竞争同一个锁路径。旧包不会识别新的归档状态和恢复提示。
 - 减法：保留一个本地状态文件、一个工作区锁和当前事务恢复目录。先不建设查询命令、索引服务、双向同步、通用迁移框架或自动证据推断；普通 Markdown 索引、已装配的工作流和人工复核足以覆盖首版目标。
 
 ## 5. 任务分解
@@ -90,9 +90,9 @@ CLI 在本地生成只读计划；维护者用计划的 revision 提交。单变
 
 | 任务 | 文件 / 变更 | 依赖 | 验证与 AC |
 |---|---|---|---|
-| T1 共享工作区规则 | 从 `assets/skills/my-create-feature/scripts/init-feature.mjs` 提取 `feature-workspace.mjs`：保留独立脚本可用性，供 CLI 和脚本复用编号、ROADMAP、模板与锁；`src/project.mjs` 接入规格写入锁。 | 无 | `test/feature-init.test.mjs` 回归、`test/existing-project.test.mjs` 或装配集成覆盖并发争用、旧索引和自定义布局；AC-03/04/08。 |
+| T1 迁移自带工作区规则 | `src/migrations/workspace.mjs` 提供编号、ROADMAP、模板渲染与工作区锁，`init-feature.mjs` 与 `src/project.mjs` 不改动。锁路径和 `owner.json` 格式与初始化器相同，迁移与初始化因此互斥。 | 无 | `test/migration-workspace-parity.test.mjs` 逐例比对编号、ROADMAP 行、BRIEF 渲染与锁互斥；`test/feature-init.test.mjs` 回归；AC-03/04/08。 |
 | T2 迁移计划与提交 | `src/cli.mjs` 分流；新增 `src/feature-migration.mjs`、`src/migrations/openspec.mjs`、`src/feature-transaction.mjs`，实现迁移扫描、单项/批量/整仓模式、映射、revision、工作区日志及恢复。 | T1 | 新增 `test/feature-migration.test.mjs` 和事务故障测试；覆盖参数互斥、恢复缺省用法、缺少提交 revision、不同来源相同路径、维护权冲突、空源、单导入、指定批量、全部活动项、整仓、重复、整批冲突、批量中途失败和过期预览；AC-01/02/03/04/08/09/10。 |
 | T3 差量对齐 | 新增 `src/spec-delta.mjs`、`src/openspec-align.mjs`，把差量要求写入 `spec/PRD.md`。 | T1、T2 | `test/feature-migration.test.mjs` 覆盖四类差量解析、PRD 对齐和现行规格不被改写；AC-06/07。 |
-| T4 接续和历史入口 | `assets/skills/my-create-feature/references/stage-contracts.md` 与实际读取需求、设计和任务的阶段 Skill 接入 BRIEF 链接；`templates/mai-specs/README.md`、`docs/usage.md`、`docs/troubleshooting.md` 提供入口与恢复步骤；`manifest.yml` 和分发资源按实际新增文件核对。 | T2、T3 | 实际宿主接续、按能力找历史、链接可达；AC-03/05。用 `test/workflow-evals.md` 登记场景，另行执行真实宿主验证。 |
+| T4 接续和历史入口 | 迁移生成的 Feature 使用现有布局。BRIEF 登记有效需求来源、技术方案和当前任务。阶段 Skill 与 `stage-contracts.md` 不增加 OpenSpec 专用说明。用法和文件映射写在 `docs/usage.md`；`docs/troubleshooting.md` 提供恢复步骤。 | T2、T3 | 用现有实施流程从 BRIEF 的当前任务接续一个迁入 Feature；AC-03/05。 |
 
-代码交付执行 `npm run verify`；涉及分发资产与 CLI 的本次功能交付另执行 `npm run release:check`，装配锁影响共享 Web 写入入口时另跑浏览器回归。上述是实施后的验收要求，本阶段未运行迁移或归档。关键业务验证缺口是缺真实样本与宿主接续证据，以及回滚时外部编辑保留；由后续测试规划安排。
+代码交付执行 `npm run verify`；涉及分发资产与 CLI 的本次功能交付另执行 `npm run release:check`，另运行 `test/migration-workspace-parity.test.mjs` 核对迁移自带规则与初始化器一致。上述是实施后的验收要求，本阶段未运行迁移或归档。关键业务验证缺口是缺真实样本与宿主接续证据，以及回滚时外部编辑保留；由后续测试规划安排。

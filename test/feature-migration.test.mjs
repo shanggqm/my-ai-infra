@@ -103,8 +103,11 @@ test('preview is read-only and single import keeps the sibling change and source
   assert.equal(await fs.lstat(path.join(root, feature, 'context/openspec')).then(() => 'present', error => error.code), 'ENOENT');
   assert.equal(await fs.lstat(path.join(root, feature, 'spec/deltas')).then(() => 'present', error => error.code), 'ENOENT');
   const brief = await fs.readFile(path.join(root, feature, 'BRIEF.md'), 'utf8');
+  assert.match(brief, /## 有效来源/);
+  assert.match(brief, /需求：\[PRD\]\(spec\/PRD.md\)/);
+  assert.match(brief, /设计：\[技术方案\]\(design\/TECH_DESIGN.md\)/);
+  assert.match(brief, /## 当前任务/);
   assert.match(brief, /下一项可执行任务：next step/);
-  assert.match(brief, /spec\/PRD.md/);
   assert.equal(await fs.readFile(path.join(root, 'openspec/changes/add-search/proposal.md'), 'utf8'), '# Search\n');
   assert.deepEqual(await fs.readFile(path.join(root, 'openspec/specs/auth/spec.md')), before);
   const again = await planMigration(root, { change: 'add-login' });
@@ -142,18 +145,17 @@ test('stale revision and symlink input do not write', async t => {
   await assert.rejects(planMigration(root, { change: 'add-login' }), /软链接/);
 });
 
-test('cutover copies current specs without replaying active or historical deltas', async t => {
+test('cutover aligns changes without copying specs or history directories', async t => {
   const root = await project(t);
   const preview = await planMigration(root, { all: true });
   assert.equal(preview.authority, 'mai');
+  assert.equal(preview.actions.some(item => item.path.startsWith('mai-specs/specs/') || item.path.startsWith('mai-specs/history/')), false);
   const submitted = await submitMigration(root, { all: true }, preview.revision);
   assert.equal(submitted.applied, true);
-  assert.equal(await fs.readFile(path.join(root, 'mai-specs/specs/auth/spec.md'), 'utf8'), current);
+  assert.equal(await fs.lstat(path.join(root, 'mai-specs/specs')).then(() => 'present', error => error.code), 'ENOENT');
+  assert.equal(await fs.lstat(path.join(root, 'mai-specs/history')).then(() => 'present', error => error.code), 'ENOENT');
   const state = JSON.parse(await fs.readFile(path.join(root, 'mai-specs/.mai-migration/state.json'), 'utf8'));
   assert.equal(state.authority.owner, 'mai');
-  const index = await fs.readFile(path.join(root, 'mai-specs/history/INDEX.md'), 'utf8');
-  assert.match(index, /2026-01-02-old/);
-  assert.match(index, /auth/);
   const archived = submitted.items.find(item => item.id === 'old');
   assert.ok(archived.feature);
   const archivedName = archived.feature.split('/').at(-1);
@@ -166,7 +168,6 @@ test('cutover copies current specs without replaying active or historical deltas
   const roadmap = await fs.readFile(path.join(root, 'mai-specs/ROADMAP.md'), 'utf8');
   assert.match(roadmap.split('## 已完成')[1], new RegExp(archivedName));
   assert.match(roadmap.split('## 进行中')[0], /add-login\/BRIEF\.md/);
-  assert.match(index, new RegExp(archivedName));
   assert.equal(await fs.readFile(path.join(root, 'openspec/specs/auth/spec.md'), 'utf8'), current);
   const repeated = await planMigration(root, { all: true });
   assert.equal(repeated.actions.length, 0);
@@ -298,15 +299,14 @@ test('an imported change archived by OpenSpec can still be cut over', async t =>
   await submitMigration(root, { all: true }, cutover.revision);
   assert.match(await fs.readFile(path.join(root, feature, 'spec/PRD.md'), 'utf8'), /Add login/);
   assert.equal(await fs.lstat(path.join(root, feature, 'context/openspec')).then(() => 'present', error => error.code), 'ENOENT');
-  const index = await fs.readFile(path.join(root, 'mai-specs/history/INDEX.md'), 'utf8');
+  assert.equal(await fs.lstat(path.join(root, 'mai-specs/specs')).then(() => 'present', error => error.code), 'ENOENT');
+  assert.equal(await fs.lstat(path.join(root, 'mai-specs/history')).then(() => 'present', error => error.code), 'ENOENT');
   const featureName = feature.split('/').at(-1);
-  assert.match(index, /2026-02-02-add-login/);
-  assert.match(index, new RegExp(featureName));
   const roadmap = await fs.readFile(path.join(root, 'mai-specs/ROADMAP.md'), 'utf8');
   assert.match(roadmap.split('## 已完成')[1], new RegExp(featureName));
   assert.match(await fs.readFile(path.join(root, feature, 'BRIEF.md'), 'utf8'), /\| Phase \| done \|/);
   assert.equal(roadmap.split(featureName).length - 1, 1);
-  assert.equal(await fs.readFile(path.join(root, 'mai-specs/specs/auth/spec.md'), 'utf8'), current);
+  assert.equal(await fs.readFile(path.join(root, 'openspec/specs/auth/spec.md'), 'utf8'), current);
 });
 
 test('a removed imported change still blocks cutover', async t => {
@@ -331,7 +331,8 @@ test('links outside the change are recorded without rewriting the source', async
   assert.match(notes, /missing.md/);
   await submitMigration(root, { change: 'add-login' }, preview.revision);
   const index = await fs.readFile(path.join(root, preview.items[0].feature, 'context/_INDEX.md'), 'utf8');
-  assert.match(index, /mai-specs\/specs\/auth\/spec.md/);
+  assert.match(index, /openspec\/specs\/auth\/spec.md/);
+  assert.doesNotMatch(index, /mai-specs\/specs/);
   assert.match(index, /失效/);
   assert.equal(await fs.readFile(proposal, 'utf8'), body);
   const aligned = await fs.readFile(path.join(root, preview.items[0].feature, 'spec/PRD.md'), 'utf8');
@@ -402,4 +403,136 @@ test('newline differences are equivalent and an unsupported heading blocks the d
   assert.equal(equivalent('a\r\nb\n', 'a\nb\n'), true);
   const blocked = parseDelta('## CHANGED Requirements\n\n### Requirement: Timeout\n\nNo.\n', 'auth');
   assert.equal(blocked.findings.some(item => item.blocking), true);
+});
+
+test('artifacts follow the project FEATURE_LAYOUT.json and BRIEF links point at them', async t => {
+  const root = await project(t);
+  await fs.mkdir(path.join(root, 'mai-specs'), { recursive: true });
+  await fs.writeFile(path.join(root, 'mai-specs/FEATURE_LAYOUT.json'), JSON.stringify({ version: 1, initialFiles: ['BRIEF.md', 'context/_INDEX.md'], artifacts: [
+    { id: 'prd', path: 'docs/需求.md', skill: 'my-create-prd' }, { id: 'design', path: 'docs/方案.md', skill: 'my-create-design' }] }));
+  const preview = await planMigration(root, { change: 'add-login' });
+  assert.equal(preview.canApply, true, preview.messages.join('\n'));
+  assert.ok(preview.affected.some(file => file.endsWith('/docs/需求.md')) && preview.affected.some(file => file.endsWith('/docs/方案.md')));
+  assert.ok(!preview.affected.some(file => file.endsWith('/spec/PRD.md') || file.endsWith('/design/TECH_DESIGN.md')));
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  const feature = path.join(root, preview.items[0].feature);
+  const brief = await fs.readFile(path.join(feature, 'BRIEF.md'), 'utf8');
+  assert.match(brief, /\[PRD\]\(docs\/%E9%9C%80%E6%B1%82\.md\)/);
+  assert.match(brief, /\[技术方案\]\(docs\/%E6%96%B9%E6%A1%88\.md\)/);
+  assert.match(await fs.readFile(path.join(feature, 'docs/方案.md'), 'utf8'), /\[PRD\]\(\.\/%E9%9C%80%E6%B1%82\.md\)/);
+  assert.match(await fs.readFile(path.join(feature, 'docs/需求.md'), 'utf8'), /\]\(\.\.\/BRIEF\.md\)/);
+});
+
+test('BRIEF current task states it is a migration-time snapshot', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  const brief = await fs.readFile(path.join(root, preview.items[0].feature, 'BRIEF.md'), 'utf8');
+  assert.match(brief, /下一项可执行任务：next step（迁移时快照；之后以技术方案任务分解中的勾选为准/);
+});
+
+test('cutover after OpenSpec archive marks an advanced Feature done in BRIEF and ROADMAP', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  const feature = preview.items[0].feature;
+  const briefFile = path.join(root, feature, 'BRIEF.md');
+  const advanced = (await fs.readFile(briefFile, 'utf8')).replace('| Phase | draft |', '| Phase | dev |');
+  await fs.writeFile(briefFile, advanced);
+  await fs.rename(path.join(root, 'openspec/changes/add-login'), path.join(root, 'openspec/changes/archive/2026-02-02-add-login'));
+  const cutover = await planMigration(root, { all: true });
+  assert.equal(cutover.canApply, true, cutover.messages.join('\n'));
+  await submitMigration(root, { all: true }, cutover.revision);
+  assert.match(await fs.readFile(briefFile, 'utf8'), /\| Phase \| done \|/);
+  const roadmap = await fs.readFile(path.join(root, 'mai-specs/ROADMAP.md'), 'utf8');
+  assert.match(roadmap.split('## 已完成')[1], new RegExp(feature.split('/').at(-1)));
+});
+
+test('a user-written current-task section survives the done marking', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  const briefFile = path.join(root, preview.items[0].feature, 'BRIEF.md');
+  const brief = await fs.readFile(briefFile, 'utf8');
+  const edited = brief.replace(/## 当前任务\n\n[\s\S]*$/, '## 当前任务\n\n团队自己记录：正在做第三项。\n');
+  await fs.writeFile(briefFile, edited);
+  await fs.rename(path.join(root, 'openspec/changes/add-login'), path.join(root, 'openspec/changes/archive/2026-02-02-add-login'));
+  const cutover = await planMigration(root, { all: true });
+  await submitMigration(root, { all: true }, cutover.revision);
+  const after = await fs.readFile(briefFile, 'utf8');
+  assert.match(after, /团队自己记录：正在做第三项。/);
+  assert.match(after, /\| Phase \| done \|/);
+});
+
+test('a file added to an imported change after import is picked up instead of conflicting', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  await fs.writeFile(path.join(root, 'openspec/changes/add-login/notes.md'), '# 补充说明\n');
+  const next = await planMigration(root, { all: true });
+  assert.equal(next.canApply, true, next.messages.join('\n'));
+  await submitMigration(root, { all: true }, next.revision);
+  assert.equal(await fs.readFile(path.join(root, preview.items[0].feature, 'context/notes.md'), 'utf8'), '# 补充说明\n');
+});
+
+test('a new source file whose target already exists still conflicts', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  await fs.writeFile(path.join(root, preview.items[0].feature, 'context/notes.md'), '本地文件\n');
+  await fs.writeFile(path.join(root, 'openspec/changes/add-login/notes.md'), '# 补充说明\n');
+  const next = await planMigration(root, { all: true });
+  assert.equal(next.canApply, false);
+  assert.equal(await fs.readFile(path.join(root, preview.items[0].feature, 'context/notes.md'), 'utf8'), '本地文件\n');
+});
+
+test('BRIEF marks the OpenSpec source read-only after import', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  const brief = await fs.readFile(path.join(root, preview.items[0].feature, 'BRIEF.md'), 'utf8');
+  assert.match(brief, /迁入后只读；任务勾选和设计变更只改 MAI Feature/);
+});
+
+test('editing both the source and the Feature blocks cutover with the changed source files named', async t => {
+  const root = await project(t);
+  const preview = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, preview.revision);
+  const design = path.join(root, preview.items[0].feature, 'design/TECH_DESIGN.md');
+  await fs.writeFile(design, (await fs.readFile(design, 'utf8')).replace('- [ ] next step', '- [x] next step'));
+  await fs.writeFile(path.join(root, 'openspec/changes/add-login/tasks.md'), '- [x] done\n- [x] next step\n');
+  const cutover = await planMigration(root, { all: true });
+  assert.equal(cutover.canApply, false);
+  const block = cutover.findings.find(item => item.severity === 'block');
+  assert.match(block.message, /源已修改或新增：tasks\.md/);
+  assert.match(block.hint, /git 把这些源文件恢复到导入时的内容/);
+  await fs.writeFile(path.join(root, 'openspec/changes/add-login/tasks.md'), '- [x] done\n- [ ] next step\n');
+  const retry = await planMigration(root, { all: true });
+  assert.equal(retry.canApply, true, retry.messages.join('\n'));
+});
+
+test('a repeated cutover preview counts every migrated Feature and gives no submit command', async t => {
+  const root = await project(t);
+  const first = await planMigration(root, { all: true });
+  assert.equal(first.created, 3);
+  assert.ok(first.submit);
+  await submitMigration(root, { all: true }, first.revision);
+  const again = await planMigration(root, { all: true });
+  assert.equal(again.canApply, true);
+  assert.equal(again.created, 0);
+  assert.equal(again.reused, 3);
+  assert.deepEqual(again.actions, []);
+  assert.equal(again.submit, null);
+  assert.ok(again.messages.some(message => message.includes('没有需要写入的变更，已迁入的 3 个 Feature 保持不变')));
+  assert.ok(!again.messages.some(message => message.includes('使用本次 revision 提交') || message.includes('mai migrate')));
+});
+
+test('a repeated single import with nothing to write gives no submit command', async t => {
+  const root = await project(t);
+  const first = await planMigration(root, { change: 'add-login' });
+  await submitMigration(root, { change: 'add-login' }, first.revision);
+  const again = await planMigration(root, { change: 'add-login' });
+  assert.deepEqual(again.actions, []);
+  assert.equal(again.submit, null);
+  assert.ok(again.messages.some(message => message.includes('没有需要写入的变更')));
 });

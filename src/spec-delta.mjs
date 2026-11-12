@@ -48,26 +48,6 @@ function splitLines(text) {
   return { lines, newline, trailing: text.endsWith(newline) || text === '' };
 }
 
-export function parseSpec(text) {
-  const { lines, newline, trailing } = splitLines(text);
-  const mask = maskLines(lines);
-  const blocks = [];
-  let preambleEnd = lines.length;
-  for (let index = 0; index < lines.length; index++) {
-    if (mask[index]) continue;
-    const match = lines[index].match(/^ {0,3}### Requirement:\s*(.+?)\s*$/);
-    if (!match) continue;
-    if (!blocks.length) preambleEnd = index;
-    blocks.push({ name: match[1], key: requirementKey(match[1]), start: index });
-  }
-  blocks.forEach((block, index) => {
-    block.end = blocks[index + 1]?.start ?? lines.length;
-    block.raw = lines.slice(block.start, block.end).join(newline) + (block.end > block.start ? newline : '');
-  });
-  const preamble = lines.slice(0, preambleEnd).join(newline) + (preambleEnd ? newline : '');
-  return { lines, newline, trailing, preamble, blocks };
-}
-
 function visibleHeading(line, hidden) {
   if (hidden) return null;
   const section = line.match(/^ {0,3}##\s+(.+?)\s*$/);

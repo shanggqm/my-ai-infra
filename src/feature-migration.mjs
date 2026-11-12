@@ -3,17 +3,15 @@ import path from 'node:path';
 import { safe } from './fs.mjs';
 import { scanOpenSpec } from './migrations/openspec-scan.mjs';
 import { SOURCE_ID, SOURCE_VERSION } from './migrations/openspec.mjs';
-import { moveRoadmapRow, readWorkspace, renderFeature, reserveFeature, table } from '../assets/skills/my-create-feature/scripts/feature-workspace.mjs';
-import { digest, publicPlan, revisionOf, submitTransaction } from './feature-transaction.mjs';
-import { alignChange } from './openspec-align.mjs';
+import { moveRoadmapRow, readWorkspace, renderFeature, reserveFeature, table } from './migrations/workspace.mjs';
+import { conflict as blocked, digest, publicPlan, revisionOf, submitTransaction } from './feature-transaction.mjs';
+import { alignChange, defaultTargets, targetFor } from './openspec-align.mjs';
 import { inspectMetadata } from './migrations/openspec-metadata.mjs';
 
 const statePath = 'mai-specs/.mai-migration/state.json';
 const ignorePath = 'mai-specs/.mai-migration/.gitignore';
-const historyIndex = 'mai-specs/history/INDEX.md';
 const doneTask = '该 change 在 OpenSpec 已归档。BRIEF Phase 记为 done，ROADMAP 记在已完成。材料已对齐；迁移不重新评审。';
 const emptyState = () => ({ version: 1, authority: { owner: 'external', sourceId: null }, cutover: null, imports: {}, archives: {} });
-const blocked = message => Object.assign(Error(message), { exitCode: 2 });
 
 async function readBytes(root, relative) {
   const file = await safe(root, relative);
@@ -87,8 +85,8 @@ export async function planMigration(project, options) {
     const digestNow = digest(Buffer.from(scan.files.map(file => `${file.path}:${file.sha256}`).sort().join('\n')));
     const drift = state.cutover?.sourceDigest !== digestNow;
     return finish(root, options, {
-      operation: 'cutover', mode, selection: scan.selection.ids, created: 0, reused: scan.selection.ids.length, authority: 'mai', members: scan.members, items: [], actions: [],
-      findings: drift ? [{ severity: 'warning', message: 'OpenSpec 源快照已漂移，未覆盖 MAI 现行规格' }] : [],
+      operation: 'cutover', mode, selection: scan.selection.ids, created: 0, reused: new Set(Object.values(state.imports[SOURCE_ID] || {}).map(entry => entry.featurePath)).size, authority: 'mai', members: scan.members, items: [], actions: [],
+      findings: drift ? [{ severity: 'warning', message: 'OpenSpec 源快照已漂移，本次不改写已迁入的 Feature' }] : [],
     });
   }
   if (state.authority.sourceId && state.authority.sourceId !== SOURCE_ID) findings.push({ severity: 'block', path: statePath, message: `现行规格维护权属于 ${state.authority.sourceId}`, hint: '先解决维护权冲突' });
@@ -100,7 +98,6 @@ export async function planMigration(project, options) {
   imports[SOURCE_ID] ||= {};
   const items = [];
   for (const id of scan.selection.ids) items.push(await planChange({ root, workspace, state, imports, snapshot, scan, id, findings, actions, names }));
-  const archivedFeatures = new Map();
   if (mode === 'all') {
     const seenArchive = new Set();
     for (const archive of archiveEntries(scan)) {
@@ -110,11 +107,9 @@ export async function planMigration(project, options) {
         continue;
       }
       seenArchive.add(archive.id);
-      const item = await planChange({ root, workspace, state, imports, snapshot, scan, id: archive.id, sourcePath: archive.folder, fromArchive: true, findings, actions, names });
-      items.push(item);
-      if (item.feature) archivedFeatures.set(archive.folder, item.feature);
+      items.push(await planChange({ root, workspace, state, imports, snapshot, scan, id: archive.id, sourcePath: archive.folder, fromArchive: true, findings, actions, names }));
     }
-    await planCutover({ root, scan, findings, actions, imports, active, archivedFeatures });
+    planCutover({ scan, findings, imports, active });
   }
   const hasBlock = findings.some(item => item.severity === 'block');
   if (hasBlock) actions.length = 0;
@@ -173,7 +168,8 @@ async function planChange({ root, workspace, state, imports, snapshot, scan, id,
   item.feature = reserved.featurePath;
   const featureName = item.feature.split('/').at(-1);
   const inputs = await loadInputs(root, sourceFiles, sourcePath);
-  const aligned = alignChange({ id, featureName, profile: workspace.profile, sourcePath, files: inputs });
+  const targets = targetsOf(workspace.layout);
+  const aligned = alignChange({ id, featureName, profile: workspace.profile, sourcePath, files: inputs, targets });
   for (const message of aligned.warnings) findings.push({ severity: 'warning', code: 'capability', id, message });
   const occupied = [];
   for (const output of aligned.outputs) occupied.push(await maybeBytes(root, `${item.feature}/${output.targetRel}`));
@@ -199,7 +195,7 @@ async function planChange({ root, workspace, state, imports, snapshot, scan, id,
     MATERIAL_ROWS: materialRows(aligned.entries, sourcePath),
     FINDINGS: item.missing.map(name => `- 缺少 ${name}`).join('\n'), QUESTIONS: '- 旧证据和勾选状态需要对照当前代码核对',
   });
-  let brief = rendered.find(([name]) => name === 'BRIEF.md')[1] + briefLinks(sourcePath, item);
+  let brief = rendered.find(([name]) => name === 'BRIEF.md')[1] + briefLinks(sourcePath, item, targets);
   if (fromArchive) {
     brief = markDone(brief);
     snapshot.roadmap = moveRoadmapRow(snapshot.roadmap, reserved.id, '已完成');
@@ -217,14 +213,18 @@ async function reuseChange({ root, workspace, previous, sourceFiles, sourcePath,
     findings.push({ severity: 'block', id: item.id, path: item.feature, message: '导入映射与 Feature 目录或 ROADMAP 不一致', hint: '恢复目录和索引，或在备份后修正状态文件' });
     return item;
   }
-  const decision = await decideImport(root, previous, sourceFiles, sourcePath);
+  const targets = targetsOf(workspace.layout);
+  const decision = await decideImport(root, previous, sourceFiles, sourcePath, targets);
   item.decision = decision;
   if (decision === 'conflict') {
-    findings.push({ severity: 'block', id: item.id, path: sourcePath, message: '源和目标都有独立修改，或已导入文件从源消失', hint: '备份后把受管副本调成一致，再重新预览' });
+    const changed = sourceFiles.filter(file => previous.files[file.path.slice(sourcePath.length + 1)]?.sourceDigest !== file.sha256).map(file => file.path.slice(sourcePath.length + 1));
+    const missing = Object.keys(previous.files).filter(relative => !sourceFiles.some(file => file.path === `${sourcePath}/${relative}`));
+    const detail = [changed.length && `源已修改或新增：${changed.join('、')}`, missing.length && `源已删除：${missing.join('、')}`].filter(Boolean).join('；');
+    findings.push({ severity: 'block', id: item.id, path: sourcePath, message: `源和目标都有独立修改，或已导入文件从源消失${detail ? `（${detail}）` : ''}`, hint: '若源的改动只是重复勾选或编辑，用 git 把这些源文件恢复到导入时的内容（进度保留在 MAI Feature 中），再重新预览；其他情况备份后把受管副本调成一致' });
     return item;
   }
   const inputs = await loadInputs(root, sourceFiles, sourcePath);
-  const aligned = alignChange({ id: item.id, featureName, profile: workspace.profile, sourcePath, files: inputs });
+  const aligned = alignChange({ id: item.id, featureName, profile: workspace.profile, sourcePath, files: inputs, targets });
   for (const message of aligned.warnings) findings.push({ severity: 'warning', code: 'capability', id: item.id, message });
   if (decision === 'update') {
     for (const output of aligned.outputs) {
@@ -258,12 +258,24 @@ function materialRows(entries, sourcePath) {
 }
 function refreshCurrentTask(brief, nextTask) {
   if (!brief.includes('## 当前任务')) return brief;
-  return brief.replace(/## 当前任务\n\n[\s\S]*?(?=\n## |$)/, `## 当前任务\n\n${nextTask}\n\n旧评审、旧测试和已勾选任务均保留原样，适用性待核对。迁移没有把本变更标为完成。\n`);
+  return brief.replace(/## 当前任务\n\n[\s\S]*?(?=\n## |$)/, `## 当前任务\n\n${currentTaskText(nextTask)}`);
 }
+// 产物位置取自项目 Feature 布局契约（mai-specs/FEATURE_LAYOUT.json 或随包默认）。
+function targetsOf(layout) {
+  const path = id => layout?.artifacts?.find(item => item.id === id)?.path;
+  return { proposal: path('prd') || defaultTargets.proposal, design: path('design') || defaultTargets.design };
+}
+const snapshotMark = '迁移时快照';
+function currentTaskText(nextTask) {
+  return `${nextTask}（${snapshotMark}；之后以技术方案任务分解中的勾选为准，从第一项未勾选且前置条件已满足的任务接续）\n\n旧评审、旧测试和已勾选任务均保留原样，适用性待核对。迁移没有把本变更标为完成。\n`;
+}
+const migratedTaskSection = section => section.includes(snapshotMark) || section.includes('迁移没有把本变更标为完成');
 function markDone(brief) {
-  const phase = brief.replace('| Phase | draft |', '| Phase | done |');
+  const phase = brief.replace(/^(\|\s*Phase\s*\|\s*)[A-Za-z][\w-]*(\s*\|)/m, '$1done$2');
   const section = `## 当前任务\n\n${doneTask}\n`;
-  return phase.includes('## 当前任务') ? phase.replace(/## 当前任务\n\n[\s\S]*?(?=\n## |$)/, section) : `${phase.trimEnd()}\n\n${section}`;
+  const existing = phase.match(/## 当前任务\n\n[\s\S]*?(?=\n## |$)/);
+  if (!existing) return `${phase.trimEnd()}\n\n${section}`;
+  return migratedTaskSection(existing[0]) ? phase.replace(existing[0], section) : phase;
 }
 function roadmapSectionOf(source, id) {
   let section = '';
@@ -290,8 +302,8 @@ async function settleDone(root, snapshot, featurePath, actions) {
   if (pending) pending.after = Buffer.from(next);
   else actions.push(fileAction(briefPath, 'index', before, Buffer.from(next), before.mode));
 }
-function briefLinks(sourcePath, item) {
-  return `\n## 有效来源\n\n- 需求：[PRD](spec/PRD.md)\n- 任务：[技术方案中的任务](design/TECH_DESIGN.md)\n- 设计：[技术方案](design/TECH_DESIGN.md)\n- 来源：\`${sourcePath}\`\n\n## 当前任务\n\n${item.nextTask}\n\n旧评审、旧测试和已勾选任务均保留原样，适用性待核对。迁移没有把本变更标为完成。\n`;
+function briefLinks(sourcePath, item, targets) {
+  return `\n## 有效来源\n\n- 需求：[PRD](${encodeURI(targets.proposal)})\n- 任务：[技术方案中的任务分解](${encodeURI(targets.design)})\n- 设计：[技术方案](${encodeURI(targets.design)})\n- 来源：\`${sourcePath}\`（迁入后只读；任务勾选和设计变更只改 MAI Feature，不要同时修改该目录下的原文件）\n\n## 当前任务\n\n${currentTaskText(item.nextTask)}`;
 }
 function importForChange(imports, id) {
   const group = imports[SOURCE_ID] || {};
@@ -379,8 +391,8 @@ async function inspectLinks(root, filePath, text, sourcePath) {
       catch (error) { hint = `指向 \`${located.resolved}\`，但无法按普通文件读取（${error.message}）。原文：${link.snippet}`; }
       if (hint) { notes.push({ from: filePath.slice(sourcePath.length + 1), href: link.href, snippet: link.snippet, hint }); continue; }
       if (!exists) hint = `失效。原文指向 \`${located.resolved}\`，项目内没有这个文件。原文：${link.snippet}`;
-      else if (located.resolved.startsWith('openspec/specs/')) hint = `指向现行规格 \`${located.resolved}\`；整仓切换后对应 \`mai-specs/specs/${located.resolved.slice('openspec/specs/'.length)}\``;
-      else if (located.resolved.startsWith('openspec/changes/archive/')) hint = `指向 OpenSpec 历史 \`${located.resolved}\``;
+      else if (located.resolved.startsWith('openspec/specs/')) hint = `指向现行规格 \`${located.resolved}\`。迁移保留该 OpenSpec 文件，不复制到 mai-specs`;
+      else if (located.resolved.startsWith('openspec/changes/archive/')) hint = `指向 OpenSpec 归档 \`${located.resolved}\`。迁移按 Feature 对齐该 change，不复制归档目录`;
       else hint = `指向项目内 \`${located.resolved}\`。复制到 Feature 后，原文的相对位置不再指向该文件`;
     }
     notes.push({ from: filePath.slice(sourcePath.length + 1), href: link.href, snippet: link.snippet, hint });
@@ -391,7 +403,7 @@ function linkSection(notes) {
   if (!notes.length) return '';
   return `\n## 相对引用\n\n${notes.map(note => `- \`${note.from}\` 中的 \`${note.href}\`：${note.hint}`).join('\n')}\n`;
 }
-async function decideImport(root, previous, sourceFiles, sourcePath) {
+async function decideImport(root, previous, sourceFiles, sourcePath, targets) {
   const bySource = new Map(sourceFiles.map(file => [file.path.slice(sourcePath.length + 1), file]));
   for (const relative of Object.keys(previous.files)) if (!bySource.has(relative)) return 'conflict';
   let sourceSame = true, targetSameAsBase = true, targetSameAsSource = true;
@@ -401,12 +413,14 @@ async function decideImport(root, previous, sourceFiles, sourcePath) {
       if (current.sha256 !== recorded.sourceDigest) sourceSame = false;
       continue;
     }
-    const target = await maybeBytes(root, `${previous.featurePath}/${recorded?.targetRel || `context/openspec/${relative}`}`);
     if (!recorded) {
-      if (target) return 'conflict';
-      sourceSame = false; targetSameAsBase = false; targetSameAsSource = false;
+      // 导入后新增的源文件：合并进 PRD/技术方案的类别随其他文件一并核对，独立文件只在目标处没有同名文件时作为新增。
+      const added = targetFor(relative, targets);
+      sourceSame = false; targetSameAsSource = false;
+      if (added && added !== targets.proposal && added !== targets.design && await maybeBytes(root, `${previous.featurePath}/${added}`)) return 'conflict';
       continue;
     }
+    const target = await maybeBytes(root, `${previous.featurePath}/${recorded.targetRel}`);
     if (current.sha256 !== recorded.sourceDigest) sourceSame = false;
     if (!target || digest(target.bytes) !== recorded.targetDigest) targetSameAsBase = false;
     if (!target || digest(target.bytes) !== current.sha256) targetSameAsSource = false;
@@ -417,26 +431,12 @@ async function decideImport(root, previous, sourceFiles, sourcePath) {
   return 'conflict';
 }
 
-async function planCutover({ root, scan, findings, actions, imports, active, archivedFeatures }) {
+function planCutover({ scan, findings, imports, active }) {
   for (const sourcePath of Object.keys(imports[SOURCE_ID] || {})) {
     const id = changeIdFromSource(sourcePath);
     if (active.includes(id) || archivedChange(scan, id)) continue;
     findings.push({ severity: 'block', path: sourcePath, message: '活动映射对应的 change 已不在活动目录或归档历史中', hint: '确认本地改动后处置旧活动记录，再重新预览' });
   }
-  for (const file of scan.files) {
-    if (!file.path.startsWith('openspec/specs/') && !file.path.startsWith('openspec/changes/archive/')) continue;
-    const target = file.path.startsWith('openspec/specs/')
-      ? `mai-specs/specs/${file.path.slice('openspec/specs/'.length)}`
-      : `mai-specs/history/openspec/${file.path.slice('openspec/changes/archive/'.length)}`;
-    const body = await readBytes(root, file.path);
-    const existing = await maybeBytes(root, target);
-    if (!existing) actions.push(fileAction(target, 'content', null, body.bytes, body.mode));
-    else if (!body.bytes.equals(existing.bytes)) findings.push({ severity: 'block', path: target, message: '目标与源现行规格或历史字节不同', hint: '核对后使目标与源一致，或移开无关内容' });
-  }
-  const index = historyIndexText(scan, archivedFeatures);
-  const existingIndex = await maybeBytes(root, historyIndex);
-  if (!existingIndex) addText(actions, historyIndex, null, index, 'index');
-  else if (existingIndex.bytes.toString('utf8') !== index) findings.push({ severity: 'block', path: historyIndex, message: '历史索引与本次历史条目冲突', hint: '保留索引后合并冲突段落' });
 }
 function changeIdFromSource(sourcePath) {
   const parts = sourcePath.split('/');
@@ -452,21 +452,6 @@ function archivedChange(scan, id) {
     return folder === id || folder.replace(/^\d{4}-\d{2}-\d{2}-/, '') === id;
   });
 }
-function historyIndexText(scan, archivedFeatures = new Map()) {
-  const folders = [...new Set(scan.files.filter(file => file.path.startsWith('openspec/changes/archive/')).map(file => file.path.split('/').slice(0, 4).join('/')))].sort();
-  const sections = ['# 历史索引', '', '本索引由迁移维护，供阅读 OpenSpec 归档原文。这些 change 已按 MAI 布局对齐为 Feature。', ''];
-  for (const folder of folders) {
-    const name = folder.split('/').at(-1);
-    const id = name.match(/^\d{4}-\d{2}-\d{2}-(.+)$/)?.[1] || name;
-    const featureName = archivedFeatures.get(folder)?.split('/').at(-1);
-    const aligned = featureName ? [`- 对齐目录：\`${featureName}\``] : [];
-    const capabilities = [...new Set(scan.files.filter(file => file.path.startsWith(`${folder}/specs/`) && file.path.endsWith('/spec.md')).map(file => file.path.slice(`${folder}/specs/`.length, -'/spec.md'.length)))];
-    const links = scan.files.filter(file => file.path.startsWith(`${folder}/`)).map(file => `- [${file.path.slice(folder.length + 1)}](openspec/${file.path.slice('openspec/changes/archive/'.length)})`);
-    sections.push(`## ${folder}`, '', '- 来源：OpenSpec', `- 原目录：\`${folder}\``, `- 变更：${id}`, `- 能力：${capabilities.join('、') || '未识别'}`, ...aligned, '- 资料：', ...links, '');
-  }
-  return `${sections.join('\n')}\n`;
-}
-
 function finish(root, options, plan) {
   const blocking = plan.findings.filter(item => item.severity === 'block');
   const empty = plan.findings.some(item => item.message === '无可迁移项');
@@ -479,14 +464,16 @@ function finish(root, options, plan) {
   });
   const messages = [];
   if (empty) messages.push('无可迁移项');
-  else if (canApply) {
+  else if (canApply && !plan.actions.length) {
+    messages.push(`已预览迁移：${modeName(plan.mode)}。没有需要写入的变更，已迁入的 ${plan.reused} 个 Feature 保持不变。`);
+  } else if (canApply) {
     messages.push(`已预览迁移：${modeName(plan.mode)}。将新增 ${plan.created} 个 Feature，复用 ${plan.reused} 个 Feature。核对清单后，使用本次 revision 提交。`);
     if (plan.actions.length) messages.push('执行期间请暂停编辑预览列出的受影响文件，完成后即可继续编辑。');
     const links = plan.findings.filter(item => item.code === 'link');
     if (links.length) messages.push(`有 ${links.length} 条指向变更目录之外的相对引用，已写入预览 findings 和 Feature 索引。`);
     if (plan.mode !== 'change') messages.push('请人工核对所选变更与其他 change 之间的依赖关系及开发顺序。');
   } else messages.push(...blocking.map(item => `无法继续迁移：${item.path || item.id || '项目'}（${item.message}）。请${item.hint || '处理阻塞项'}后重新预览。`));
-  const submit = canApply ? commandFor(options, revision) : null;
+  const submit = canApply && plan.actions.length ? commandFor(options, revision) : null;
   if (submit) messages.push(submit);
   return {
     ...plan, root, source: SOURCE_ID, sourceVersion: SOURCE_VERSION, revision, canApply, messages,
@@ -501,7 +488,7 @@ export async function submitMigration(project, options, revision, hooks = {}) {
   result.items = plan.items;
   result.submit = plan.submit;
   result.completion = plan.operation === 'cutover'
-    ? '已切换到 my-ai-infra。现行规格在 mai-specs/specs。已归档 change 已对齐为 Feature，Phase 为 done，列在 ROADMAP 已完成。原文在 mai-specs/history，供阅读。原 OpenSpec 文件已保留。'
+    ? '已切换到 my-ai-infra。活动 change 与已归档 change 已按 Feature 布局对齐。已归档 change 的 Phase 为 done，列在 ROADMAP 已完成。原 OpenSpec 文件已保留。'
     : plan.operation === 'import'
       ? `已将 ${plan.selection[0]} 导入 Feature ${plan.items[0]?.feature?.split('/').at(-1) || ''}。OpenSpec 继续维护现行规格和归档。`
       : `已导入 ${plan.selection.length} 个 OpenSpec 变更。OpenSpec 继续维护现行规格和归档。`;

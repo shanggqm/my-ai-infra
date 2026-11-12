@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 |---|---|
-| Phase | draft |
+| Phase | review |
 | Profile | standard |
 | 优先级 | P1 |
 | 负责人 | wangxing |
@@ -19,7 +19,7 @@
 
 ## 关键决策
 
-产品规格已起草，覆盖单变更接续与整仓切换；首版范围待评审。后续设计、实现与验收按 PRD 的 FR 和 AC 引用。
+首版只做 OpenSpec 到 MAI 布局的对齐迁移，不改既有 Skill 与装配流程，不提供归档命令。实现、自动化验证与 Cursor、Claude Code 宿主续接已完成；Codex 宿主与真实项目样本待验。后续设计、实现与验收按 PRD 的 FR 和 AC 引用。
 
 ## 上下文索引
 
@@ -27,4 +27,4 @@
 - [产品规格与验收标准（有效需求源，待评审）](spec/PRD.md)
 - [技术方案与实施任务（待评审）](design/TECH_DESIGN.md) · [关键代码骨架](design/CODE_DESIGN.md)
 
-需求负责人已确认 AC-03 保留已同步结果，并要求批量导入在途 change；真实迁移样本与宿主接续待验证。
+需求负责人已确认 AC-03 保留已同步结果，并要求批量导入在途 change。实施与复审记录见 [实施记录](review/IMPLEMENTATION.md)、[代码评审](review/code_review.md)；Codex 宿主接续与真实项目样本待验证。

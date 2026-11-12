@@ -14,8 +14,6 @@ import { detectFormatting } from '../assets/hooks/my-format/run.mjs';
 import { FORMAT_ASSET, formatHookActions, validFormatState } from './format-hook.mjs';
 import { parseAgent, agentCatalog, AGENT_TOOLS, agentFilename, renderAgent, isManagedAgentPath } from './agents.mjs';
 import { conflictPolicy, pathInspector, inspectEntry, resolveConflicts, recoveryDirectory, pruneBackups, backupEntry, installEntry, restoreEntry, saveCandidates } from './conflicts.mjs';
-import { acquireWorkspaceLock } from '../assets/skills/my-create-feature/scripts/feature-workspace.mjs';
-import { assertWritableWorkspace, pendingInfo } from './feature-transaction.mjs';
 
 export const CONFIG = '.my-ai-infra.json';
 const STATE = '.my-ai-infra/state.json';
@@ -296,25 +294,15 @@ export async function plan(home, project, override, options = {}) {
 }
 export const publicPlan = (p, phase = 'plan') => ({ root: p.root, assetMigrations: p.assetMigrations, skillMigrations: p.skillMigrations, config: p.config, agents: p.agents, formatting: p.formatting ? Object.fromEntries(Object.entries(p.formatting).filter(([key]) => key !== 'inputs')) : undefined, discovery: discoveryEntries(p,phase), summary: p.summary, revision: p.revision, nextSteps: p.nextSteps, conflict: p.policy, conflicts: p.conflicts, review: p.review, skipped: p.skipped, complete: p.complete, actions: p.actions.map(({ path, action, after, reason, note, resolution }) => ({ path, action, ...(resolution ? { resolution } : {}), ...(reason ? { reason } : {}), ...(note ? { note } : {}), ...(after?.kind === 'symlink' ? { target: after.target } : {}) })) });
 
-const writesSpecs = value => value.actions.some(action => action.path.startsWith('mai-specs/') && ['create', 'update', 'remove'].includes(action.action) && action.resolution !== 'skip');
 export async function apply(home, project, override, expectedRevision, options = {}) {
   return locked(home, async () => {
     const initial = await plan(home, project, override, options);
     if (initial.actions.some(a => a.action === 'conflict')) throw conflictError(initial);
     if (expectedRevision !== undefined && initial.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
     const seeded = await seed(home);
-    let p = await plan(home, project, initial.config, options);
+    const p = await plan(home, project, initial.config, options);
     if (expectedRevision !== undefined && p.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
     if (p.actions.some(a => a.action === 'conflict')) throw conflictError(p);
-    let specsLock = null;
-    try {
-    if (writesSpecs(initial) || writesSpecs(p)) {
-      await assertWritableWorkspace(p.root);
-      specsLock = await acquireWorkspaceLock(p.root);
-      p = await plan(home, project, initial.config, options);
-      if (expectedRevision !== undefined && p.revision !== expectedRevision) throw Error('Project or assets changed since preview; preview again');
-      if (p.actions.some(a => a.action === 'conflict')) throw conflictError(p);
-    }
     const registryBefore = await snapshot(home, 'projects.json');
     const changed = p.actions.filter(a => ['create', 'update', 'remove'].includes(a.action));
     const stamp = Date.now() + '-' + randomUUID();
@@ -357,7 +345,6 @@ export async function apply(home, project, override, expectedRevision, options =
       await pruneBackups(home, p.root);
     }
     return { ...publicPlan(p,'applied'), applied: true, recovery, assetMigrations: seeded.assetMigrations, skillMigrations: seeded.skillMigrations };
-    } finally { if (specsLock) await specsLock.release(); }
   });
 }
 export async function doctor(home, project) {
@@ -370,8 +357,5 @@ export async function doctor(home, project) {
   for (const entry of discovery.filter(entry => entry.status === 'needs-sync')) {
     if (!issues.some(issue => issue.path === entry.path)) issues.push({path:entry.path,action:'check',reason:'入口或其依赖与预期不一致，请核对 discovery 并重新同步。'});
   }
-  const pending = await pendingInfo(root).catch(error => ({ error }));
-  if (pending?.error) issues.push({ path: 'mai-specs/.mai-migration/pending', action: 'check', reason: pending.error.message });
-  else if (pending && !pending.committed) issues.push({ path: 'mai-specs/.mai-migration/pending', action: 'check', reason: '存在未完成迁移，请先执行 mai migrate recover。' });
   return { healthy: issues.length === 0, issues, discovery };
 }

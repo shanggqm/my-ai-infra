@@ -1,11 +1,15 @@
+// 迁移专用的 Feature 工作区辅助：编号分配、ROADMAP 行、模板渲染与工作区锁。
+// 规则与 my-create-feature/scripts/init-feature.mjs 保持一致（该脚本不改动），
+// test/migration-workspace-parity.test.mjs 逐例比对两者，防止漂移。
+// 锁路径 mai-specs/.feature-init.lock 与 owner.json 格式必须与 init-feature.mjs 相同，才能与它互斥。
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { loadLayout } from './validate-feature.mjs';
+import { loadLayout } from '../../assets/skills/my-create-feature/scripts/validate-feature.mjs';
 
-export const templateRoot = fileURLToPath(new URL('../template/', import.meta.url));
-const profilesFile = fileURLToPath(new URL('../references/FEATURE_PROFILES.json', import.meta.url));
+export const templateRoot = fileURLToPath(new URL('../../assets/skills/my-create-feature/template/', import.meta.url));
+const profilesFile = fileURLToPath(new URL('../../assets/skills/my-create-feature/references/FEATURE_PROFILES.json', import.meta.url));
 export const conflict = message => Object.assign(Error(message), { exitCode: 2 });
 export const table = value => value.replaceAll('\\', '\\\\').replaceAll('|', '\\|').replace(/\r?\n/g, '<br>');
 
@@ -56,50 +60,6 @@ export async function featureProfile(io, requested) {
   const profile = requested ?? registry.default;
   if (!Object.hasOwn(registry.profiles, profile)) throw Error(`Unknown profile: ${profile}; expected ${Object.keys(registry.profiles).join(', ')}`);
   return { profile, defaultProfile: registry.default };
-}
-export function metadataText(source) {
-  let comment = false, fence = null;
-  return source.split(/\r?\n/).map(line => {
-    if (fence) {
-      const closing = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
-      if (closing && closing[1][0] === fence[0] && closing[1].length >= fence.length) fence = null;
-      return '';
-    }
-    if (!comment && (/^(?: {4}|\t)/.test(line) || /^ {0,3}(`{3,}|~{3,})/.test(line))) {
-      fence = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1] ?? null;
-      return '';
-    }
-    let visible = '', rest = line;
-    while (rest) {
-      const marker = rest.indexOf(comment ? '-->' : '<!--');
-      const code = !comment && rest.match(/(`+)(?!`)(.*?)\1(?!`)/);
-      if (code && (marker < 0 || code.index < marker)) {
-        visible += rest.slice(0, code.index + code[0].length);
-        rest = rest.slice(code.index + code[0].length);
-        continue;
-      }
-      if (marker < 0) { if (!comment) visible += rest; break; }
-      if (!comment) visible += rest.slice(0, marker);
-      rest = rest.slice(marker + (comment ? 3 : 4));
-      comment = !comment;
-    }
-    fence = visible.match(/^ {0,3}(`{3,}|~{3,})/)?.[1] ?? null;
-    return fence ? '' : visible;
-  }).join('\n');
-}
-export function checkProfileTemplate(source, profile, defaultProfile, allowLegacy = true) {
-  const visible = metadataText(source);
-  const rows = [...visible.matchAll(/^ {0,3}\|[ \t]*Profile[ \t]*\|([^\r\n]*)$/gm)];
-  if (allowLegacy && !rows.length && profile === 'standard' && profile === defaultProfile && !visible.includes('{{PROFILE}}')) return false;
-  const tables = [...visible.matchAll(/(?:^ {0,3}\|[^\n]*(?:\n|$))+/gm)].map(match => match[0].replace(/\n$/, '').split('\n'));
-  const metadata = tables.filter(lines => /^ {0,3}\|(?:[ \t]*:?-+:?[ \t]*\|){2}[ \t]*$/.test(lines[1] || '')
-    && lines.slice(2).some(line => /^ {0,3}\|[ \t]*Phase[ \t]*\|/.test(line)));
-  if (rows.length !== 1 || !/^\s*(?:\{\{PROFILE\}\}|[a-z][a-z0-9-]*)\s*\|\s*$/.test(rows[0][1])
-    || metadata.length !== 1 || !metadata[0].slice(2).includes(rows[0][0])
-    || rows[0][1].trim().replace(/\s*\|$/, '').replace('{{PROFILE}}', profile) !== profile) {
-    throw Error('BRIEF template must record the selected Profile; update the installed Skill template');
-  }
-  return true;
 }
 export function roadmapWithRow(source, fields) {
   const row = count => `| ${fields.id} | [${table(fields.title).replaceAll('[', '\\[').replaceAll(']', '\\]')}](${fields.name}/BRIEF.md) | ${count === 5 ? fields.profile + ' | ' : ''}${fields.priority} | ${count === 4 ? '规格：' + fields.profile + '；' : ''}${table(fields.summary)} |`;
@@ -158,10 +118,6 @@ export function allocateFeatureId(names, oldRoadmap, requestedSlug) {
   let next = (lowest + 999) % 1000;
   while (usedNumbers.has(next)) next = (next + 999) % 1000;
   return String(next).padStart(3, '0');
-}
-
-export function updateRoadmap(source, fields) {
-  return roadmapWithRow(source, fields);
 }
 
 function sectionBounds(lines, heading) {

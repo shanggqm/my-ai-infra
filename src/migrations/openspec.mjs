@@ -17,7 +17,7 @@ mai migrate recover --dry-run`;
 --change   导入一个活动 change，OpenSpec 继续维护现行规格和归档
 --changes  一次导入至少两个活动 change，ID 用空格分开；任一项阻塞则整批不写入
 --active   导入当前全部活动 change，不包含 archive
---all      切换整个工作区：现行规格、活动 change 和归档历史改由 MAI 维护
+--all      切换整个工作区：活动 change 和已归档 change 按 MAI 布局建立 Feature
 原 openspec/ 目录始终保留。预览只读；提交必须使用本次预览的 revision。
 示例：mai migrate openspec --change add-login --dry-run`;
 }

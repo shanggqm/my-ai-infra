@@ -4,9 +4,9 @@ import { createHash } from 'node:crypto';
 import { safe, stat } from '../fs.mjs';
 import { selectChanges } from './openspec-selection.mjs';
 import { inspectMetadata } from './openspec-metadata.mjs';
+import { conflict } from '../feature-transaction.mjs';
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
-const conflict = message => Object.assign(new Error(message), { exitCode: 2 });
 
 async function directory(root, relative) {
   const file = await safe(root, relative);
