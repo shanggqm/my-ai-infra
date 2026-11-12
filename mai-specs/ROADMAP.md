@@ -9,6 +9,7 @@
 
 | 需求 | 标题 | 优先级 | 说明 |
 |---|---|---|---|
+| 991 | [接入 MiniMax Code 工具](991-minimax-code-adapter/BRIEF.md) | P1 | 规格：standard；按原生目录接入 Skill、规则、格式化 Hook 与用户级角色；实现与自动化验证完成，278 项测试及安装包验收通过；宿主真实发现待验。 |
 | 992 | [统一快捷指令为 Skill](992-prompt-skills/BRIEF.md) | P1 | 规格：simple；review，四个工作流已统一为 Skill；276 项自动化、8 组浏览器、安装包及 Codex/Claude 发现通过，模型行为回归待验。 |
 | 993 | [复用项目既有格式化规范的 Hook](993-project-format-hook/BRIEF.md) | P1 | 规格：standard；实现与自检完成，review；277 项自动化、7 组浏览器回归及安装包验收通过；真实宿主触发与独立代码评审待验。 |
 | 994 | [技术债治理贯穿 SDD 与独立债务分析 Skill](994-technical-debt-governance/BRIEF.md) | P1 | 规格：standard；my-analyze-debt 与阶段短约束已实现，追加全局最优/MVP比较及用户选择；review，保留前次宿主限制与报告质量问题。 |

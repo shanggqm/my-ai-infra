@@ -61,7 +61,7 @@ metadata:
 
 ### 从个人库或内置库装配
 
-1. `mai config --project PATH` 读取配置，`mai catalog` 核对可用 Skill。工具优先沿用已有选择，首次装配且无偏好时简短询问；可选 codex、claudecode、cursor、copilot。
+1. `mai config --project PATH` 读取配置，`mai catalog` 核对可用 Skill。工具优先沿用已有选择，首次装配且无偏好时简短询问；可选 codex、claudecode、cursor、copilot、mcode。
 2. 增减 Skill 或工具时计算完整目标清单，保留用户未要求改动的项。`--skills` / `--tools` 接收逗号分隔完整清单；不要将“加一个”传成“只保留一个”。取消项目工具可能整体备份并移除对应专属目录，需在预览中明确影响。
 3. 先 `mai plan --project PATH`，再按相同工具、Skill 和冲突策略执行 `mai init --project PATH --conflict merge --yes` 或 `mai sync --project PATH --conflict merge --yes`。需要调整选择时，plan 与写入命令都传同一 `--skills FULL_LIST` / `--tools FULL_LIST`。首次装配用 init，已有项目同步用 sync。
 4. `mai doctor --project PATH` 检查装配结果，并核对用户要求的具体资产。用户只要求查看或诊断时，停留在 config、plan、doctor 与文件读取。

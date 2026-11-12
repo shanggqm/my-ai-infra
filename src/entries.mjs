@@ -23,8 +23,10 @@ export async function putEntry(root, relative, entry, { restore = false } = {}) 
   if (!restore) await safe(root, path.relative(path.resolve(root), target));
   await fs.mkdir(path.dirname(file), { recursive: true });
   const temporary = file + '.' + randomUUID() + '.tmp';
+  // A link to a directory needs the directory type so the host resolves it.
+  const directory = entry.directory ?? (await stat(target))?.isDirectory() === true;
   try {
-    await fs.symlink(entry.target, temporary, 'file');
+    await fs.symlink(entry.target, temporary, directory ? 'dir' : 'file');
     await fs.rename(temporary, file);
   } catch (error) {
     if (['EPERM', 'EACCES'].includes(error.code)) throw Error(`无法创建软链接 ${relative}，请启用系统软链接权限（Windows 可启用开发者模式）。`);

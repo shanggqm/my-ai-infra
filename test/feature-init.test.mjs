@@ -420,7 +420,7 @@ test('rollback preserves outside content added to a newly created Feature', asyn
   await missing(path.join(specsRoot, '999-record-search/BRIEF.md'));
 });
 
-test('all four installed adapters include working script/templates and preserve legacy project templates', async t => {
+test('all installed adapters include working script/templates and preserve legacy project templates', async t => {
   const { project, root } = await fixture(t);
   const legacy = path.join(project, 'mai-specs/_templates/BRIEF.tmpl.md');
   await fs.mkdir(path.dirname(legacy), { recursive: true }); await fs.writeFile(legacy, 'User-owned legacy template\n');

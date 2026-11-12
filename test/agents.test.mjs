@@ -74,7 +74,9 @@ for (const { name, skill } of roles) {
     const link = [...prompt.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)].find(match => match[1] === skill)?.[2];
     assert.ok(link, file);
     const dependency = path.resolve(path.dirname(file), decodeURIComponent(link));
-    assert.equal(await fs.realpath(dependency), await fs.realpath(path.join(root, '.agents/skills', skill, 'SKILL.md')));
+    // MiniMax Code links the Skill directory, so its SKILL.md stays a real file.
+    const canonical = path.join(root, '.agents/skills', skill, 'SKILL.md');
+    assert.equal(await fs.realpath(dependency), await fs.realpath(canonical));
     assert.equal(await fs.readFile(dependency, 'utf8'), await fs.readFile(new URL(`../assets/skills/${skill}/SKILL.md`, import.meta.url), 'utf8'));
     if (tool === 'claudecode') assert.ok(text.includes(`skills: ["${skill}"]`));
     if (tool === 'copilot') assert.ok(text.includes('include-custom-instructions: true'));
@@ -141,18 +143,38 @@ for (const { name, skill } of roles) {
 
   test(name + ': setup installs global roles and dependencies, preserves edits and keeps relocated runtime functional', async t => {
     const { home, toolHome } = await fixture(t);
-    const result = await setup(home, Object.keys(AGENT_TOOLS), toolHome, [skill]);
+    const result = await setup(home, Object.keys(GLOBAL_AGENT_TOOLS), toolHome, [skill]);
     assert.deepEqual(result.agents, [name]);
-    for (const tool of Object.keys(AGENT_TOOLS)) await checkInstalled(toolHome, tool, true);
-    await setup(home, Object.keys(AGENT_TOOLS), toolHome, [skill]);
+    for (const tool of Object.keys(GLOBAL_AGENT_TOOLS)) await checkInstalled(toolHome, tool, true);
+    await setup(home, Object.keys(GLOBAL_AGENT_TOOLS), toolHome, [skill]);
     const listing = await exec(process.execPath, [path.join(home, 'runtime/bin/my-ai-infra.mjs'), 'agents', '--home', home]);
     assert.deepEqual(JSON.parse(listing.stdout).map(agent => agent.name), roles.map(role => role.name));
     const target = path.join(toolHome, `.claude/agents/${name}.md`);
     await fs.appendFile(target, '\nPersonal native edit\n');
     const codexBefore = await fs.readFile(path.join(toolHome, `.codex/agents/${name}.toml`));
-    await assert.rejects(setup(home, Object.keys(AGENT_TOOLS), toolHome, [skill]), /Global Agent conflict/);
+    await assert.rejects(setup(home, Object.keys(GLOBAL_AGENT_TOOLS), toolHome, [skill]), /Global Agent conflict/);
     assert.deepEqual(await fs.readFile(path.join(toolHome, `.codex/agents/${name}.toml`)), codexBefore);
     assert.ok((await fs.readFile(target, 'utf8')).includes('Personal native edit'));
+  });
+
+  test(name + ': MiniMax Code keeps project roles out and installs one user-level agent.md', async t => {
+    const { project, home, toolHome } = await fixture(t);
+    const preview = await plan(home, project, chosen(['mcode']));
+    await apply(home, project, chosen(['mcode']), preview.revision);
+    await absent(path.join(project, '.minimax/agents'));
+    const directory = path.join(project, '.minimax/skills', skill);
+    assert.ok((await fs.lstat(directory)).isSymbolicLink());
+    const entry = path.join(directory, 'SKILL.md');
+    assert.ok((await fs.lstat(entry)).isFile());
+    assert.equal(await fs.readFile(entry, 'utf8'), await fs.readFile(path.join(project, '.agents/skills', skill, 'SKILL.md'), 'utf8'));
+    const discovered = (await doctor(home, project)).discovery.find(item => item.tool === 'mcode' && item.type === 'agents' && item.name === name);
+    assert.equal(discovered.status, 'unsupported');
+    await setup(home, ['mcode'], toolHome, [skill]);
+    const native = path.join(toolHome, '.minimax/agents', name, 'agent.md');
+    assert.ok((await fs.lstat(native)).isFile());
+    const text = await fs.readFile(native, 'utf8');
+    assert.ok(text.includes(`skills: ["${skill}"]`));
+    assert.ok(!text.includes('{{SKILL:'));
   });
 
   test(name + ': setup excludes roles without dependencies and archives legacy builtin edits', async t => {

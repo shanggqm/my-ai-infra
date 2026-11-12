@@ -12,7 +12,7 @@ import { PACKAGE, setup } from '../src/store.mjs';
 import { json, readJSON, write } from '../src/fs.mjs';
 
 const exec = promisify(execFile);
-const chosen = { version: 1, tools: ['codex', 'claudecode', 'cursor', 'copilot'], skills: ['my-review-code'] };
+const chosen = { version: 1, tools: ['codex', 'claudecode', 'cursor', 'copilot', 'mcode'], skills: ['my-review-code'] };
 async function fixture(t) {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'mai-format-')));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -93,7 +93,7 @@ test('no configuration leaves every host Hook configuration absent during init a
   await assert.rejects(fs.lstat(path.join(project, FORMAT_SOURCE)), { code: 'ENOENT' });
 });
 
-test('init registers four hosts, keeps user settings, executes from the real root and sync is idempotent', async t => {
+test('init registers every supported host, keeps user settings, executes from the real root and sync is idempotent', async t => {
   const { root, home, project } = await fixture(t);
   await script(project);
   const originals = {};
@@ -108,7 +108,7 @@ test('init registers four hosts, keeps user settings, executes from the real roo
   await assert.rejects(fs.stat(path.join(project, 'formatted.txt')), { code: 'ENOENT' });
   const result = await apply(home, project, chosen, preview.revision);
   assert.equal(result.complete, true);
-  assert.equal(result.discovery.filter(item => item.name === 'my-format' && item.status === 'ready').length, 4);
+  assert.equal(result.discovery.filter(item => item.name === 'my-format' && item.status === 'ready').length, Object.keys(FORMAT_CONFIGS).length);
   assert.ok(result.discovery.every(item => !item.hostVerified));
   for (const [tool, spec] of Object.entries(FORMAT_CONFIGS)) {
     const settings = await readJSON(project, spec.path);

@@ -12,8 +12,8 @@ import { startWeb } from '../src/web.mjs';
 import { snapshot } from '../src/entries.mjs';
 import { json, write } from '../src/fs.mjs';
 
-const tools = ['codex', 'claudecode', 'cursor', 'copilot'];
-const prefixes = ['.agents/skills', '.claude/skills', '.cursor/skills', '.github/skills'];
+const tools = ['codex', 'claudecode', 'cursor', 'copilot', 'mcode'];
+const prefixes = ['.agents/skills', '.claude/skills', '.cursor/skills', '.github/skills', '.minimax/skills'];
 const selected = { version: 1, tools, skills: ['my-create-prd', 'my-create-feature', 'my-review-code'] };
 const reduced = { ...selected, skills: ['my-create-prd'] };
 const absent = file => assert.rejects(fs.lstat(file), { code: 'ENOENT' });
@@ -53,7 +53,12 @@ test('Web deselection removes Skill trees and role directories; reselect restore
   assert.ok((await fs.lstat(path.join(project, '.agents/skills/my-create-feature/SKILL.md'))).isFile());
   for (const prefix of prefixes.slice(1)) {
     const file = path.join(project, prefix, 'my-create-feature/scripts/init-feature.mjs');
-    assert.ok((await fs.lstat(file)).isSymbolicLink());
+    // MiniMax Code rejects a symlinked SKILL.md, so its entry links the Skill directory.
+    if (prefix === '.minimax/skills') {
+      const directory = path.join(project, prefix, 'my-create-feature');
+      assert.ok((await fs.lstat(directory)).isSymbolicLink());
+      assert.equal(await fs.realpath(directory), await fs.realpath(path.join(project, '.agents/skills/my-create-feature')));
+    } else assert.ok((await fs.lstat(file)).isSymbolicLink());
     assert.equal(await fs.readFile(file, 'utf8'), original);
   }
   assert.ok((await fs.lstat(path.join(project, '.codex/agents/code-review.toml'))).isSymbolicLink());

@@ -59,7 +59,7 @@ try {
   for (const asset of extensions) {
     for (const file of Object.keys(asset.contents)) check(deliverables.split('\n').includes(`- assets/${assetRelative(asset,file)}`), `Missing extension deliverable: ${assetRelative(asset,file)}`);
   }
-  for (const global of [false, true]) addExtensions(new Map(), extensions, ['codex', 'claudecode', 'cursor', 'copilot'], global);
+  for (const global of [false, true]) addExtensions(new Map(), extensions, ['codex', 'claudecode', 'cursor', 'copilot', 'mcode'], global);
 } catch (error) { errors.push(error.message); }
 for (const relative of ['README.md', 'assets/README.md', 'assets/agents/README.md', 'scripts/README.md', 'catalog/README.md', 'skill-inventory.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md', ...await files(path.join(root, 'docs')).then(names => names.filter(name => name.endsWith('.md')).map(name => 'docs/' + name))]) {
   const body = (await fs.readFile(path.join(root, relative), 'utf8')).replace(/```[\s\S]*?```/g, '');

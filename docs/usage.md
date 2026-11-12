@@ -40,7 +40,7 @@ my-ai-infra web --project "/path/to/my repo" --home "/path/to/personal assets" -
 
 ## 选择工具与 Skill
 
-工具值为 `codex`、`claudecode`、`cursor`、`copilot`；CLI 也接受 `claude`、`claude-code`、`github-copilot`。
+工具值为 `codex`、`claudecode`、`cursor`、`copilot`、`mcode`；CLI 也接受 `claude`、`claude-code`、`github-copilot`、`minimax`、`minimax-code`。
 
 交互式 `init` / `setup` 只展示工具多选菜单：↑/↓ 移动、空格切换选中、`a` 全选/清空、Enter 确认。已有工具偏好默认勾选；至少保留一项。Esc 或 Ctrl+C 取消，取消时不安装资产、不写入项目。未保存固定 Skill 清单时，CLI 与 Web 新项目默认选择所有可用 Skill，包含新增个人 Skill；显式保存过 Skill 清单或已有项目配置时沿用清单，`--skills` 可显式覆盖。标准输入或输出未连接终端时沿用相同规则。项目 `init` / `sync` 的 `--yes` 跳过工具和冲突策略选择，默认按 merge 处理；可通过 `--conflict merge|replace|abort` 明确指定策略。全局 `setup` 仍保护工具入口的同名修改并报告冲突。
 
@@ -125,6 +125,8 @@ my-create-feature 的脚本在 mai-specs/ 下创建 NNN-<slug> 需求目录，�
 
 项目使用 `.agents/<类型>/` 保存资产，`skills/`、`agents/`、`hooks/` 等目录并列。Codex 直接读取 `.agents/skills/` 源文件，其他工具的 Skill 目录使用相对软链接入口。全局 setup 使用用户主目录 `.agents/`。个人库与分发包采用 `assets/<类型>/`，完整扩展清单见 [统一资产管理](../assets/README.md)。
 
+MiniMax Code 拒绝软链接的 `SKILL.md`，因此它的入口是整个 Skill 目录的相对软链接：项目内为 `.minimax/skills/<名称>` → `../../.agents/skills/<名称>`，全局为 `~/.minimax/skills/<名称>` → `../../.agents/skills/<名称>`，正文仍是 `.agents/skills/<名称>/SKILL.md` 的普通文件，用户修改后各入口立即同步。宿主侧读取项目目录时依赖外部技能根 `workspace-minimax`（默认开启）；该来源关闭时项目内 Skill 不再被发现，可改用全局 setup。MiniMax Code 只在用户数据目录注册自定义 Agent，项目内不装配角色入口。
+
 项目规则正文由项目作者维护，不注入 SDD 正文或共享流程引用。已有不同正文的 AGENTS.md、CLAUDE.md 和 Copilot 原生规则分别备份、迁移到 .agents/rules/ 下的独立文件，原入口改为相对软链接。已有根规则即使对应工具未选中也迁移。新建 CLAUDE.md 时，AGENTS.md 是唯一内容源，两个根入口都直接链接 .agents/rules/AGENTS.md；只选 Claude Code 也创建此中心文件和 AGENTS.md 入口，后续新增 Claude Code 同样复用已有 AGENTS.md。未选 Claude Code 时不新建 CLAUDE.md；Copilot 对应 .github/copilot-instructions.md，继续独立管理。切换偏好保留已有规则与入口，删除安装记录后也能识别并保留共享关系。
 
 CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用后也在终端单独显示；Web 在预览和成功提示中显示。Codex / Claude Code 在各自会话中执行 /init；Copilot 执行 copilot init；Cursor 使用 Agent 对话补全 AGENTS.md。具体命令及官方说明见 [项目规则入口](#项目规则入口)。安装器不自动运行这些命令；doctor 健康表示安装一致，空规则仍需用户补全。
@@ -179,16 +181,17 @@ merge 以本地优先的目录合并补齐资产，同名不同正文保留候�
 - Claude Code：启动 `claude` 后执行 `/init`，补全 CLAUDE.md（[官方命令说明](https://code.claude.com/docs/zh-CN/commands)）。
 - Cursor：在 Agent 对话发送“请读取仓库，补全根目录 AGENTS.md 中的项目运行原则、命令和约束”（[规则支持](https://cursor.com/docs/context/rules)）。
 - Copilot：执行 `copilot init`，或在 CLI 会话执行 `/init`（[官方命令说明](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)）。
+- MiniMax Code：启动 `mcode` 后执行 `/init`，补全根目录 AGENTS.md（[官方文档](https://agent.minimax.cn/docs/llms.txt)）。
 
-文件已存在时，可让对应工具补全已有内容。新建的 AGENTS.md 与 CLAUDE.md 共用源，Codex、Cursor、Claude Code 可选一个生成原则；原有独立规则保持独立。通过现有链接写入后内容立即集中生效；如果初始化工具将空链接替换成普通文件，执行 `my-ai-infra sync --project .` 重新归入中心目录。已有两份不同的非空内容时，先合并差异后再同步。
+文件已存在时，可让对应工具补全已有内容。新建的 AGENTS.md 与 CLAUDE.md 共用源，Codex、Cursor、MiniMax Code 可选一个生成原则；原有独立规则保持独立。通过现有链接写入后内容立即集中生效；如果初始化工具将空链接替换成普通文件，执行 `my-ai-infra sync --project .` 重新归入中心目录。已有两份不同的非空内容时，先合并差异后再同步。
 
 ## 初始化冲突处理
 
 取消选择 Skill 时，会删除对应受管文件，并从深到浅清理因此变空的资产目录和工具入口目录；重新选择时重建文件与相对软链接。仍在使用的工具目录内，用户自行添加的文件、目录和外部链接保留，修改过的受管文件继续遵循冲突策略。
 
-已初始化项目取消 Coding 工具后，CLI `init` / `sync` 与 Web 应用变更会整体备份并移除未选工具的专属目录：Codex 的 `.codex/`、Claude Code 的 `.claude/`、Cursor 的 `.cursor/`。目录内的本地配置、未登记文件和空目录一并归档；再次同步也会清理旧版本残留。`.agents/` 中仍选用的 Skill、Agent、规则和已安装的扩展源保留，未启用工具的派生 Agent 格式可移除。首次初始化不清理未选工具的已有目录。
+已初始化项目取消 Coding 工具后，CLI `init` / `sync` 与 Web 应用变更会整体备份并移除未选工具的专属目录：Codex 的 `.codex/`、Claude Code 的 `.claude/`、Cursor 的 `.cursor/`、MiniMax Code 的 `.minimax/`。目录内的本地配置、未登记文件和空目录一并归档；再次同步也会清理旧版本残留。`.agents/` 中仍选用的 Skill、Agent、规则和已安装的扩展源保留，未启用工具的派生 Agent 格式可移除。首次初始化不清理未选工具的已有目录。
 
-GitHub Copilot 清理 `.copilot/`、`.github/skills/`、`.github/agents/`、`.github/prompts/`、`.github/instructions/` 和专属规则入口；`.github/`、工作流及其他仓库配置保留。共享 `.github` 若为未知目录链接，各策略均保持该路径并报告未完成清理。Claude Code 的 `CLAUDE.md` 入口移除，中心规则正文保留。目录清理纳入只读预览、revision 校验、备份和失败回滚；工具专属目录的外部软链接仅移除链接本身，目标不变。已停用工具的目录清理适用于所有冲突策略；可在结果的 `recovery/before/` 查找原目录。
+GitHub Copilot 清理 `.copilot/`、`.github/skills/`、`.github/agents/`、`.github/prompts/`、`.github/instructions/` 和专属规则入口；`.github/`、工作流及其他仓库配置保留。共享 `.github` 若为未知目录链接，各策略均保持该路径并报告未完成清理。Claude Code 的 `CLAUDE.md` 入口移除，中心规则正文保留。MiniMax Code 的 `.minimax/` 目录归档移除；AGENTS.md 入口与 Codex、Cursor 共用，取消该工具时保留。目录清理纳入只读预览、revision 校验、备份和失败回滚；工具专属目录的外部软链接仅移除链接本身，目标不变。已停用工具的目录清理适用于所有冲突策略；可在结果的 `recovery/before/` 查找原目录。
 
 `init` / `sync` 会在写入前集中检查计划安装和移除的路径，包括 Skill / Agent、运行规则、父目录类型、文件链接、配置、安装记录与忽略标记。无关文件保持原状。交互终端发现冲突时用方向键选择处理方式，Enter 默认选择 merge；完成后显示简短摘要与恢复目录。`--yes` 和非交互命令直接采用默认策略，非交互输出保持 JSON。Web 提供相同策略，并要求重新预览后应用。
 

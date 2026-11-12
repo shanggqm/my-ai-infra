@@ -9,19 +9,23 @@ export const FORMAT_CONFIGS = {
   claudecode: { path: '.claude/settings.json', event: 'Stop', grouped: true },
   cursor: { path: '.cursor/hooks.json', event: 'stop', version: 1 },
   copilot: { path: '.github/hooks/my-ai-infra-format.json', event: 'Stop', version: 1 },
+  mcode: { path: '.minimax/hooks.json', event: 'Stop', grouped: true, timeout: 10 },
 };
+// MiniMax Code accepts a handler timeout of 1 to 10 seconds; other hosts allow 30.
+const DEFAULT_TIMEOUT = 30;
 const marker = ' --my-ai-infra-format';
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const quote = value => "'" + value.replaceAll("'", "'\"'\"'") + "'";
 const owned = item => object(item) && typeof item.command === 'string' && item.command.endsWith(marker);
 
-function handler(root) {
-  return { type: 'command', command: `node ${quote(path.join(root, FORMAT_SOURCE))}${marker}`, timeout: 30 };
+function handler(root, timeout = DEFAULT_TIMEOUT) {
+  return { type: 'command', command: `node ${quote(path.join(root, FORMAT_SOURCE))}${marker}`, timeout };
 }
 
 export function validFormatState(relative, entry) {
-  if (!Object.values(FORMAT_CONFIGS).some(item => item.path === relative)) return false;
-  return entry?.kind === 'file' && object(entry.formatHook) && owned(entry.formatHook) && entry.formatHook.type === 'command' && entry.formatHook.timeout === 30;
+  const spec = Object.values(FORMAT_CONFIGS).find(item => item.path === relative);
+  if (!spec) return false;
+  return entry?.kind === 'file' && object(entry.formatHook) && owned(entry.formatHook) && entry.formatHook.type === 'command' && entry.formatHook.timeout === (spec.timeout ?? DEFAULT_TIMEOUT);
 }
 
 // Shared host files are semantically patched. Their other settings and hooks
@@ -31,7 +35,7 @@ export async function formatHookActions(root, tools, enabled, previous, inspect)
   for (const [tool, spec] of Object.entries(FORMAT_CONFIGS)) {
     const active = enabled && tools.includes(tool), old = previous[spec.path];
     if (!active && !old?.formatHook) continue;
-    const before = await inspect(spec.path), wanted = handler(root);
+    const before = await inspect(spec.path), wanted = handler(root, spec.timeout);
     try {
       if (before !== null && before.kind !== 'file') throw Error('宿主 Hook 配置必须是普通 JSON 文件；保留原路径');
       const document = before ? JSON.parse(before.text) : {};

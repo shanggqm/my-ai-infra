@@ -4,8 +4,11 @@ import { read } from './fs.mjs';
 
 const validName = value => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64;
 export const AGENT_TOOLS = { codex: '.codex/agents', claudecode: '.claude/agents', cursor: '.cursor/agents', copilot: '.github/agents' };
-export const GLOBAL_AGENT_TOOLS = { ...AGENT_TOOLS, copilot: '.copilot/agents' };
-export const agentFilename = (tool, name) => `${name}${tool === 'codex' ? '.toml' : tool === 'copilot' ? '.agent.md' : '.md'}`;
+export const GLOBAL_AGENT_TOOLS = { ...AGENT_TOOLS, copilot: '.copilot/agents', mcode: '.minimax/agents' };
+// Tools with a native Agent format. MiniMax Code registers Agents in the user data directory only.
+export const AGENT_FORMATS = [...Object.keys(AGENT_TOOLS), 'mcode'];
+// MiniMax Code registers a custom Agent as a directory with its own agent.md.
+export const agentFilename = (tool, name) => tool === 'codex' ? `${name}.toml` : tool === 'copilot' ? `${name}.agent.md` : tool === 'mcode' ? `${name}/agent.md` : `${name}.md`;
 
 export function parseAgent(content, expectedName) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]+)$/);
@@ -30,14 +33,14 @@ export async function agentCatalog(home) {
 }
 
 export function renderAgent(agent, tool, skillPath) {
-  if (!Object.hasOwn(AGENT_TOOLS, tool)) throw Error(`Unsupported Agent tool: ${tool}`);
+  if (!AGENT_FORMATS.includes(tool)) throw Error(`Unsupported Agent tool: ${tool}`);
   const body = agent.body.replace(/\{\{SKILL:([^}]+)\}\}/g, (_, skill) => {
     // Markdown destinations are URI-escaped; the path resolves from the agent file.
     return skillPath(skill).split(path.sep).join('/').split('/').map(encodeURIComponent).join('/');
   });
   const quote = JSON.stringify;
   if (tool === 'codex') return `name = ${quote(agent.name)}\ndescription = ${quote(agent.description)}\ndeveloper_instructions = ${quote(body + '\n')}\n`;
-  const extra = tool === 'claudecode' ? `skills: ${quote(agent.skills)}\n` : tool === 'copilot' ? 'include-custom-instructions: true\n' : '';
+  const extra = tool === 'claudecode' || tool === 'mcode' ? `skills: ${quote(agent.skills)}\n` : tool === 'copilot' ? 'include-custom-instructions: true\n' : '';
   return `---\nname: ${quote(agent.name)}\ndescription: ${quote(agent.description)}\n${extra}---\n\n${body}\n`;
 }
 

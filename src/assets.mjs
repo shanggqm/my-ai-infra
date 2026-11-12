@@ -14,7 +14,7 @@ export async function pruneAssetDirectories(root, removed) {
   const directories = new Set();
   for (const relative of removed) {
     const boundary = relative.split('/')[0];
-    if (!relativePath(relative) || !['.agents', '.codex', '.claude', '.cursor', '.github', '.copilot'].includes(boundary)) continue;
+    if (!relativePath(relative) || !['.agents', '.codex', '.claude', '.cursor', '.github', '.copilot', '.minimax'].includes(boundary)) continue;
     // Only visit ancestors of removed managed files; keep host roots and user contents.
     for (let parent = path.posix.dirname(relative); parent.startsWith(boundary + '/'); parent = path.posix.dirname(parent)) directories.add(parent);
   }
@@ -30,10 +30,10 @@ export const relativePath = value => typeof value === 'string' && value.length >
 export const linkTarget = (entry, source) => path.posix.relative(path.posix.dirname(entry), source);
 export const derivedAgent = (tool, name, filename) => `${ASSET_ROOT}/.generated/${tool}/agents/${filename}`;
 export function sourceForEntry(relative) {
-  for (const prefix of ['.agents/skills', '.claude/skills', '.cursor/skills', '.github/skills', '.copilot/skills']) {
+  for (const prefix of ['.agents/skills', '.claude/skills', '.cursor/skills', '.github/skills', '.copilot/skills', '.minimax/skills']) {
     if (relative.startsWith(prefix + '/')) return relative.replace(prefix, SKILL_SOURCE);
   }
-  for (const [tool, prefix] of Object.entries({codex:'.codex/agents',claudecode:'.claude/agents',cursor:'.cursor/agents',copilot:'.github/agents'})) {
+  for (const [tool, prefix] of Object.entries({codex:'.codex/agents',claudecode:'.claude/agents',cursor:'.cursor/agents',copilot:'.github/agents',mcode:'.minimax/agents'})) {
     if (relative.startsWith(prefix + '/')) return derivedAgent(tool, null, relative.slice(prefix.length + 1));
   }
   return null;
@@ -42,7 +42,7 @@ export function assetSourcePath(relative) {
   return relativePath(relative) && relative.startsWith(ASSET_ROOT + '/') && relative.slice(ASSET_ROOT.length + 1).split('/').length >= 2;
 }
 export function validDestination(relative, tool, global = false) {
-  const prefix = {codex:'.codex/',claudecode:'.claude/',cursor:'.cursor/',copilot:global?'.copilot/':'.github/'}[tool];
+  const prefix = {codex:'.codex/',claudecode:'.claude/',cursor:'.cursor/',copilot:global?'.copilot/':'.github/',mcode:'.minimax/'}[tool];
   // Shared configuration files are owned by the user, never entire-file asset aliases.
   return prefix && relativePath(relative) && relative.startsWith(prefix) && relative.slice(prefix.length).includes('/') && !relative.startsWith(prefix+'skills/') && !relative.startsWith(prefix+'agents/');
 }
