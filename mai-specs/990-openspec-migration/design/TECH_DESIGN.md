@@ -1,6 +1,6 @@
 # 存量 OpenSpec 项目迁移技术方案
 
-> Feature 991 · Profile：standard · 状态：待评审 · 代码基线：main / `9c436d2`  
+> Feature 990 · Profile：standard · 状态：待评审 · 代码基线：main / `9c436d2`  
 > 模板：[项目标准技术方案](../../_templates/TECH_DESIGN.tmpl.md) · 需求与 AC：[PRD](../spec/PRD.md)
 
 [返回需求简报](../BRIEF.md) · [预审报告](../review/design_review.md) · [供评审的代码设计](CODE_DESIGN.md)

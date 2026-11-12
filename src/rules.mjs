@@ -5,7 +5,7 @@ import { legacyRuleActions } from './legacy-instructions.mjs';
 
 // Runtime principles belong to the project. Only their locations and links are managed.
 export const RULES = [
-  { entry: 'AGENTS.md', source: '.agents/rules/AGENTS.md', tools: ['codex', 'cursor'] },
+  { entry: 'AGENTS.md', source: '.agents/rules/AGENTS.md', tools: ['codex', 'cursor', 'mcode'] },
   { entry: 'CLAUDE.md', source: '.agents/rules/CLAUDE.md', tools: ['claudecode'] },
   { entry: '.github/copilot-instructions.md', source: '.agents/rules/copilot-instructions.md', tools: ['copilot'] },
 ];
@@ -15,6 +15,7 @@ const initialization = {
   codex: '在项目目录启动 codex，在会话中执行 /init；若提示文件已存在，请让它根据真实代码补全 AGENTS.md。',
   claudecode: '在项目目录启动 claude，在会话中执行 /init；若提示文件已存在，请让它根据真实代码补全 CLAUDE.md。',
   cursor: '在 Cursor Agent 中发送：请读取仓库，补全根目录 AGENTS.md 中的项目运行原则、命令和约束。',
+  mcode: '在项目目录启动 MiniMax Code，在会话中执行 /init 补全根目录 AGENTS.md；若提示文件已存在，请让它根据真实代码补全。',
   copilot: '在项目目录执行 copilot init，或在 Copilot CLI 会话中执行 /init，补全 .github/copilot-instructions.md。',
 };
 export const ruleInitialization = (tool, shared) => initialization[tool] + (shared ? ' AGENTS.md 与 CLAUDE.md 共用 AGENTS.md 唯一内容源，补全一次即可。' : '') + ' 请通过现有软链接写入，保留链接；完成后通过本工具再次同步并检查入口，沿用本次个人库和项目配置。';

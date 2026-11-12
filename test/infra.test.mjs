@@ -20,6 +20,11 @@ async function fixture(t) {
   return { root, project, home, toolHome };
 }
 const config = (tools = ['codex'], skills = defaultConfig().skills) => ({ version: 1, tools, skills });
+// MiniMax Code links the whole Skill directory, so its files are reached through the link.
+const skillFile = async (project, prefix, name, relative = 'SKILL.md') => {
+  try { return await fs.readFile(await fs.realpath(path.join(project, prefix, name, relative)), 'utf8'); }
+  catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+};
 
 test('plan is read-only, initializes all adapters, and repeated installation is stable', async t => {
   const { home, project } = await fixture(t);
@@ -37,12 +42,18 @@ test('plan is read-only, initializes all adapters, and repeated installation is 
   await assert.rejects(fs.stat(path.join(project, 'specs')), { code: 'ENOENT' });
   const worktreeScript = await fs.readFile(new URL('../assets/skills/my-create-worktree/scripts/create-worktree.sh', import.meta.url), 'utf8');
   for (const prefix of Object.values(TOOLS)) {
-    assert.match(await read(project, `${prefix}/my-create-feature/SKILL.md`), /name: "?my-create-feature/);
-    assert.match(await read(project, `${prefix}/my-review-design/SKILL.md`), /name: "?my-review-design/);
-    assert.equal(await read(project, `${prefix}/my-verify-feature/SKILL.md`), null);
-    assert.equal(await read(project, `${prefix}/my-create-worktree/scripts/create-worktree.sh`), worktreeScript);
-    assert.match(await read(project, `${prefix}/my-create-prd/SKILL.md`), /mai-specs\/_templates\/PRD\.tmpl\.md/);
+    assert.match(await skillFile(project, prefix, 'my-create-feature'), /name: "?my-create-feature/);
+    assert.match(await skillFile(project, prefix, 'my-review-design'), /name: "?my-review-design/);
+    assert.equal(await skillFile(project, prefix, 'my-verify-feature'), null);
+    assert.equal(await skillFile(project, prefix, 'my-create-worktree', 'scripts/create-worktree.sh'), worktreeScript);
+    assert.match(await skillFile(project, prefix, 'my-create-prd'), /mai-specs\/_templates\/PRD\.tmpl\.md/);
   }
+  // MiniMax Code rejects a symlinked SKILL.md, so it links the Skill directory instead.
+  const minimax = path.join(project, TOOLS.mcode, 'my-create-feature');
+  assert.ok((await fs.lstat(minimax)).isSymbolicLink());
+  assert.equal(await fs.readlink(minimax), '../../.agents/skills/my-create-feature');
+  assert.ok((await fs.stat(minimax)).isDirectory());
+  assert.ok(!(await fs.lstat(path.join(minimax, 'SKILL.md'))).isSymbolicLink());
   for (const name of ['CLAUDE.md','AGENTS.md','.github/copilot-instructions.md']) assert.equal(await read(project, name), '');
   assert.equal(await read(project, '.agents/AGENTS.md'), null);
   assert.equal((await doctor(home, project)).healthy, true);
@@ -302,6 +313,14 @@ test('my-create-code migrates to my-implement-code across adapters while preserv
   await write(project, '.my-ai-infra.json', json(oldChoice));
   const owned = {};
   for (const prefix of Object.values(TOOLS)) {
+    if (prefix === TOOLS.mcode) {
+      // MiniMax Code keeps a retired Skill as a directory link.
+      await fs.mkdir(path.join(project, prefix), { recursive: true });
+      const target = '../../.agents/skills/my-create-code';
+      await fs.symlink(target, path.join(project, prefix, 'my-create-code'), 'dir');
+      owned[`${prefix}/my-create-code`] = { kind: 'symlink', target, hash: hash(target) };
+      continue;
+    }
     const file = `${prefix}/my-create-code/SKILL.md`;
     await write(project, file, original);
     owned[file] = { kind: 'file', hash: hash(original) };
@@ -315,9 +334,9 @@ test('my-create-code migrates to my-implement-code across adapters while preserv
   assert.equal(await read(home, 'assets/skills/my-implement-code/SKILL.md'), null);
   assert.deepEqual(JSON.parse(await read(home, 'defaults.json')).skills, ['my-implement-code']);
   for (const prefix of Object.values(TOOLS)) {
-    assert.equal(await read(project, `${prefix}/my-create-code/SKILL.md`), null);
-    assert.match(await read(project, `${prefix}/my-implement-code/SKILL.md`), /name: "my-implement-code"/);
-    assert.equal(await read(project, `${prefix}/my-implement-code/references/custom.md`), null);
+    assert.equal(await skillFile(project, prefix, 'my-create-code'), null);
+    assert.match(await skillFile(project, prefix, 'my-implement-code'), /name: "my-implement-code"/);
+    assert.equal(await skillFile(project, prefix, 'my-implement-code', 'references/custom.md'), null);
   }
   const backups = await fs.readdir(path.join(home, 'backups'));
   const naming = backups.find(name => name.startsWith('builtin-skills-'));

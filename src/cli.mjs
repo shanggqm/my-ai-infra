@@ -17,7 +17,7 @@ import { planRecovery, submitRecovery } from './feature-transaction.mjs';
 
 const HELP = `my-ai-infra · 个人 AI Coding / SDD 工具
 
-mai setup [--tools codex,claudecode,cursor,copilot]
+mai setup [--tools codex,claudecode,cursor,copilot,mcode]
 mai init [--project PATH] [--tools ...] [--dry-run]
 mai plan [--project PATH] [--tools ...]
 mai sync [--project PATH] [--tools ...] [--dry-run]
@@ -71,14 +71,14 @@ function parse(args) {
   return { positionals, options };
 }
 const csv = text => text.split(',').map(t => t.trim()).filter(Boolean);
-const aliases = tools => tools.map(t => ({ claude: 'claudecode', 'claude-code': 'claudecode', 'github-copilot': 'copilot' })[t] || t);
+const aliases = tools => tools.map(t => ({ claude: 'claudecode', 'claude-code': 'claudecode', 'github-copilot': 'copilot', minimax: 'mcode', 'minimax-code': 'mcode' })[t] || t);
 
 async function preferences(base, options, interactive) {
   const result = { ...base };
   if (options.tools) result.tools = aliases(csv(options.tools));
   if (interactive && !options.yes && stdin.isTTY && stdout.isTTY) {
     if (!options.tools) {
-      const labels = { codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot' };
+      const labels = { codex: 'Codex', claudecode: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', mcode: 'MiniMax Code' };
       result.tools = await selectMany({ title: '选择 AI Coding 工具（可多选）', choices: Object.keys(TOOLS).map(value => ({ value, label: labels[value] })), selected: aliases(base.tools) });
     }
   }

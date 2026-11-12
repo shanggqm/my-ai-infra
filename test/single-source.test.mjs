@@ -125,11 +125,17 @@ test('CLI initialization respects explicit defaults without a Skill prompt; sync
 });
 test('global setup keeps a canonical entry even without Codex and links selected adapters to it', async t => {
   const { root, home } = await fixture(t);const tools=path.join(root,'tools');await fs.mkdir(tools);
-  await setup(home,['claudecode','cursor','copilot'],tools);
+  await setup(home,['claudecode','cursor','copilot','mcode'],tools);
   const source=path.join(tools,'.agents/skills/my-ai-infra/SKILL.md');
   for(const prefix of ['.claude','.cursor','.copilot']) assert.equal(await fs.realpath(path.join(tools,prefix,'skills/my-ai-infra/SKILL.md')),source);
+  // MiniMax Code rejects a symlinked SKILL.md; its entry links the canonical Skill directory.
+  const minimax=path.join(tools,'.minimax/skills/my-ai-infra');
+  assert.ok((await fs.lstat(minimax)).isSymbolicLink());
+  assert.equal(await fs.realpath(minimax),await fs.realpath(path.join(tools,'.agents/skills/my-ai-infra')));
+  assert.ok((await fs.lstat(path.join(minimax,'SKILL.md'))).isFile());
+  assert.deepEqual(await fs.readFile(path.join(minimax,'SKILL.md')),await fs.readFile(source));
   assert.ok((await fs.lstat(source)).isFile());
-  await setup(home,['claudecode','cursor','copilot'],tools);
+  await setup(home,['claudecode','cursor','copilot','mcode'],tools);
 });
 
 test('adaptive resources survive selected installs, moves and sync while project templates and four-column indexes are preserved', async t => {

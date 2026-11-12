@@ -8,7 +8,7 @@ import { defaultConfig } from '../src/store.mjs';
 import { json, write } from '../src/fs.mjs';
 import { BUILTINS } from '../src/names.mjs';
 
-const tools = ['codex','claudecode','cursor','copilot'];
+const tools = ['codex','claudecode','cursor','copilot','mcode'];
 const config = {...defaultConfig(),tools};
 const prompts = ['my-auto-design','my-auto-feature','my-init-repo-memory','my-simple-feature'];
 async function fixture(t) {
@@ -38,6 +38,12 @@ test('native discovery inventory covers all selected tools and distinguishes con
     assert.equal(entries.filter(a => a.type === 'agents').length,2);
     assert.ok(entries.some(a => a.type === 'rules'));
     for (const type of ['hooks','mcp','custom']) assert.equal(entries.find(a => a.type === type).status,tool === 'codex' ? 'configuration-required' : 'unsupported');
+  }
+  // MiniMax Code registers a custom Agent in the user data directory only.
+  for (const entry of result.discovery.filter(a => a.tool === 'mcode' && a.type === 'agents')) {
+    assert.equal(entry.status,'unsupported');
+    assert.equal(entry.path,null);
+    assert.match(entry.limitation,/用户级/);
   }
   assert.match(result.discovery.find(a => a.tool === 'codex' && a.type === 'skills' && prompts.includes(a.name)).invocation,/@my-/);
   assert.match(result.discovery.find(a => a.tool === 'cursor' && a.type === 'skills' && prompts.includes(a.name)).invocation,/^\/my-/);

@@ -1,4 +1,4 @@
-# Feature 991 实施记录
+# Feature 990 实施记录
 
 > 状态：实现、自动化验证、安装包验收与 Cursor、Claude Code 宿主续接已完成。Codex 宿主与真实项目样本未验证，Feature 保持 review。
 
@@ -44,6 +44,10 @@
 ## 复审修复（2026-11-12）
 
 详见 `review/code_review.md` 的复审一节：产物路径读取项目布局；Phase 一律标为 done 并保留用户写的当前任务；当前任务标注为迁移时快照；导入后新增的源文件不再误报冲突；来源标注为只读，阻塞提示列出被改文件；重复预览的复用数和提示更正；删除无调用方代码。
+
+## 编号
+
+main 合入 MiniMax Code 适配后，`991` 已被 `991-minimax-code-adapter` 占用，本 Feature 由 `991-openspec-migration` 改号为 `990-openspec-migration`，ROADMAP 与记录内的引用同步更新。
 
 ## 偏差与未验证
 

@@ -13,7 +13,7 @@ import { parseAgent, agentCatalog, GLOBAL_AGENT_TOOLS, agentFilename, renderAgen
 
 export const PACKAGE = fileURLToPath(new URL('../', import.meta.url));
 export const CORE = BUILTINS.filter(s => s.default).map(s => s.name);
-export const TOOLS = { codex: '.agents/skills', claudecode: '.claude/skills', cursor: '.cursor/skills', copilot: '.github/skills' };
+export const TOOLS = { codex: '.agents/skills', claudecode: '.claude/skills', cursor: '.cursor/skills', copilot: '.github/skills', mcode: '.minimax/skills' };
 export const GLOBAL_TOOLS = { ...TOOLS, copilot: '.copilot/skills' };
 export const personalHome = () => path.resolve(process.env.MY_AI_INFRA_HOME || path.join(os.homedir(), '.my-ai-infra'));
 export const defaultConfig = () => ({ version: 1, tools: ['codex'], skills: BUILTINS.map(skill => skill.name) });
@@ -245,8 +245,10 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
         let text = await read(root,`${sourceName}/${relative}`);
         if (['my-ai-infra', 'my-create-memory'].includes(skill) && relative === 'scripts/my-ai-infra.mjs') text = `#!/usr/bin/env node\nimport { pathToFileURL } from 'node:url';\nconst { main } = await import(pathToFileURL(${JSON.stringify(path.join(home, 'runtime/src/cli.mjs'))}));\nmain(['--home', ${JSON.stringify(home)}, ...process.argv.slice(2)]).catch(e => { console.error(e.message); process.exitCode = e.exitCode || 1; });\n`;
         addFile(desired,target,text);
-        for (const tool of tools.filter(tool => tool !== 'codex')) addLink(desired,`${GLOBAL_TOOLS[tool]}/${skill}/${relative}`,target);
+        for (const tool of tools.filter(tool => tool !== 'codex' && tool !== 'mcode')) addLink(desired,`${GLOBAL_TOOLS[tool]}/${skill}/${relative}`,target);
       }
+      // MiniMax Code rejects a symlinked SKILL.md; its entry links the canonical Skill directory.
+      if (tools.includes('mcode')) addLink(desired,`${GLOBAL_TOOLS.mcode}/${skill}`,`${SKILL_SOURCE}/${skill}`);
     }
     for (const agent of agents) {
       const source = `${ASSET_ROOT}/agents/${agent.name}.md`;
@@ -254,6 +256,11 @@ export async function setup(home, tools = ['codex'], toolHome = os.homedir(), sk
       addFile(desired,source,agent.content);
       for (const tool of tools) {
         const target = `${GLOBAL_AGENT_TOOLS[tool]}/${agentFilename(tool,agent.name)}`;
+        // MiniMax Code requires a regular agent.md file; its native path is the entry itself.
+        if (tool === 'mcode') {
+          addFile(desired,target,renderAgent(agent,tool,skill=>path.posix.relative(path.posix.dirname(target),`${GLOBAL_TOOLS.mcode}/${skill}/SKILL.md`)));
+          continue;
+        }
         const generated = derivedAgent(tool,agent.name,agentFilename(tool,agent.name));
         const text = renderAgent(agent,tool,skill=>path.posix.relative(path.posix.dirname(target),`${TOOLS.codex}/${skill}/SKILL.md`));
         addFile(desired,generated,text); addLink(desired,target,generated);

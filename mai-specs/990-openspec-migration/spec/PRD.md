@@ -1,10 +1,10 @@
 # PRD：存量 OpenSpec 项目迁移
 
-> 状态：待评审 · Feature 991 · Profile：standard · [项目 PRD 模板](../../_templates/PRD.tmpl.md)
+> 状态：待评审 · Feature 990 · Profile：standard · [项目 PRD 模板](../../_templates/PRD.tmpl.md)
 
 [返回需求简报](../BRIEF.md) · [需求依据](../context/_INDEX.md)
 
-本文是 Feature 991 的需求与验收标准维护源。已确认目标是让存量项目能从 OpenSpec 迁移到 my-ai-infra。下列模式、首版边界及文案为评审草案，参考当前项目规则、已安装的接续契约和 OpenSpec 官方资料。
+本文是 Feature 990 的需求与验收标准维护源。已确认目标是让存量项目能从 OpenSpec 迁移到 my-ai-infra。下列模式、首版边界及文案为评审草案，参考当前项目规则、已安装的接续契约和 OpenSpec 官方资料。
 
 ## 1. 背景与目标
 

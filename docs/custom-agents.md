@@ -16,7 +16,7 @@
 - 项目取消关联 Skill 或切换工具时，移除未修改的受管角色文件。修改冲突会停止整个项目应用，`doctor` 可检查漂移。
 - `setup` 沿用全局入口的增量安装行为，不自动删除此前为其他工具安装的入口。
 - 安装或同步后开启新会话；已运行的客户端可能需要重启或刷新 Agent 列表。请求示例：“请使用 architecture-review 评审 mai-specs/999-record-search 的技术方案。”
-- Claude Code 可在 `/agents` 查看；Copilot CLI 可在 `/agent` 选择。Codex、Cursor 可显式要求使用该名称的自定义 Agent。
+- Claude Code 可在 `/agents` 查看；Copilot CLI 可在 `/agent` 选择。Codex、Cursor 可显式要求使用该名称的自定义 Agent。MiniMax Code 在用户级目录注册角色，由主 Agent 按名称委派。
 
 代码评审请求示例：“请使用 code-review 评审 mai-specs/999-record-search 的实现”，或“请使用 code-review 评审当前 PR，核对需求和兼容性”。没有 Feature 工作区时直接交付评审结论，不为此创建规格目录。
 
@@ -28,10 +28,13 @@
 | Claude Code | `.claude/agents/code-review.md` | `~/.claude/agents/code-review.md` |
 | Cursor | `.cursor/agents/code-review.md` | `~/.cursor/agents/code-review.md` |
 | Copilot | `.github/agents/code-review.agent.md` | `~/.copilot/agents/code-review.agent.md`（Copilot CLI） |
+| MiniMax Code | 无项目级入口 | `~/.minimax/agents/code-review/agent.md` |
 
 Copilot 的项目文件同时适用于支持自定义 Agent 的 IDE；用户级 IDE 入口由各 IDE 管理，不能将 CLI 目录视为所有 IDE 的全局目录。Copilot CLI 同名个人角色优先于项目角色；需要项目版本时检查 `/agent` 的来源。
 
-Codex 生成必需的 `name`、`description`、`developer_instructions`。Claude Code 额外通过 `skills` 预载关联 Skill。所有格式均包含指向实际 Skill 文件的引用；Copilot CLI 同时启用项目指令继承。模型、推理强度和权限沿用客户端配置。
+MiniMax Code 只在用户数据目录注册自定义 Agent，每个角色是独立目录下的 `agent.md`；项目内不装配角色入口，`init` / `sync` 的 `discovery` 将其标记为「未适配」。需要角色时执行 `mai setup --tools mcode`。
+
+Codex 生成必需的 `name`、`description`、`developer_instructions`。Claude Code 与 MiniMax Code 额外通过 `skills` 预载关联 Skill。所有格式均包含指向实际 Skill 文件的引用；Copilot CLI 同时启用项目指令继承。模型、推理强度和权限沿用客户端配置。
 
 ## 维护资产
 
@@ -57,3 +60,4 @@ my-ai-infra sync --project /path/to/project
 - [Copilot Agent 配置](https://docs.github.com/en/copilot/reference/custom-agents-configuration)
 - [Copilot CLI 目录与加载](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli)
 - [VS Code 自定义 Agent](https://code.visualstudio.com/docs/agent-customization/custom-agents)
+- [MiniMax Code Agent 与 Skill](https://agent.minimax.cn/docs/llms.txt)

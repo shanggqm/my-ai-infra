@@ -55,7 +55,8 @@
     "codex",
     "claude-code",
     "cursor",
-    "github-copilot"
+    "github-copilot",
+    "minimax-code"
   ],
   "publishConfig": {
     "access": "public",
