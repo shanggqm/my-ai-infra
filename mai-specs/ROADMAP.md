@@ -4,6 +4,7 @@
 
 | 需求 | 标题 | 优先级 | 说明 |
 |---|---|---|---|
+| 989 | [项目规则正文纳入版本管理](989-rules-source-tracking/BRIEF.md) | P1 | 规格：standard；装配的 .gitignore 受管区块不再忽略 .agents/rules/，已有项目同步时移除旧规则 |
 
 ## 进行中
 

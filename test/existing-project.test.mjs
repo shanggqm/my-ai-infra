@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { apply, plan, publicPlan, doctor } from '../src/project.mjs';
 import { hash, json, write } from '../src/fs.mjs';
 import { RULES, ruleTarget, SHARED_RULE_SOURCE, ruleActions } from '../src/rules.mjs';
+const exec=promisify(execFile);
 const chosen={version:1,tools:['codex','claudecode','cursor','copilot'],skills:['my-create-feature']};
 const START='<!-- my-ai-infra:start -->',END='<!-- my-ai-infra:end -->';
 const core=(await fs.readFile(new URL('./fixtures/legacy-instructions-0.0.2.md',import.meta.url),'utf8')).trim();
@@ -55,6 +58,26 @@ test('old registered reference blocks are cleaned without injecting a replacemen
 test('stale or edited ignore blocks merge additively, retaining comments, CRLF, negations and idempotence',async t=>{
   const {home,project}=await fixture(t);const original=`node_modules\r\n!.env.example\r\n# ${START}\r\n/.my-ai-infra/\r\n# human comment\r\n/private/\r\n# ${END}\r\n!/.claude/skills/my-create-feature/\r\n`;await write(project,'.gitignore',original);await apply(home,project,chosen);const text=await fs.readFile(path.join(project,'.gitignore'),'utf8');assert.ok(text.startsWith('node_modules\r\n!.env.example\r\n'));assert.ok(text.includes('# human comment\r\n/private/\r\n'));assert.ok(text.endsWith('!/.claude/skills/my-create-feature/\r\n'));assert.ok(!text.split(/\r?\n/).includes('/.claude/skills/my-create-feature/'));await apply(home,project);assert.equal(await fs.readFile(path.join(project,'.gitignore'),'utf8'),text);
   await fs.unlink(path.join(project,'.my-ai-infra/state.json'));await apply(home,project,chosen);assert.equal(await fs.readFile(path.join(project,'.gitignore'),'utf8'),text);
+});
+const gitEnv={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:path.join(os.tmpdir(),`mai-missing-gitconfig-${process.pid}`)};
+async function ignoredByGit(project,relative){try{await exec('git',['check-ignore','-q',relative],{cwd:project,env:gitEnv});return true;}catch(error){if(error.code===1)return false;throw error;}}
+const derivedPaths=['.agents/.generated/codex/agents/x.toml','.my-ai-infra/state.json','.agents/skills/my-create-feature/SKILL.md','.claude/skills/my-create-feature/SKILL.md'];
+test('S-001/S-003 fresh initialization keeps centralized rule sources tracked while derived files stay ignored',async t=>{
+  const {home,project}=await fixture(t);await exec('git',['init','-q'],{cwd:project,env:gitEnv});await apply(home,project,chosen);
+  assert.ok(!(await fs.readFile(path.join(project,'.gitignore'),'utf8')).split(/\r?\n/).includes('/.agents/rules/'));
+  for(const relative of ['.agents/rules/AGENTS.md','.agents/rules/copilot-instructions.md'])assert.equal(await ignoredByGit(project,relative),false,relative);
+  for(const relative of derivedPaths)assert.equal(await ignoredByGit(project,relative),true,relative);
+});
+test('S-002/S-003 sync retires the old managed rules ignore row and keeps user rows byte-for-byte',async t=>{
+  const {home,project}=await fixture(t);await exec('git',['init','-q'],{cwd:project,env:gitEnv});
+  const outside='\r\n# Keep rules in Git\r\n!/.agents/rules/\r\n/.agents/rules/*\r\n!/.agents/rules/AGENTS.md\r\n';
+  await write(project,'.gitignore',`node_modules\r\n# ${START}\r\n/.agents/.generated/\r\n/.agents/rules/\r\n/private/\r\n# ${END}${outside}`);
+  await apply(home,project,chosen);const text=await fs.readFile(path.join(project,'.gitignore'),'utf8');const rows=text.split('\r\n');
+  const block=rows.slice(rows.indexOf(`# ${START}`),rows.indexOf(`# ${END}`)+1);
+  assert.ok(text.startsWith(`node_modules\r\n# ${START}\r\n/.agents/.generated/\r\n/private/\r\n`));assert.ok(text.endsWith(`# ${END}${outside}`));
+  assert.ok(!block.includes('/.agents/rules/'));assert.ok(!text.includes('\n/.agents/rules/\r'));
+  assert.equal(await ignoredByGit(project,'.agents/rules/AGENTS.md'),false);for(const relative of derivedPaths)assert.equal(await ignoredByGit(project,relative),true,relative);
+  assert.equal((await plan(home,project)).actions.find(a=>a.path==='.gitignore').action,'noop');assert.ok(!(await doctor(home,project)).issues.some(issue=>issue.path==='.gitignore'));
 });
 test('real asset conflicts and malformed ignore markers report the path, cause and exit 2 without overwriting input',async t=>{
   const f=await fixture(t);await write(f.project,'.agents/skills/my-create-feature/SKILL.md','# User asset\n');const p=publicPlan(await plan(f.home,f.project,chosen));assert.match(p.actions.find(a=>a.action==='conflict').reason,/没有可信安装记录/);await assert.rejects(apply(f.home,f.project,chosen),e=>e.exitCode===2&&e.message.includes('plan --project'));await assert.rejects(fs.stat(path.join(f.project,'.my-ai-infra.json')),{code:'ENOENT'});

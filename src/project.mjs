@@ -38,12 +38,14 @@ function merge(text, block, first = START, last = END) {
   if (old !== null) return text.replace(old, block);
   return text + (text.endsWith('\n') || !text ? '' : '\n') + '\n' + block + '\n';
 }
+// Rows earlier releases wrote into the managed block; project rule sources must stay tracked behind committed root links.
+const RETIRED_IGNORES = new Set(['/.agents/rules/']);
 function ignoreUnion(current, required, wholeFile) {
   const eol = (current || wholeFile).includes('\r\n') ? '\r\n' : '\n';
   const present = new Set(wholeFile.split(/\r?\n/).map(row => row.trim()));
   const additions = required.split('\n').slice(1, -1).filter(row => !present.has(row) && !present.has('!' + row));
   if (current === null) return [required.split('\n')[0], ...additions, required.split('\n').at(-1)].join(eol);
-  const rows = current.split(/\r?\n/); rows.splice(rows.length - 1, 0, ...additions);
+  const rows = current.split(/\r?\n/).filter(row => !RETIRED_IGNORES.has(row.trim())); rows.splice(rows.length - 1, 0, ...additions);
   return rows.join(eol);
 }
 function blockAt(text, relative) {
@@ -180,7 +182,7 @@ export async function plan(home, project, override, options = {}) {
     migrations.set(relative, { legacy, before, customized, incoming: output.text });
     if (customized && policy !== 'replace' && !relative.startsWith(ASSET_ROOT + '/.generated/')) output.text = before.text;
   }
-  const ignored = ['/.agents/.generated/', '/.agents/rules/', '/.my-ai-infra/', '/.my-ai-infra-recovery-*/', ...selected.skills.map(name => `/${TOOLS.codex}/${name}/`), ...selected.tools.filter(tool => tool !== 'codex').flatMap(tool => selected.skills.map(name => `/${TOOLS[tool]}/${name}/`))];
+  const ignored = ['/.agents/.generated/', '/.my-ai-infra/', '/.my-ai-infra-recovery-*/', ...selected.skills.map(name => `/${TOOLS.codex}/${name}/`), ...selected.tools.filter(tool => tool !== 'codex').flatMap(tool => selected.skills.map(name => `/${TOOLS[tool]}/${name}/`))];
   ignored.push(...[...desired.keys()].map(relative => '/' + relative), ...agentPaths.map(relative => '/' + relative), ...[...desired].filter(([,v])=>v.kind==='symlink').map(([p])=>'/'+p));
   ignored.push(...formatHooks.actions.filter(action => action.before === null && action.after?.kind === 'file').map(action => '/' + action.path));
   desired.set('.gitignore', { text: `# ${START}\n${[...new Set(ignored)].join('\n')}\n# ${END}`, kind: 'block' });
