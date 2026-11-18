@@ -4,6 +4,11 @@ import { createHash, randomUUID } from 'node:crypto';
 
 export const hash = data => createHash('sha256').update(data).digest('hex');
 export const json = value => JSON.stringify(value, null, 2) + '\n';
+// Windows reads link targets back with `\`; compare them in the POSIX form the installer writes.
+export async function readLink(file) {
+  const target = await fs.readlink(file);
+  return process.platform === 'win32' ? target.replaceAll('\\', '/') : target;
+}
 export async function stat(file) {
   try { return await fs.lstat(file); } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
 }

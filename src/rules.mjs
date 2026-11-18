@@ -28,7 +28,12 @@ export async function ruleActions(root, tools, oldFiles, inspect = relative => s
   const claude = RULES.find(rule => rule.entry === 'CLAUDE.md');
   const claudeEntry = await inspect(claude.entry), claudeSource = await inspect(claude.source);
   const sharedTarget = ruleTarget(claude, SHARED_RULE_SOURCE);
-  const sharedClaude = claudeEntry?.kind === 'symlink' && claudeEntry.target === '.agents/assets/rules/AGENTS.md'
+  // `CLAUDE.md -> AGENTS.md` shares the root AGENTS rules; only a plain file or the managed link qualifies.
+  const agentsEntry = await inspect('AGENTS.md');
+  const rootAlias = claudeEntry?.kind === 'symlink' && claudeEntry.target === 'AGENTS.md'
+    && (agentsEntry?.kind === 'file' || agentsEntry?.kind === 'symlink' && agentsEntry.target === SHARED_RULE_SOURCE);
+  const sharedClaude = rootAlias
+    || claudeEntry?.kind === 'symlink' && claudeEntry.target === '.agents/assets/rules/AGENTS.md'
     || claudeEntry?.kind === 'symlink' && claudeEntry.target === sharedTarget
     || oldFiles[claude.entry]?.kind === 'symlink' && oldFiles[claude.entry].target === sharedTarget
     || claudeEntry === null && claudeSource === null;
@@ -67,6 +72,7 @@ export async function ruleActions(root, tools, oldFiles, inspect = relative => s
     if (before && !['file','symlink'].includes(before.kind)) { conflict('规则入口必须是文本文件或有效的相对软链接'); continue; }
     if (before?.kind === 'symlink') {
       if (before.target === target) current = sourceBefore;
+      else if (rule.entry === 'CLAUDE.md' && rootAlias) current = null;
       else if (before.target === ruleTarget(rule,legacySource) && legacyBefore?.kind === 'file') current = legacyBefore;
       else if (before.target === path.posix.relative(path.posix.dirname(rule.entry), '.agents/AGENTS.md')) {
         if (oldSource?.before?.kind === 'symlink') { conflict('旧版中心规则是未知链接，请先核对；不会跟随该链接'); continue; }
