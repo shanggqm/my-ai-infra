@@ -137,7 +137,7 @@ CLI 输出 JSON 的 nextSteps 记录空规则的初始化提示，成功应用�
 
 CLI 与 Web 在未保存固定清单时默认安装全部可用 Skill；显式默认清单与项目配置优先，sync 保留项目选择。--skills 可指定本次清单，不参与交互选择。
 
-.gitignore 增量补缺并去重，保留已有规则、注释、换行和显式反向规则。删除安装记录后留下的旧片段不会仅因没有旧 hash 而阻止安装。项目规格文档只补缺，已有正文保留。CLI 与 Web 默认 merge，交互终端发现冲突时提供 merge / replace / 终止单选。使用 --conflict 显式指定策略；--yes 或非交互环境采用默认 merge。plan 返回 conflicts、review、skipped、complete 与逐项 resolution，链接项包含 target。冲突内容的恢复方式与不同类型处理见 [初始化冲突处理](#初始化冲突处理)。
+.gitignore 增量补缺并去重，保留已有规则、注释、换行和显式反向规则。受管区块不忽略 .agents/rules/，根目录规则链接与其正文一起进入 Git；同步时会移除旧版写入区块内的 /.agents/rules/，区块外的规则保持原样，旧版为保留正文手动添加的反向规则可按需删除。删除安装记录后留下的旧片段不会仅因没有旧 hash 而阻止安装。项目规格文档只补缺，已有正文保留。CLI 与 Web 默认 merge，交互终端发现冲突时提供 merge / replace / 终止单选。使用 --conflict 显式指定策略；--yes 或非交互环境采用默认 merge。plan 返回 conflicts、review、skipped、complete 与逐项 resolution，链接项包含 target。冲突内容的恢复方式与不同类型处理见 [初始化冲突处理](#初始化冲突处理)。
 
 merge 以本地优先的目录合并补齐资产，同名不同正文保留候选；脚本和结构化文件不盲目拼接。合并后保留的本地资产记录 preserve 标记，普通同步和 doctor 尊重这些项目定制；显式 replace 才重置它们。安装状态无效时备份后重建，不使用未经校验的旧路径删除文件。merge 会备份损坏的忽略标记，再保留其他内容并重建有效标记。目录或二进制占位归档后装配，未知父目录链接保持原状并跳过依赖入口；此时部分配置可应用，但 complete 为 false，CLI 退出 2，doctor 不宣称健康。
 
